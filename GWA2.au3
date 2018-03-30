@@ -999,7 +999,7 @@ EndFunc   ;==>CancelHero
 
 ;~ Description: Clear the position flag from all heroes.
 Func CancelAll()
-	Return SendPacket(0x10, 0x18, 0x7F800000, 0x7F800000, 0)
+	Return SendPacket(0x10, 0x19, 0x7F800000, 0x7F800000, 0)
 EndFunc   ;==>CancelAll
 
 ;~ Description: Place a hero's position flag.
