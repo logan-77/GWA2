@@ -18,7 +18,7 @@ Local $mLabels[1][2]
 Local $mBase = 0x00DE0000
 Local $mASMString, $mASMSize, $mASMCodeOffset
 
-Local $mGUI = GUICreate('GWA²'), $mSkillActivate, $mSkillCancel, $mSkillComplete, $mChatReceive, $mLoadFinished
+Local $mGUI = GUICreate('GWA2'), $mSkillActivate, $mSkillCancel, $mSkillComplete, $mChatReceive, $mLoadFinished
 Local $mSkillLogStruct = DllStructCreate('dword;dword;dword;float')
 Local $mSkillLogStructPtr = DllStructGetPtr($mSkillLogStruct)
 Local $mChatLogStruct = DllStructCreate('dword;wchar[256]')
@@ -226,7 +226,7 @@ Func ScanGW()
 	Return $lReturnArray
 EndFunc
 
-;~ Description: Injects GWA² into the game client.
+;~ Description: Injects GWAÂ² into the game client.
 Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = true, $aUseEventSystem = True)
 	Local $lProcessList
 	$mUseStringLog = $aUseStringLog
