@@ -123,56 +123,56 @@ Local $mChangeStatusPtr = DllStructGetPtr($mChangeStatus)
 #EndRegion CommandStructs
 
 #Region Headers
-$SalvageMaterialsHeader = 0x7A
-$SalvageModHeader = 0x7B
-$IdentifyItemHeader = 0x6C
-$EquipItemHeader = 0x30
-$UseItemHeader = 0x7E
-$PickUpItemHeader = 0x3F
-$DropItemHeader = 0x2C
-$MoveItemHeader = 0x72
-$AcceptAllItemsHeader = 0x73
-$DropGoldHeader = 0x2F
-$ChangeGoldHeader = 0x7C
-$AddHeroHeader = 0x1C
-$KickHeroHeader = 0x1D
-$KickAllHeroesHeader = 0x1D
-$AddNpcHeader = 0x9F
-$KickNpcHeader = 0xA8
-$CancelHeroHeader = 0x18
-$CancelAllHeader = 0x18
-$CommandHeroHeader = 0x18
-$CommandAllHeader = 0x19
-$LockHeroTargetHeader = 0x14
-$SetHeroAggressionHeader = 0x13
+$SalvageMaterialsHeader 		= 0x7A
+$SalvageModHeader 				= 0x7B
+$IdentifyItemHeader 			= 0x6C
+$EquipItemHeader 				= 0x30
+$UseItemHeader 					= 0x7E
+$PickUpItemHeader 				= 0x3F
+$DropItemHeader 				= 0x2C
+$MoveItemHeader 				= 0x72
+$AcceptAllItemsHeader 			= 0x73
+$DropGoldHeader 				= 0x2F
+$ChangeGoldHeader 				= 0x7C
+$AddHeroHeader 					= 0x1C
+$KickHeroHeader 				= 0x1D
+$KickAllHeroesHeader 			= 0x1D
+$AddNpcHeader 					= 0x9F
+$KickNpcHeader 					= 0xA8
+$CancelHeroHeader 				= 0x18
+$CancelAllHeader 				= 0x18
+$CommandHeroHeader 				= 0x18
+$CommandAllHeader 				= 0x19
+$LockHeroTargetHeader 			= 0x14
+$SetHeroAggressionHeader 		= 0x13
 $ChangeHeroSkillSlotStateHeader = 0x17
-$SetDisplayedTitleHeader = 0x57
-$RemoveDisplayedTitleHeader = 0x58
-$GoPlayerHeader = 0x33
-$GoNPCHeader = 0x39
-$GoSignpostHeader = 0x51
-$AttackHeader = 0x26
-$MoveMapHeader = 0xB1
-$ReturnToOutpostHeader = 0xA7
-$EnterChallengeHeader = 0xA5
-$EnterChallengeForeignHeader = 0xA5
-$TravelGHHeader = 0xB0
-$LeaveGHHeader = 0xB2
-$AcceptQuestHeader = 0x3B
-$QuestRewardHeader = 0x3B
-$AbandonQuestHeader = 0xF
-$CallTargetHeader = 0x21
-$CancelActionHeader = 0x28
-$OpenChestHeader = 0x53
-$DropBuffHeader = 0x29
-$LeaveGroupHeader = 0xA2
-$SwitchModeHeader = 0x9B
-$DonateFactionHeader = 0x35
-$DialogHeader = 0x3B
-$SkipCinematicHeader = 0x63
-$SetSkillbarSkillHeader = 0x5B
-$LoadSkillBarHeader = 0x5C
-$ChangeSecondProfessionHeader = 0x41
+$SetDisplayedTitleHeader 		= 0x57
+$RemoveDisplayedTitleHeader 	= 0x58
+$GoPlayerHeader 				= 0x33
+$GoNPCHeader 					= 0x39
+$GoSignpostHeader 				= 0x51
+$AttackHeader 					= 0x26
+$MoveMapHeader 					= 0xB1
+$ReturnToOutpostHeader 			= 0xA7
+$EnterChallengeHeader 			= 0xA5
+$EnterChallengeForeignHeader 	= 0xA5
+$TravelGHHeader 				= 0xB0
+$LeaveGHHeader 					= 0xB2
+$AcceptQuestHeader 				= 0x3B
+$QuestRewardHeader 				= 0x3B
+$AbandonQuestHeader 			= 0xF
+$CallTargetHeader 				= 0x21
+$CancelActionHeader 			= 0x28
+$OpenChestHeader 				= 0x53
+$DropBuffHeader 				= 0x29
+$LeaveGroupHeader 				= 0xA2
+$SwitchModeHeader 				= 0x9B
+$DonateFactionHeader 			= 0x35
+$DialogHeader 					= 0x3B
+$SkipCinematicHeader 			= 0x63
+$SetSkillbarSkillHeader 		= 0x5B
+$LoadSkillBarHeader 			= 0x5C
+$ChangeSecondProfessionHeader 	= 0x41
 #EndRegion Headers
 
 #Region Memory
@@ -275,10 +275,6 @@ Func ScanGW()
 	Next
 
 	Return $lReturnArray
-EndFunc
-
-Func Initialize($aGW, $aChangeTitle, $aUseStringLog = True, $aUseEventSystem = True)
-	return Initialize($aGW, $aChangeTitle)
 EndFunc
 
 ;~ Description: Injects GWA² into the game client. TODO fix usestringlog, useeventsystem
