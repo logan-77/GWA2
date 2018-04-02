@@ -1,5 +1,5 @@
-;~ Version 3.7.1
-;~ After the Update from 03/2018
+;~ Version 3.7.2
+;~ After the Update from 2018/04/02
 
 #include-once
 #RequireAdmin
