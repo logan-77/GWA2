@@ -123,56 +123,58 @@ Local $mChangeStatusPtr = DllStructGetPtr($mChangeStatus)
 #EndRegion CommandStructs
 
 #Region Headers
-$SalvageMaterialsHeader 		= 0x7A
-$SalvageModHeader 				= 0x7B
-$IdentifyItemHeader 			= 0x6C
-$EquipItemHeader 				= 0x30
-$UseItemHeader 					= 0x7E
-$PickUpItemHeader 				= 0x3F
-$DropItemHeader 				= 0x2C
-$MoveItemHeader 				= 0x72
-$AcceptAllItemsHeader 			= 0x73
-$DropGoldHeader 				= 0x2F
-$ChangeGoldHeader 				= 0x7C
-$AddHeroHeader 					= 0x1C
-$KickHeroHeader 				= 0x1D
-$KickAllHeroesHeader 			= 0x1D
-$AddNpcHeader 					= 0x9F
-$KickNpcHeader 					= 0xA8
-$CancelHeroHeader 				= 0x18
-$CancelAllHeader 				= 0x18
-$CommandHeroHeader 				= 0x18
-$CommandAllHeader 				= 0x19
-$LockHeroTargetHeader 			= 0x14
-$SetHeroAggressionHeader 		= 0x13
-$ChangeHeroSkillSlotStateHeader = 0x17
-$SetDisplayedTitleHeader 		= 0x57
-$RemoveDisplayedTitleHeader 	= 0x58
-$GoPlayerHeader 				= 0x33
-$GoNPCHeader 					= 0x39
-$GoSignpostHeader 				= 0x51
-$AttackHeader 					= 0x26
-$MoveMapHeader 					= 0xB1
-$ReturnToOutpostHeader 			= 0xA7
-$EnterChallengeHeader 			= 0xA5
-$EnterChallengeForeignHeader 	= 0xA5
-$TravelGHHeader 				= 0xB0
-$LeaveGHHeader 					= 0xB2
-$AcceptQuestHeader 				= 0x3B
-$QuestRewardHeader 				= 0x3B
-$AbandonQuestHeader 			= 0xF
-$CallTargetHeader 				= 0x21
-$CancelActionHeader 			= 0x28
-$OpenChestHeader 				= 0x53
-$DropBuffHeader 				= 0x29
-$LeaveGroupHeader 				= 0xA2
-$SwitchModeHeader 				= 0x9B
-$DonateFactionHeader 			= 0x35
-$DialogHeader 					= 0x3B
-$SkipCinematicHeader 			= 0x63
-$SetSkillbarSkillHeader 		= 0x5B
-$LoadSkillBarHeader 			= 0x5C
-$ChangeSecondProfessionHeader 	= 0x41
+$SalvageMaterialsHeader 		= 0x80
+$SalvageModHeader 				= 0x81
+$IdentifyItemHeader 			= 0x72
+$EquipItemHeader 				= 0x37
+$UseItemHeader 					= 0x84
+$PickUpItemHeader 				= 0x46
+$DropItemHeader 				= 0x33
+$MoveItemHeader 				= 0x78
+$AcceptAllItemsHeader 			= 0x79
+$DropGoldHeader 				= 0x36
+$ChangeGoldHeader 				= 0x82
+$AddHeroHeader 					= 0x24
+$KickHeroHeader 				= 0x25
+$KickAllHeroesHeader 			= 0x25
+$AddNpcHeader 					= 0xA6
+$KickNpcHeader 					= 0xAF
+$CancelHeroHeader 				= 0x1F
+$CancelAllHeader 				= 0x20
+$CommandHeroHeader 				= 0x1F
+$CommandAllHeader 				= 0x20
+$LockHeroTargetHeader 			= 0x19
+$SetHeroAggressionHeader 		= 0x18
+$ChangeHeroSkillSlotStateHeader = 0x1D
+$SetDisplayedTitleHeader 		= 0x5E
+$RemoveDisplayedTitleHeader 	= 0x5F
+$GoPlayerHeader 				= 0x3A
+$GoNPCHeader 					= 0x40
+$GoSignpostHeader 				= 0x58
+$AttackHeader 					= 0x2D
+$MoveMapHeader 					= 0xB8
+$ReturnToOutpostHeader 			= 0xAE
+$EnterChallengeHeader 			= 0xAC
+$EnterChallengeForeignHeader 	= 0xAC
+$TravelGHHeader 				= 0xB7
+$LeaveGHHeader 					= 0xB9
+$AcceptQuestHeader 				= 0x42
+$QuestRewardHeader 				= 0x42
+$AbandonQuestHeader 			= 0x13
+$CallTargetHeader 				= 0x29
+$CancelActionHeader 			= 0x2F
+$OpenChestHeader 				= 0x58
+$DropBuffHeader 				= 0x30
+$LeaveGroupHeader 				= 0xA9
+$SwitchModeHeader 				= 0xA2
+$DonateFactionHeader 			= 0x3C
+$DialogHeader 					= 0x42
+$SkipCinematicHeader 			= 0x69
+$SetSkillbarSkillHeader 		= 0x62
+$LoadSkillBarHeader 			= 0x63
+$ChangeSecondProfessionHeader 	= 0x48
+$SendChatHeader					= 0x6A
+$SetAttributesHeader			= 0x11
 #EndRegion Headers
 
 #Region Memory
@@ -423,7 +425,7 @@ Func Initialize($aGW, $bChangeTitle = True)
 	DllStructSetData($mUseHeroSkill, 1, GetValue('CommandUseHeroSkill'))
 	DllStructSetData($mBuyItem, 1, GetValue('CommandBuyItem'))
 	DllStructSetData($mSendChat, 1, GetValue('CommandSendChat'))
-	DllStructSetData($mSendChat, 2, 0x64)
+	DllStructSetData($mSendChat, 2, $SendChatHeader)
 	DllStructSetData($mWriteChat, 1, GetValue('CommandWriteChat'))
 	DllStructSetData($mRequestQuote, 1, GetValue('CommandRequestQuote'))
 	DllStructSetData($mRequestQuoteSell, 1, GetValue('CommandRequestQuoteSell'))
@@ -432,7 +434,7 @@ Func Initialize($aGW, $bChangeTitle = True)
 	DllStructSetData($mSalvage, 1, GetValue('CommandSalvage'))
 	DllStructSetData($mSetAttributes, 1, GetValue('CommandPacketSend'))
 	DllStructSetData($mSetAttributes, 2, 0x90)
-	DllStructSetData($mSetAttributes, 3, 0xE)
+	DllStructSetData($mSetAttributes, 3, $SetAttributesHeader)
 	DllStructSetData($mMakeAgentArray, 1, GetValue('CommandMakeAgentArray'))
 	DllStructSetData($mChangeStatus, 1, GetValue('CommandChangeStatus'))
 
