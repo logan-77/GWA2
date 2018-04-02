@@ -1,4 +1,4 @@
-;~ Version 3.7.2
+;~ Version 3.7.3
 ;~ After the Update from 2018/04/02
 
 #include-once
@@ -175,6 +175,7 @@ $LoadSkillBarHeader 			= 0x63
 $ChangeSecondProfessionHeader 	= 0x48
 $SendChatHeader					= 0x6A
 $SetAttributesHeader			= 0x11
+$DestroyItemHeader				= 0x6F
 #EndRegion Headers
 
 #Region Memory
@@ -842,6 +843,18 @@ Func MoveItem($aItem, $aBag, $aSlot)
 
 	Return SendPacket(0x10, $MoveItemHeader, $lItemID, $lBagID, $aSlot - 1)
 EndFunc   ;==>MoveItem
+
+Func DestroyItem($aItem)
+	Local $lItemID
+
+	If IsDllStruct($aItem) == 0 Then
+		$lItemID = $item
+	Else
+		$lItemID = DllStructGetData($aItem, "ID")
+	EndIf
+
+	Return SendPacket(0x8, $DestroyItemHeader, $lItemID)
+EndFunc
 
 ;~ Description: Accepts unclaimed items after a mission.
 Func AcceptAllItems()
