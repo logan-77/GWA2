@@ -891,7 +891,7 @@ EndFunc   ;==>BuyIDKit
 
 ;~ Description: Buys a superior ID kit.
 Func BuySuperiorIDKit($aQuantity = 1)
-	BuyItem(6, 1, 500)
+	BuyItem(6, $aQuantity, 500)
 EndFunc   ;==>BuySuperiorIDKit
 
 ;~ Description: Request a quote to buy an item from a trader. Returns true if successful.
