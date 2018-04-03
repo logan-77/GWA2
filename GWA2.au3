@@ -2020,34 +2020,6 @@ EndFunc   ;==>SetPlayerStatus
 Func GetPlayerStatus()
        Return MemoryRead($mCurrentStatus)
  EndFunc   ;==>GetPlayerStatus
- 
-  Func Disconnected()
-   ;Out("Disconnected!")
-   ;Out("Attempting to reconnect.")
-   ControlSend(getwindowhandle(), "", "", "{Enter}")
-   Local $lcheck = False
-   Local $ldeadlock = TimerInit()
-   Do
-      Sleep(20)
-      $lcheck = getmaploading() <> 2 AND getagentexists(-2)
-   Until $lcheck OR TimerDiff($ldeadlock) > 60000
-   If $lcheck = False Then
-      ;Out("Failed to Reconnect!")
-      ;Out("Retrying...")
-      ControlSend(getwindowhandle(), "", "", "{Enter}")
-      $ldeadlock = TimerInit()
-      Do
-         Sleep(20)
-         $lcheck = getmaploading() <> 2 AND getagentexists(-2)
-      Until $lcheck OR TimerDiff($ldeadlock) > 60000
-      If $lcheck = False Then
-         ;Out("Could not reconnect!")
-         ;Out("Exiting.")
-      EndIf
-   EndIf
-   ;Out("Reconnected!")
-   Sleep(2000)
-EndFunc
 #EndRegion Online Status
 
 ;~ Description: Internal use only.
@@ -3294,19 +3266,6 @@ Func GetSkillByID($aSkillID)
 	DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lSkillStructAddress, 'ptr', DllStructGetPtr($lSkillStruct), 'int', DllStructGetSize($lSkillStruct), 'int', '')
 	Return $lSkillStruct
 EndFunc   ;==>GetSkillByID
-
-;~ Description: Returns energy cost of a skill.
-Func GetEnergyCost($aSkillId)
-   Local $lInitCost = MemoryRead(($mSkillBase + (160 * $aSkillId)) + 53,'byte')
-   Switch $lInitCost
-         Case 0xB
-            Return 15
-         Case 0xC
-            Return 25
-         Case Else
-            Return $lInitCost
-    EndSwitch
-EndFunc   ;==>GetEnergyCost
 
 ;~ Description: Returns current morale.
 Func GetMorale($aHeroNumber = 0)
