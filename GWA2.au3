@@ -891,7 +891,7 @@ EndFunc   ;==>BuyIDKit
 
 ;~ Description: Buys a superior ID kit.
 Func BuySuperiorIDKit($aQuantity = 1)
-	BuyItem(6, 1, 500)
+	BuyItem(6, $aQuantity, 500)
 EndFunc   ;==>BuySuperiorIDKit
 
 ;~ Description: Request a quote to buy an item from a trader. Returns true if successful.
@@ -2210,6 +2210,20 @@ Func GetWisdomTitle()
 	Local $lReturn = MemoryReadPtr($mBasePointer, $lOffset)
 	Return $lReturn[1]
 EndFunc   ;==>GetWisdomTitle
+
+ ;~ Description: Returns codex title progress.
+Func GetCodexTitle()
+    Local $lOffset[5] = [0, 0x18, 0x2C, 0x81C, 0x75C] ;0x7B8 before apr20
+    Local $lReturn = MemoryReadPtr($mBasePointer, $lOffset)
+    Return $lReturn[1]
+ EndFunc   ;==>GetCodexTitle
+ 
+ ;~ Description: Returns current Tournament points.
+Func GetTournamentPoints()
+    Local $lOffset[5] = [0 ,0x18, 0x2C, 0, 0x18]
+    Local $lReturn = MemoryReadPtr($mBasePointer, $lOffset)
+    Return $lReturn[1]
+EndFunc   ;==>GetTournamentPoints
 #EndRegion Titles
 
 #Region Faction
@@ -2893,6 +2907,17 @@ Func GetAgentArray($aType = 0)
 	Return $lReturnArray
 EndFunc   ;==>GetAgentArray
 
+Func GetPartySize()
+    Local $lSize = 0, $lReturn
+    Local $lOffset[5] = [0, 0x18, 0x4C, 0x54, 0]
+    For $i=0 To 2
+        $lOffset[4] = $i * 0x10 + 0xC
+        $lReturn = MemoryReadPtr($mBasePointer, $lOffset)
+        $lSize += $lReturn[1]
+    Next
+    Return $lSize
+EndFunc
+
 ;~ Description Returns the "danger level" of each party member
 ;~ Param1: an array returned by GetAgentArray(). This is totally optional, but can greatly improve script speed.
 ;~ Param2: an array returned by GetParty() This is totally optional, but can greatly improve script speed.
@@ -3241,6 +3266,19 @@ Func GetSkillByID($aSkillID)
 	DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lSkillStructAddress, 'ptr', DllStructGetPtr($lSkillStruct), 'int', DllStructGetSize($lSkillStruct), 'int', '')
 	Return $lSkillStruct
 EndFunc   ;==>GetSkillByID
+
+;~ Description: Returns energy cost of a skill.
+Func GetEnergyCost($aSkillId)
+   Local $lInitCost = DllStructGetData(GetSkillByID($aSkillId), 'energy')
+   Switch $lInitCost
+         Case 11
+            Return 15
+         Case 12
+            Return 25
+         Case Else
+            Return $lInitCost
+    EndSwitch
+EndFunc   ;==>GetEnergyCost
 
 ;~ Description: Returns current morale.
 Func GetMorale($aHeroNumber = 0)
