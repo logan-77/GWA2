@@ -1943,25 +1943,6 @@ Func SetAttributes($fAttsID, $fAttsLevel, $aHeroNumber = 0)
    Enqueue($mSetAttributesPtr, 152)
 EndFunc   ;==>SetAttributes
 
-;~ Description: Set all attributes to 0
-Func ClearAttributes($aHeroNumber = 0)
-	Local $lLevel
-	If GetMapLoading() <> 0 Then Return
-	For $i = 0 To 44
-		If GetAttributeByID($i, False, $aHeroNumber) > 0 Then
-			Do
-				$lLevel = GetAttributeByID($i, False, $aHeroNumber)
-				$lDeadlock = TimerInit()
-				DecreaseAttribute($i, $aHeroNumber)
-				Do
-					Sleep(20)
-				Until $lLevel > GetAttributeByID($i, False, $aHeroNumber) Or TimerDiff($lDeadlock) > 5000
-				Sleep(100)
-			Until GetAttributeByID($i, False, $aHeroNumber) == 0
-		EndIf
-	Next
-EndFunc   ;==>ClearAttributes
-
 ;~ Description: Change your secondary profession.
 Func ChangeSecondProfession($aProfession, $aHeroNumber = 0)
 	Return SendPacket(0xC, $ChangeSecondProfessionHeader, GetHeroID($aHeroNumber), $aProfession)
