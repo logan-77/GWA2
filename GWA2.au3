@@ -1,4 +1,4 @@
-;~ Version 3.7.3
+;~ Version 3.7.4
 ;~ After the Update from 2018/04/02
 
 #include-once
