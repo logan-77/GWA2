@@ -294,7 +294,7 @@ Func GetHwnd($aProc)
 EndFunc
 
 ;~ Description: Injects GWA² into the game client. TODO fix usestringlog, useeventsystem
-Func Initialize($aGW, $bChangeTitle = True)
+Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSystem = True)
 	Local $lProcessList
 	If IsString($aGW) Then
 		$lProcessList = processList("gw.exe")
@@ -425,7 +425,7 @@ Func Initialize($aGW, $bChangeTitle = True)
 	$mDisableRendering = GetValue('DisableRendering')
 	$mAgentCopyCount = GetValue('AgentCopyCount')
 	$mAgentCopyBase = GetValue('AgentCopyBase')
-	
+
 	;EventSystem
 	MemoryWrite(GetValue('CallbackHandle'), $mGUI)
 
@@ -2211,7 +2211,7 @@ Func GetCodexTitle()
     Local $lReturn = MemoryReadPtr($mBasePointer, $lOffset)
     Return $lReturn[1]
  EndFunc   ;==>GetCodexTitle
- 
+
  ;~ Description: Returns current Tournament points.
 Func GetTournamentPoints()
     Local $lOffset[5] = [0 ,0x18, 0x2C, 0, 0x18]
