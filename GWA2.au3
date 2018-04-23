@@ -293,8 +293,8 @@ Func GetHwnd($aProc)
 	Return 0
 EndFunc
 
-;~ Description: Injects GWA² into the game client. TODO fix usestringlog, useeventsystem
-Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSystem = True)
+;~ Description: Injects GWA² into the game client. 3rd and 4th arguments are here for legacy purposes
+Func Initialize($aGW, $bChangeTitle = True, $notUsed1 = 0, $notUsed2 = 0)
 	Local $lProcessList
 	If IsString($aGW) Then
 		$lProcessList = processList("gw.exe")
