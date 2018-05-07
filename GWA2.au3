@@ -1,5 +1,5 @@
-;~ Version 3.7.6
-;~ Implemented Assembly level hooks to be run on initialize, allows third party extensions without editing original GWA2.au3 file.
+;~ Version 3.7.7
+;~ Added $mGWA2Version variable - allows other scripts to figure out which version of GWA2 is running
 ;~ https://github.com/tjubutsi/gwa2
 
 #include-once
@@ -11,6 +11,8 @@ If @AutoItX64 Then
 EndIf
 
 #Region Declarations
+Local $mGWA2Version = '3.7.7'
+
 Local $mKernelHandle
 Local $mGWProcHandle
 Local $mGWHwnd
