@@ -1,5 +1,6 @@
-;~ Version 3.7.5
-;~ After the Update from 2018/04/30
+;~ Version 3.7.6
+;~ Implemented Assembly level hooks to be run on initialize, allows third party extensions without editing original GWA2.au3 file.
+;~ https://github.com/tjubutsi/gwa2
 
 #include-once
 #RequireAdmin
@@ -61,6 +62,54 @@ Local $mTraderCostValue
 Local $mDisableRendering
 Local $mAgentCopyCount
 Local $mAgentCopyBase
+Local $mPostInitialize_Functions[0] ; e.g. ['MyFunctionName'], where 'MyFunctionName' is the function to be called.
+Local $mPostCreateCommands_Functions[0] ; e.g. ['MyFunctionName'], where 'MyFunctionName' is the function to be called.
+Local $mPreModifyMemory_Functions[0] ; e.g. ['MyFunctionName'], where 'MyFunctionName' is the function to be called.
+Local $mScanPatterns[43][2] = [ _
+		['ScanBasePointer','85C0750F8BCE'], _
+		['ScanAgentBase','568BF13BF07204'], _
+		['ScanEngine','5356DFE0F6C441'], _
+		['ScanLoadFinished','8B561C8BCF52E8'], _
+		['ScanPostMessage','6A00680080000051FF15'], _
+		['ScanTargetLog','5356578BFA894DF4E8'], _
+		['ScanChangeTargetFunction','33C03BDA0F95C033'], _
+		['ScanMoveFunction','558BEC83EC2056578BF98D4DF0'], _
+		['ScanPing','908D41248B49186A30'], _
+		['ScanMapID','B07F8D55'], _
+		['ScanLoggedIn','85C07411B807'], _
+		['ScanRegion','83F9FD7406'], _
+		['ScanLanguage','C38B75FC8B04B5'], _
+		['ScanUseSkillFunction','558BEC83EC1053568BD9578BF2895DF0'], _
+		['ScanChangeTargetFunction','33C03BDA0F95C033'], _
+		['ScanPacketSendFunction','558BEC83EC2C5356578BF985'], _
+		['ScanBaseOffset','5633F63BCE740E5633D2'], _
+		['ScanWriteChatFunction','558BEC5153894DFC8B4D0856578B'], _
+		['ScanSkillLog','408946105E5B5D'], _
+		['ScanSkillCompleteLog','741D6A006A40'], _
+		['ScanSkillCancelLog','85C0741D6A006A42'], _
+		['ScanChatLog','8B45F48B138B4DEC50'], _
+		['ScanSellItemFunction','8B4D2085C90F858E'], _
+		['ScanStringLog','893E8B7D10895E04397E08'], _
+		['ScanStringFilter1','51568B7508578BF9833E00'], _
+		['ScanStringFilter2','515356578BF933D28B4F2C'], _
+		['ScanActionFunction','8B7D0883FF098BF175116876010000'], _
+		['ScanActionBase','8B4208A80175418B4A08'], _
+		['ScanSkillBase','8D04B65EC1E00505'], _
+		['ScanUseHeroSkillFunction','8D0C765F5E8B'], _
+		['ScanBuyItemFunction','558BEC81ECC000000053568B75085783FE108BFA8BD97614'], _
+		['ScanRequestQuoteFunction','81EC9C00000053568B'], _
+		['ScanTraderFunction','8B45188B551085'], _
+		['ScanTraderHook','8955FC6A008D55F8B9BA'], _
+		['ScanSleep','5F5E5B741A6860EA0000'], _
+		['ScanSalvageFunction','8BFA8BD9897DF0895DF4'], _
+		['ScanSalvageGlobal','8B018B4904A3'], _
+		['ScanSkillTimer','85c974158bd62bd183fa64'], _
+		['ScanClickToMoveFix','3DD301000074'], _
+		['ScanZoomStill','3B448BCB'], _
+		['ScanZoomMoving','50EB116800803B448BCE'], _
+		['ScanBuildNumber','8D8500FCFFFF8D'], _
+		['ScanChangeStatusFunction','568BF183FE047C146811020000'] _
+	]
 #EndRegion Declarations
 
 #Region CommandStructs
@@ -453,9 +502,18 @@ Func Initialize($aGW, $bChangeTitle = True, $notUsed1 = 0, $notUsed2 = 0)
 	DllStructSetData($mChangeStatus, 1, GetValue('CommandChangeStatus'))
 
 	If $bChangeTitle Then WinSetTitle($mGWHwnd, '', 'Guild Wars - ' & GetCharname())
+	PostInitialize() ; Run hooks for post initialize
 	Return $mGWHwnd
 EndFunc   ;==>Initialize
-
+;~ Description: Internal use only; allows hooks to run.
+Func PostInitialize()
+	For $i = 0 To UBound($mPostInitialize_Functions)-1
+		Call($mPostInitialize_Functions[$i])
+		If @error = 0xDEAD And @extended = 0xBEEF Then 
+			MsgBox(0, 'GWA2', 'PostInitialize error, no such function: ' & $mPostInitialize_Functions[$i])
+		EndIf
+	Next
+EndFunc	;==>PostInitialize
 ;~ Description: Internal use only.
 Func GetValue($aKey)
 	For $i = 1 To $mLabels[0][0]
@@ -479,93 +537,15 @@ Func Scan()
 	$mASMString = ''
 
 	_('MainModPtr/4')
-	_('ScanBasePointer:')
-	AddPattern('85C0750F8BCE')
-	_('ScanAgentBase:')
-	AddPattern('568BF13BF07204')
-	_('ScanEngine:')
-	AddPattern('5356DFE0F6C441')
-	_('ScanLoadFinished:')
-	AddPattern('8B561C8BCF52E8')
-	_('ScanPostMessage:')
-	AddPattern('6A00680080000051FF15')
-	_('ScanTargetLog:')
-	AddPattern('5356578BFA894DF4E8')
-	_('ScanChangeTargetFunction:')
-	AddPattern('33C03BDA0F95C033')
-	_('ScanMoveFunction:')
-	AddPattern('558BEC83EC2056578BF98D4DF0')
-	_('ScanPing:')
-	AddPattern('908D41248B49186A30')
-	_('ScanMapID:')
-	AddPattern('B07F8D55')
-	_('ScanLoggedIn:')
-	AddPattern('85C07411B807')
-	_('ScanRegion:')
-	AddPattern('83F9FD7406')
-	_('ScanLanguage:')
-	AddPattern('C38B75FC8B04B5')
-	_('ScanUseSkillFunction:')
-	AddPattern('558BEC83EC1053568BD9578BF2895DF0')
-	_('ScanChangeTargetFunction:')
-	AddPattern('33C03BDA0F95C033')
-	_('ScanPacketSendFunction:')
-	AddPattern('558BEC83EC2C5356578BF985')
-	_('ScanBaseOffset:')
-	AddPattern('5633F63BCE740E5633D2')
-	_('ScanWriteChatFunction:')
-	AddPattern('558BEC5153894DFC8B4D0856578B')
-	_('ScanSkillLog:')
-	AddPattern('408946105E5B5D')
-	_('ScanSkillCompleteLog:')
-	AddPattern('741D6A006A40')
-	_('ScanSkillCancelLog:')
-	AddPattern('85C0741D6A006A42')
-	_('ScanChatLog:')
-	AddPattern('8B45F48B138B4DEC50')
-	_('ScanSellItemFunction:')
-	AddPattern('8B4D2085C90F858E')
-	_('ScanStringLog:')
-	AddPattern('893E8B7D10895E04397E08')
-	_('ScanStringFilter1:')
-	AddPattern('51568B7508578BF9833E00')
-	_('ScanStringFilter2:')
-	AddPattern('515356578BF933D28B4F2C')
-	_('ScanActionFunction:')
-	AddPattern('8B7D0883FF098BF175116876010000')
-	_('ScanActionBase:')
-	AddPattern('8B4208A80175418B4A08')
-	_('ScanSkillBase:')
-	AddPattern('8D04B65EC1E00505')
-	_('ScanUseHeroSkillFunction:')
-	AddPattern('8D0C765F5E8B')
-	_('ScanBuyItemFunction:')
-	AddPattern('558BEC81ECC000000053568B75085783FE108BFA8BD97614')
-	_('ScanRequestQuoteFunction:')
-	AddPattern('81EC9C00000053568B')
-	_('ScanTraderFunction:')
-	AddPattern('8B45188B551085')
-	_('ScanTraderHook:')
-	AddPattern('8955FC6A008D55F8B9BA')
-	_('ScanSleep:')
-	AddPattern('5F5E5B741A6860EA0000')
-	_('ScanSalvageFunction:')
-	AddPattern('8BFA8BD9897DF0895DF4')
-	_('ScanSalvageGlobal:')
-	AddPattern('8B018B4904A3')
-	_('ScanSkillTimer:')
-	AddPattern('85c974158bd62bd183fa64')
-	_('ScanClickToMoveFix:')
-	AddPattern('3DD301000074')
-	_('ScanZoomStill:')
-	AddPattern('3B448BCB')
-	_('ScanZoomMoving:')
-	AddPattern('50EB116800803B448BCE')
-	_('ScanBuildNumber:')
-	AddPattern('8D8500FCFFFF8D')
-	_('ScanChangeStatusFunction:')
-	AddPattern('568BF183FE047C146811020000')
-
+	
+	; Add scan patterns
+	For $i = 0 To UBound($mScanPatterns)-1
+		If IsDeclared('iScanned_'&$mScanPatterns[$i][0]) = -1 Then ContinueLoop	; Already setup to scan this variable.
+		_($mScanPatterns[$i][0]&':')
+		AddPattern($mScanPatterns[$i][1])
+		Assign('iScanned_'&$mScanPatterns[$i][0],1,1) ; Assign local variable to avoid duplicate scanning.
+	Next
+	
 	_('ScanProc:')
 	_('pushad')
 	_('mov ecx,401000')
@@ -3944,7 +3924,9 @@ Func ModifyMemory()
 	$mASMSize = 0
 	$mASMCodeOffset = 0
 	$mASMString = ''
-
+	
+	PreModifyMemory()	; Allow other scripts to assign code to assembler before writing.
+	
 	CreateData()
 	CreateMain()
 	CreateTargetLog()
@@ -3991,7 +3973,15 @@ Func ModifyMemory()
 	WriteDetour('StringFilter1Start', 'StringFilter1Proc')
 	WriteDetour('StringFilter2Start', 'StringFilter2Proc')
 EndFunc   ;==>ModifyMemory
-
+;~ Description: Internal use only; allows hooks to run.
+Func PreModifyMemory()
+	For $i = 0 To UBound($mPreModifyMemory_Functions)-1
+		Call($mPreModifyMemory_Functions[$i])
+		If @error = 0xDEAD And @extended = 0xBEEF Then 
+			MsgBox(0, 'GWA2', 'PreModifyMemory error, no such function: ' & $mPreModifyMemory_Functions[$i])
+		EndIf
+	Next
+EndFunc	;==>PostInitialize
 ;~ Description: Internal use only.
 Func WriteDetour($aFrom, $aTo)
 	WriteBinary('E9' & SwapEndian(Hex(GetLabelInfo($aTo) - GetLabelInfo($aFrom) - 5)), GetLabelInfo($aFrom))
@@ -4666,9 +4656,18 @@ Func CreateCommands()
     _('mov ecx,dword[eax+4]')
     _('call ChangeStatusFunction')
     _('ljmp CommandReturn')
+	PostCreateCommands()
 EndFunc   ;==>CreateCommands
+;~ Description: Internal use only; allows hooks to run.
+Func PostCreateCommands()
+	For $i = 0 To UBound($mPostCreateCommands_Functions)-1
+		Call($mPostCreateCommands_Functions[$i])
+		If @error = 0xDEAD And @extended = 0xBEEF Then 
+			MsgBox(0, 'GWA2', 'PostCreateCommands error, no such function: ' & $mPostCreateCommands_Functions[$i])
+		EndIf
+	Next
+EndFunc	;==>PostCreateCommands
 #EndRegion Modification
-
 #Region Assembler
 ;~ Description: Internal use only.
 Func _($aASM)
