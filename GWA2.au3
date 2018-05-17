@@ -1,5 +1,6 @@
-;~ Version 3.7.8
-;~ After the Update from 2018/05/17
+; Version 3.7.9
+; Unfucked missing header
+; After the Update from 2018/05/17
 
 #include-once
 #RequireAdmin
@@ -1029,7 +1030,7 @@ EndFunc   ;==>KickHero
 
 ;~ Description: Kicks all heroes from the party.
 Func KickAllHeroes()
-	Return SendPacket(0x8, $KickAllHeroesHeader, 0x26)
+	Return SendPacket(0x8, $KickHeroHeader, 0x26)
 EndFunc   ;==>KickAllHeroes
 
 ;~ Description: Add a henchman to the party.
@@ -1045,12 +1046,12 @@ EndFunc   ;==>KickNpc
 ;~ Description: Clear the position flag from a hero.
 Func CancelHero($aHeroNumber)
 	Local $lAgentID = GetHeroID($aHeroNumber)
-	Return SendPacket(0x14, $CancelHeroHeader, $lAgentID, 0x7F800000, 0x7F800000, 0)
+	Return SendPacket(0x14, $CommandHeroHeader, $lAgentID, 0x7F800000, 0x7F800000, 0)
 EndFunc   ;==>CancelHero
 
 ;~ Description: Clear the position flag from all heroes.
 Func CancelAll()
-	Return SendPacket(0x10, $CancelAllHeader, 0x7F800000, 0x7F800000, 0)
+	Return SendPacket(0x10, $CommandAllHeader, 0x7F800000, 0x7F800000, 0)
 EndFunc   ;==>CancelAll
 
 ;~ Description: Place a hero's position flag.
@@ -1368,7 +1369,7 @@ EndFunc   ;==>EnterChallenge
 
 ;~ Description: Enter a foreign challenge mission/pvp.
 Func EnterChallengeForeign()
-	Return SendPacket(0x8, $EnterChallengeForeignHeader, 0)
+	Return SendPacket(0x8, $EnterChallengeHeader, 0)
 EndFunc   ;==>EnterChallengeForeign
 
 ;~ Description: Travel to your guild hall.
@@ -1394,7 +1395,7 @@ EndFunc   ;==>AcceptQuest
 
 ;~ Description: Accept the reward for a quest.
 Func QuestReward($aQuestID)
-	Return SendPacket(0x8, $QuestRewardHeader, '0x008' & Hex($aQuestID, 3) & '07')
+	Return SendPacket(0x8, $AcceptQuestHeader, '0x008' & Hex($aQuestID, 3) & '07')
 EndFunc   ;==>QuestReward
 
 ;~ Description: Abandon a quest.
