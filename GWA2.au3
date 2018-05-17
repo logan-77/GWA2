@@ -1,5 +1,5 @@
-;~ Version 3.7.5
-;~ After the Update from 2018/04/30
+;~ Version 3.7.8
+;~ After the Update from 2018/05/17
 
 #include-once
 #RequireAdmin
@@ -10,6 +10,7 @@ If @AutoItX64 Then
 EndIf
 
 #Region Declarations
+Local $mGWA2Version = '3.7.8'
 Local $mKernelHandle
 Local $mGWProcHandle
 Local $mGWHwnd
@@ -123,59 +124,52 @@ Local $mChangeStatusPtr = DllStructGetPtr($mChangeStatus)
 #EndRegion CommandStructs
 
 #Region Headers
-$SalvageMaterialsHeader 		= 0x7D
-$SalvageModHeader 				= 0x7E
-$IdentifyItemHeader 			= 0x6F
-$EquipItemHeader 				= 0x34
-$UseItemHeader 					= 0x81
-$PickUpItemHeader 				= 0x43
-$DropItemHeader 				= 0x30
-$MoveItemHeader 				= 0x75
-$AcceptAllItemsHeader 			= 0x76
-$DropGoldHeader 				= 0x33
-$ChangeGoldHeader 				= 0x7F
-$AddHeroHeader 					= 0x22
-$KickHeroHeader 				= 0x23
-$KickAllHeroesHeader 			= 0x23
-$AddNpcHeader 					= 0xA3
-$KickNpcHeader 					= 0xAC
-$CancelHeroHeader 				= 0x1E
-$CancelAllHeader 				= 0x1F
-$CommandHeroHeader 				= 0x1E
-$CommandAllHeader 				= 0x1F
-$LockHeroTargetHeader 			= 0x18
-$SetHeroAggressionHeader 		= 0x17
+$SalvageMaterialsHeader = 0x7F
+$SalvageModHeader = 0x80
+$IdentifyItemHeader = 0x71
+$EquipItemHeader = 0x36
+$UseItemHeader = 0x83
+$PickUpItemHeader = 0x45
+$DropItemHeader = 0x32
+$MoveItemHeader = 0x77
+$AcceptAllItemsHeader = 0x78
+$DropGoldHeader = 0x35
+$ChangeGoldHeader = 0x81
+$AddHeroHeader = 0x23
+$KickHeroHeader = 0x24
+$AddNpcHeader = 0xA5
+$KickNpcHeader = 0xAE
+$CommandHeroHeader = 0x1E
+$CommandAllHeader = 0x1F
+$LockHeroTargetHeader = 0x18
+$SetHeroAggressionHeader = 0x17
 $ChangeHeroSkillSlotStateHeader = 0x1C
-$SetDisplayedTitleHeader 		= 0x5B
-$RemoveDisplayedTitleHeader 	= 0x5C
-$GoPlayerHeader 				= 0x37
-$GoNPCHeader 					= 0x3D
-$GoSignpostHeader 				= 0x55
-$AttackHeader 					= 0x2A
-$MoveMapHeader 					= 0xB5
-$ReturnToOutpostHeader 			= 0xAB
-$EnterChallengeHeader 			= 0xA9
-$EnterChallengeForeignHeader 	= 0xA9
-$TravelGHHeader 				= 0xB4
-$LeaveGHHeader 					= 0xB6
-$AcceptQuestHeader 				= 0x3F
-$QuestRewardHeader 				= 0x3F
-$AbandonQuestHeader 			= 0x12
-$CallTargetHeader 				= 0x27
-$CancelActionHeader 			= 0x2C
-$OpenChestHeader 				= 0x57
-$DropBuffHeader 				= 0x2D
-$LeaveGroupHeader 				= 0xA6
-$SwitchModeHeader 				= 0x9F
-$DonateFactionHeader 			= 0x39
-$DialogHeader 					= 0x3F
-$SkipCinematicHeader 			= 0x66
-$SetSkillbarSkillHeader 		= 0x5F
-$LoadSkillBarHeader 			= 0x60
-$ChangeSecondProfessionHeader 	= 0x45
-$SendChatHeader					= 0x67
-$SetAttributesHeader			= 0x10
-$DestroyItemHeader				= 0x6C
+$SetDisplayedTitleHeader = 0x5D
+$RemoveDisplayedTitleHeader = 0x5E
+$GoPlayerHeader = 0x39
+$GoNPCHeader = 0x3F
+$GoSignpostHeader = 0x57
+$AttackHeader = 0x2C
+$MoveHeader = 0x44
+$ReturnToOutpostHeader = 0xAD
+$EnterChallengeHeader = 0xAB
+$TravelGHHeader = 0xB6
+$LeaveGHHeader = 0xB8
+$AbandonQuestHeader = 0x12
+$CallTargetHeader = 0x28
+$CancelActionHeader = 0x2E
+$OpenChestHeader = 0x59
+$DropBuffHeader = 0x2F
+$LeavePartyHeader = 0xA8
+$SwitchModeHeader = 0xA1
+$DonateFactionHeader = 0x3B
+$DialogHeader = 0x41
+$SkipCinematicHeader = 0x68
+$SetSkillbarSkillHeader = 0x61
+$LoadSkillbarHeader = 0x62
+$ChangeSecondProfessionHeader = 0x47
+$SendChatHeader = 0x69
+$SetAttributesHeader = 0x10
 #EndRegion Headers
 
 #Region Memory
@@ -856,18 +850,6 @@ Func MoveItem($aItem, $aBag, $aSlot)
 
 	Return SendPacket(0x10, $MoveItemHeader, $lItemID, $lBagID, $aSlot - 1)
 EndFunc   ;==>MoveItem
-
-Func DestroyItem($aItem)
-	Local $lItemID
-
-	If IsDllStruct($aItem) == 0 Then
-		$lItemID = $item
-	Else
-		$lItemID = DllStructGetData($aItem, "ID")
-	EndIf
-
-	Return SendPacket(0x8, $DestroyItemHeader, $lItemID)
-EndFunc
 
 ;~ Description: Accepts unclaimed items after a mission.
 Func AcceptAllItems()
