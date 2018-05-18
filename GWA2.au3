@@ -14,7 +14,8 @@ EndIf
 Local $mGWA2Version = '3.7.8'
 Local $mKernelHandle
 Local $mGWProcHandle
-Local $mGWHwnd
+Local $mGWProcessId
+Local $mGWWindowHandle
 Local $mMemory
 Local $mLabels[1][2]
 Local $mBase = 0x00DE0000
@@ -258,7 +259,6 @@ Func ScanGW()
 	Local $lPid
 
 	For $i = 1 To $lProcessList[0][0]
-		$mGWHwnd = GetHwnd($lProcessList[$i][1])
 		MemoryOpen($lProcessList[$i][1])
 
 		If $mGWProcHandle Then
@@ -276,46 +276,31 @@ Func ScanGW()
 EndFunc
 
 Func GetHwnd($aProc)
-	Local $lWinList = WinList()
-	For $i = 1 To $lWinList[0][0]
-		If $lWinList[$i][0] <> "" Then
-			Local $lProc = WinGetProcess($lWinList[$i][1])
-			If $lProc = $aProc Then
-				Return $lWinList[$i][1]
-			EndIf
-		EndIf
+	Local $wins = WinList()
+	For $i = 1 To UBound($wins)-1
+		If (WinGetProcess($wins[$i][1]) == $aProc) And (BitAND(WinGetState($wins[$i][1]), 2)) Then Return $wins[$i][1]
 	Next
-	Return 0
 EndFunc
 
 ;~ Description: Injects GWA² into the game client. 3rd and 4th arguments are here for legacy purposes
 Func Initialize($aGW, $bChangeTitle = True, $notUsed1 = 0, $notUsed2 = 0)
-	Local $lProcessList
 	If IsString($aGW) Then
-		$lProcessList = processList("gw.exe")
-
+		Local $lProcessList = processList("gw.exe")
 		For $i = 1 To $lProcessList[0][0]
-			$mGWHwnd = GetHwnd($lProcessList[$i][1])
-			MemoryOpen($lProcessList[$i][1])
-
+			$mGWProcessId = $lProcessList[$i][1]
+			$mGWWindowHandle = GetHwnd($mGWProcessId)
+			MemoryOpen($mGWProcessId)
 			If $mGWProcHandle Then
 				If StringRegExp(ScanForCharname(), $aGW) = 1 Then ExitLoop
 			EndIf
-
 			MemoryClose()
-
 			$mGWProcHandle = 0
 		Next
 	Else
-		$lProcessList = processList("gw.exe")
-
-		For $i = 1 To $lProcessList[0][0]
-			If $lProcessList[$i][1] = $aGW Then
-				MemoryOpen($aGW)
-				ScanForCharname()
-				ExitLoop
-			EndIf
-		Next
+		$mGWProcessId = $aGW
+		$mGWWindowHandle = GetHwnd($mGWProcessId)
+		MemoryOpen($aGW)
+		ScanForCharname()
 	EndIf
 
 	If $mGWProcHandle = 0 Then Return False
@@ -376,9 +361,7 @@ Func Initialize($aGW, $bChangeTitle = True, $notUsed1 = 0, $notUsed2 = 0)
 	SetValue('StringFilter2Start', '0x' & Hex($lTemp, 8))
 	SetValue('StringFilter2Return', '0x' & Hex($lTemp + 5, 8))
 	SetValue('StringLogStart', '0x' & Hex(GetScannedAddress('ScanStringLog', 35), 8))
-	SetValue('LoadFinishedStart', '0x' & Hex(GetScannedAddress('ScanLoadFinished', -13), 8))
-	SetValue('LoadFinishedReturn', '0x' & Hex(GetScannedAddress('ScanLoadFinished', -8), 8))
-
+	SetValue('LoadFinishedStart', '0x' & Hex(GetScannedAddress('ScanLoadFinished', 79), 8))
 	SetValue('PostMessage', '0x' & Hex(MemoryRead(GetScannedAddress('ScanPostMessage', 11)), 8))
 	SetValue('Sleep', MemoryRead(MemoryRead(GetValue('ScanSleep') + 8) + 3))
 	SetValue('SalvageFunction', MemoryRead(GetValue('ScanSalvageFunction') + 8) - 18)
@@ -447,8 +430,8 @@ Func Initialize($aGW, $bChangeTitle = True, $notUsed1 = 0, $notUsed2 = 0)
 	DllStructSetData($mMakeAgentArray, 1, GetValue('CommandMakeAgentArray'))
 	DllStructSetData($mChangeStatus, 1, GetValue('CommandChangeStatus'))
 
-	If $bChangeTitle Then WinSetTitle($mGWHwnd, '', 'Guild Wars - ' & GetCharname())
-	Return $mGWHwnd
+	If $bChangeTitle Then WinSetTitle($mGWWindowHandle, '', 'Guild Wars - ' & GetCharname())
+	Return $mGWWindowHandle
 EndFunc   ;==>Initialize
 
 ;~ Description: Internal use only.
@@ -481,7 +464,7 @@ Func Scan()
 	_('ScanEngine:')
 	AddPattern('5356DFE0F6C441')
 	_('ScanLoadFinished:')
-	AddPattern('AA4A7D00B44A7D00')
+	AddPattern('894DD88B4D0C8955DC8B')
 	_('ScanPostMessage:')
 	AddPattern('6A00680080000051FF15')
 	_('ScanTargetLog:')
@@ -1390,12 +1373,12 @@ EndFunc   ;==>LeaveGH
 #Region Quest
 ;~ Description: Accept a quest from an NPC.
 Func AcceptQuest($aQuestID)
-	Return SendPacket(0x8, $AcceptQuestHeader, '0x008' & Hex($aQuestID, 3) & '01')
+	Return SendPacket(0x8, $DialogHeader, '0x008' & Hex($aQuestID, 3) & '01')
 EndFunc   ;==>AcceptQuest
 
 ;~ Description: Accept the reward for a quest.
 Func QuestReward($aQuestID)
-	Return SendPacket(0x8, $AcceptQuestHeader, '0x008' & Hex($aQuestID, 3) & '07')
+	Return SendPacket(0x8, $DialogHeader, '0x008' & Hex($aQuestID, 3) & '07')
 EndFunc   ;==>QuestReward
 
 ;~ Description: Abandon a quest.
@@ -3570,7 +3553,7 @@ EndFunc   ;==>TolSleep
 
 ;~ Description: Returns window handle of Guild Wars.
 Func GetWindowHandle()
-	Return $mGWHwnd
+	Return $mGWWindowHandle
 EndFunc   ;==>GetWindowHandle
 
 ;~ Description: Returns the distance between two coordinate pairs.
@@ -4299,8 +4282,8 @@ Func CreateLoadFinished()
 	_('LoadClearStringsLoop:')
 	_('mov dword[eax],0')
 	_('inc ebx')
-	_('add eax,100')
-	_('cmp ebx,StringLogSize')
+	_('add eax,80')
+	_('cmp ebx,200')
 	_('jnz LoadClearStringsLoop')
 
 	_('xor ebx,ebx')
@@ -4309,7 +4292,7 @@ Func CreateLoadFinished()
 	_('mov dword[eax],0')
 	_('inc ebx')
 	_('add eax,4')
-	_('cmp ebx,TargetLogSize')
+	_('cmp ebx,200')
 	_('jnz LoadClearTargetsLoop')
 
 	_('push 5')
@@ -4319,9 +4302,9 @@ Func CreateLoadFinished()
 	_('call dword[PostMessage]')
 
 	_('popad')
-	_('mov edx,dword[esi+1C]')
-	_('mov ecx,edi')
-	_('ljmp LoadFinishedReturn')
+	_('mov esp,ebp')
+	_('pop ebp')
+	_('retn 10')
 EndFunc   ;==>CreateLoadFinished
 
 ;~ Description: Internal use only.
