@@ -1,5 +1,5 @@
-; Version 3.7.10
-; Fixed maploading
+; Version 3.7.10b
+; I can't program
 ; After the Update from 2018/05/17
 
 #include-once
@@ -1801,7 +1801,7 @@ EndFunc   ;==>InvitePlayer
 ;~ Description: Leave your party.
 Func LeaveGroup($aKickHeroes = True)
 	If $aKickHeroes Then KickAllHeroes()
-	Return SendPacket(0x4, $LeaveGroupHeader)
+	Return SendPacket(0x4, $LeavePartyHeader)
 EndFunc   ;==>LeaveGroup
 
 ;~ Description: Switches to/from Hard Mode.
