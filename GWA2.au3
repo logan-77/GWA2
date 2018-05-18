@@ -1,5 +1,5 @@
-; Version 3.7.9
-; Unfucked missing header
+; Version 3.7.10
+; Fixed maploading
 ; After the Update from 2018/05/17
 
 #include-once
