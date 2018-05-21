@@ -1,6 +1,6 @@
-; Version 3.7.10
-; Fixed maploading
-; After the Update from 2018/05/17
+; Version 3.7.10C
+; ADDED A BUNCH OF STUFF
+; After the Update from 2018/05/18
 
 #include-once
 #RequireAdmin
