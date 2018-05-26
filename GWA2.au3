@@ -1,4 +1,4 @@
-; Version 3.7.10C
+Local $mGWA2Version = '3.7.10C' ; GWA2 Version
 ; ADDED A BUNCH OF STUFF
 ; After the Update from 2018/05/18
 
@@ -11,7 +11,6 @@ If @AutoItX64 Then
 EndIf
 
 #Region Declarations
-Local $mGWA2Version = '3.7.8'
 Local $mKernelHandle
 Local $mGWProcHandle
 Local $mGWProcessId
@@ -163,7 +162,7 @@ $CallTargetHeader = 0x28
 $CancelActionHeader = 0x2E
 $OpenChestHeader = 0x59
 $DropBuffHeader = 0x2F
-$LeavePartyHeader = 0xA8
+$LeaveGroupHeader = 0xA8
 $SwitchModeHeader = 0xA1
 $DonateFactionHeader = 0x3B
 $DialogHeader = 0x41
