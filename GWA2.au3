@@ -143,6 +143,7 @@ $AddNpcHeader = 0xA5
 $KickNpcHeader = 0xAE
 $CommandHeroHeader = 0x1E
 $CommandAllHeader = 0x1F
+$DropsHerosBundleHeader = 0x19
 $LockHeroTargetHeader = 0x18
 $SetHeroAggressionHeader = 0x17
 $ChangeHeroSkillSlotStateHeader = 0x1C
@@ -1088,8 +1089,8 @@ EndFunc   ;==>SetHeroAggression
 ;~ Description: Drops an Bundle item like protective was kaolai from a heros
 Func DropHerosBundle($aHeroNumber, $aAggression)
 	Local $lHeroID = GetHeroID($aHeroNumber)
-	Return SendPacket(0x8, 0x19, $lHeroID)
-EndFunc   ;==>SetHeroAggression
+	Return SendPacket(0x8, $DropsHerosBundleHeader, $lHeroID)
+EndFunc   ;==>DropHerosBundle
 
 ;~ Description: Disable a skill on a hero's skill bar.
 Func DisableHeroSkillSlot($aHeroNumber, $aSkillSlot)
