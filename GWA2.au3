@@ -1081,7 +1081,7 @@ Func LockHeroTarget($aHeroNumber, $aAgentID = 0) ;$aAgentID=0 Cancels Lock
 EndFunc   ;==>LockHeroTarget
 
 ;~ Description: Drops an Bundle item like protective was kaolai from a heros
-Func DropHerosBundle($aHeroNumber, $aAggression)
+Func DropHerosBundle($aHeroNumber)
 	Local $lHeroID = GetHeroID($aHeroNumber)
 	Return SendPacket(0x8, $DropHerosBundleHeader, $lHeroID)
 EndFunc   ;==>DropHerosBundle
