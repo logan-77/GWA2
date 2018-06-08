@@ -143,6 +143,7 @@ $AddNpcHeader = 0xA5
 $KickNpcHeader = 0xAE
 $CommandHeroHeader = 0x1E
 $CommandAllHeader = 0x1F
+$DropHerosBundleHeader = 0x19
 $LockHeroTargetHeader = 0x18
 $SetHeroAggressionHeader = 0x17
 $ChangeHeroSkillSlotStateHeader = 0x1C
@@ -1078,6 +1079,12 @@ Func LockHeroTarget($aHeroNumber, $aAgentID = 0) ;$aAgentID=0 Cancels Lock
 	Local $lHeroID = GetHeroID($aHeroNumber)
 	Return SendPacket(0xC, $LockHeroTargetHeader, $lHeroID, $aAgentID)
 EndFunc   ;==>LockHeroTarget
+
+;~ Description: Drops an Bundle item like protective was kaolai from a heros
+Func DropHerosBundle($aHeroNumber)
+	Local $lHeroID = GetHeroID($aHeroNumber)
+	Return SendPacket(0x8, $DropHerosBundleHeader, $lHeroID)
+EndFunc   ;==>DropHerosBundle
 
 ;~ Description: Change a hero's aggression level.
 Func SetHeroAggression($aHeroNumber, $aAggression) ;0=Fight, 1=Guard, 2=Avoid
