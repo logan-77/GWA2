@@ -173,6 +173,8 @@ $LoadSkillbarHeader = 0x62
 $ChangeSecondProfessionHeader = 0x47
 $SendChatHeader = 0x69
 $SetAttributesHeader = 0x10
+$GoldStorageHeader = 0x94
+$GoldCharacterHeader = 0x90
 #EndRegion Headers
 
 #Region Memory
@@ -2435,14 +2437,14 @@ EndFunc   ;==>GetItemByModelID
 
 ;~ Description: Returns amount of gold in storage.
 Func GetGoldStorage()
-	Local $lOffset[5] = [0, 0x18, 0x40, 0xF8, 0x80]
+	Local $lOffset[5] = [0, 0x18, 0x40, 0xF8, $GoldStorageHeader]
 	Local $lReturn = MemoryReadPtr($mBasePointer, $lOffset)
 	Return $lReturn[1]
 EndFunc   ;==>GetGoldStorage
 
 ;~ Description: Returns amount of gold being carried.
 Func GetGoldCharacter()
-	Local $lOffset[5] = [0, 0x18, 0x40, 0xF8, 0x7C]
+	Local $lOffset[5] = [0, 0x18, 0x40, 0xF8, $GoldCharacterHeader]
 	Local $lReturn = MemoryReadPtr($mBasePointer, $lOffset)
 	Return $lReturn[1]
 EndFunc   ;==>GetGoldCharacter
