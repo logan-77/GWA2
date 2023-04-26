@@ -143,7 +143,7 @@ $AddNpcHeader = 0xA5
 $KickNpcHeader = 0xAE
 $CommandHeroHeader = 0x1E
 $CommandAllHeader = 0x1F
-$DropHerosBundleHeader = 0x19
+$DropsHerosBundleHeader = 0x19
 $LockHeroTargetHeader = 0x18
 $SetHeroAggressionHeader = 0x17
 $ChangeHeroSkillSlotStateHeader = 0x1C
@@ -173,8 +173,6 @@ $LoadSkillbarHeader = 0x62
 $ChangeSecondProfessionHeader = 0x47
 $SendChatHeader = 0x69
 $SetAttributesHeader = 0x10
-$GoldStorageHeader = 0x94
-$GoldCharacterHeader = 0x90
 #EndRegion Headers
 
 #Region Memory
@@ -700,7 +698,7 @@ Func StartSalvage($aItem, $aExpert = False)
 	Else
 		Local $lItemID = DllStructGetData($aItem, 'ID')
 	EndIf
-	
+
 	Local $lSalvageKit = 0
 	If $aExpert Then
 		$lSalvageKit = FindExpertSalvageKit()
@@ -1093,6 +1091,12 @@ Func SetHeroAggression($aHeroNumber, $aAggression) ;0=Fight, 1=Guard, 2=Avoid
 	Local $lHeroID = GetHeroID($aHeroNumber)
 	Return SendPacket(0xC, $SetHeroAggressionHeader, $lHeroID, $aAggression)
 EndFunc   ;==>SetHeroAggression
+
+;~ Description: Drops an Bundle item like protective was kaolai from a heros
+Func DropHerosBundle($aHeroNumber, $aAggression)
+	Local $lHeroID = GetHeroID($aHeroNumber)
+	Return SendPacket(0x8, $DropsHerosBundleHeader, $lHeroID)
+EndFunc   ;==>DropHerosBundle
 
 ;~ Description: Disable a skill on a hero's skill bar.
 Func DisableHeroSkillSlot($aHeroNumber, $aSkillSlot)
