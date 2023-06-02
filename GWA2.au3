@@ -1,9 +1,9 @@
-Local $mGWA2Version = '3.7.10C' ; GWA2 Version
-; ADDED A BUNCH OF STUFF
-; After the Update from 2018/05/18
+; Version 3.7.11
+; After the Update from 2019/05/01
 
 #include-once
 #RequireAdmin
+#include "GWA2_Headers.au3"
 
 If @AutoItX64 Then
 	MsgBox(16, "Error!", "Please run all bots in 32-bit (x86) mode.")
@@ -11,6 +11,8 @@ If @AutoItX64 Then
 EndIf
 
 #Region Declarations
+Local $Rendering = True
+Local $mGWA2Version = '3.7.11'
 Local $mKernelHandle
 Local $mGWProcHandle
 Local $mGWProcessId
@@ -126,52 +128,51 @@ Local $mChangeStatusPtr = DllStructGetPtr($mChangeStatus)
 #EndRegion CommandStructs
 
 #Region Headers
-$SalvageMaterialsHeader = 0x7F
-$SalvageModHeader = 0x80
-$IdentifyItemHeader = 0x71
+$SalvageMaterialsHeader = 0x80
+$SalvageModHeader = 0x81
+$IdentifyItemHeader = 0x72
 $EquipItemHeader = 0x36
-$UseItemHeader = 0x83
+$UseItemHeader = 0x84
 $PickUpItemHeader = 0x45
 $DropItemHeader = 0x32
-$MoveItemHeader = 0x77
-$AcceptAllItemsHeader = 0x78
+$MoveItemHeader = 0x78
+$AcceptAllItemsHeader = 0x79
 $DropGoldHeader = 0x35
-$ChangeGoldHeader = 0x81
+$ChangeGoldHeader = 0x82
 $AddHeroHeader = 0x23
 $KickHeroHeader = 0x24
 $AddNpcHeader = 0xA5
-$KickNpcHeader = 0xAE
+$KickNpcHeader = 0xAD
 $CommandHeroHeader = 0x1E
 $CommandAllHeader = 0x1F
-$DropsHerosBundleHeader = 0x19
 $LockHeroTargetHeader = 0x18
 $SetHeroAggressionHeader = 0x17
 $ChangeHeroSkillSlotStateHeader = 0x1C
-$SetDisplayedTitleHeader = 0x5D
-$RemoveDisplayedTitleHeader = 0x5E
+$SetDisplayedTitleHeader = 0x5E
+$RemoveDisplayedTitleHeader = 0x5F
 $GoPlayerHeader = 0x39
 $GoNPCHeader = 0x3F
 $GoSignpostHeader = 0x57
 $AttackHeader = 0x2C
-$MoveMapHeader = 0xB7
-$ReturnToOutpostHeader = 0xAD
-$EnterChallengeHeader = 0xAB
-$TravelGHHeader = 0xB6
-$LeaveGHHeader = 0xB8
+$MoveMapHeader = 0xB8
+$ReturnToOutpostHeader = 0xAE
+$EnterChallengeHeader = 0xAC
+$TravelGHHeader = 0xB7
+$LeaveGHHeader = 0xB9
 $AbandonQuestHeader = 0x12
-$CallTargetHeader = 0x28
+$CallTargetHeader = 0x2C
 $CancelActionHeader = 0x2E
 $OpenChestHeader = 0x59
 $DropBuffHeader = 0x2F
-$LeaveGroupHeader = 0xA8
-$SwitchModeHeader = 0xA1
+$LeavePartyHeader = 0xA8
+$SwitchModeHeader = 0xA2
 $DonateFactionHeader = 0x3B
 $DialogHeader = 0x41
 $SkipCinematicHeader = 0x68
-$SetSkillbarSkillHeader = 0x61
-$LoadSkillbarHeader = 0x62
+$SetSkillbarSkillHeader = 0x62
+$LoadSkillbarHeader = 0x63
 $ChangeSecondProfessionHeader = 0x47
-$SendChatHeader = 0x69
+$SendChatHeader = 0x6A
 $SetAttributesHeader = 0x10
 #EndRegion Headers
 
@@ -319,16 +320,16 @@ Func Initialize($aGW, $bChangeTitle = True, $notUsed1 = 0, $notUsed2 = 0)
 	$mMapLoading = $mAgentBase - 240
 	$mCurrentTarget = $mAgentBase - 1280
 	SetValue('PacketLocation', '0x' & Hex(MemoryRead(GetScannedAddress('ScanBaseOffset', -3)), 8))
-	$mPing = MemoryRead(GetScannedAddress('ScanPing', 7))
+	$mPing = MemoryRead(GetScannedAddress('ScanPing', -8))
 	$mMapID = MemoryRead(GetScannedAddress('ScanMapID', 71))
-	$mLoggedIn = MemoryRead(GetScannedAddress('ScanLoggedIn', -3)) + 4
+	$mLoggedIn = MemoryRead(GetScannedAddress('ScanLoggedIn', -3)) -0x198
 	$mRegion = MemoryRead(GetScannedAddress('ScanRegion', 8))
 	$mLanguage = MemoryRead(GetScannedAddress('ScanLanguage', 8)) + 12
 	$mSkillBase = MemoryRead(GetScannedAddress('ScanSkillBase', 9))
 	$mSkillTimer = MemoryRead(GetScannedAddress('ScanSkillTimer', -3))
 	$mBuildNumber = MemoryRead(GetScannedAddress('ScanBuildNumber', 0x54))
-	$mZoomStill = GetScannedAddress("ScanZoomStill", -1)
-	$mZoomMoving = GetScannedAddress("ScanZoomMoving", 5)
+	$mZoomStill = GetScannedAddress("ScanZoomStill", 0x33)
+	$mZoomMoving = GetScannedAddress("ScanZoomMoving", 0x21)
 	$mCurrentStatus = MemoryRead(GetScannedAddress('ScanChangeStatusFunction', -3))
 	$mCharslots = MemoryRead(GetScannedAddress('ScanCharslots', 22))
 
@@ -356,10 +357,10 @@ Func Initialize($aGW, $bChangeTitle = True, $notUsed1 = 0, $notUsed2 = 0)
 	$lTemp = GetScannedAddress('ScanTraderHook', -7)
 	SetValue('TraderHookStart', '0x' & Hex($lTemp, 8))
 	SetValue('TraderHookReturn', '0x' & Hex($lTemp + 5, 8))
-	$lTemp = GetScannedAddress('ScanStringFilter1', 29)
+	$lTemp = GetScannedAddress('ScanStringFilter1', -2)
 	SetValue('StringFilter1Start', '0x' & Hex($lTemp, 8))
 	SetValue('StringFilter1Return', '0x' & Hex($lTemp + 5, 8))
-	$lTemp = GetScannedAddress('ScanStringFilter2', 97)
+	$lTemp = GetScannedAddress('ScanStringFilter2', -2)
 	SetValue('StringFilter2Start', '0x' & Hex($lTemp, 8))
 	SetValue('StringFilter2Return', '0x' & Hex($lTemp + 5, 8))
 	SetValue('StringLogStart', '0x' & Hex(GetScannedAddress('ScanStringLog', 35), 8))
@@ -370,7 +371,7 @@ Func Initialize($aGW, $bChangeTitle = True, $notUsed1 = 0, $notUsed2 = 0)
 	SetValue('SalvageGlobal', MemoryRead(MemoryRead(GetValue('ScanSalvageGlobal') + 8) + 1))
 	SetValue('MoveFunction', '0x' & Hex(GetScannedAddress('ScanMoveFunction', 1), 8))
 	SetValue('UseSkillFunction', '0x' & Hex(GetScannedAddress('ScanUseSkillFunction', 1), 8))
-	SetValue('ChangeTargetFunction', '0x' & Hex(GetScannedAddress('ScanChangeTargetFunction', -119), 8))
+	SetValue('ChangeTargetFunction', '0x' & Hex(GetScannedAddress('ScanChangeTargetFunction', -0x78), 8))
 	SetValue('WriteChatFunction', '0x' & Hex(GetScannedAddress('ScanWriteChatFunction', 1), 8))
 	SetValue('SellItemFunction', '0x' & Hex(GetScannedAddress('ScanSellItemFunction', -85), 8))
 	SetValue('PacketSendFunction', '0x' & Hex(GetScannedAddress('ScanPacketSendFunction', 1), 8))
@@ -380,7 +381,7 @@ Func Initialize($aGW, $bChangeTitle = True, $notUsed1 = 0, $notUsed2 = 0)
 	SetValue('BuyItemFunction', '0x' & Hex(GetScannedAddress('ScanBuyItemFunction', 1), 8))
 	SetValue('RequestQuoteFunction', '0x' & Hex(GetScannedAddress('ScanRequestQuoteFunction', -2), 8))
 	SetValue('TraderFunction', '0x' & Hex(GetScannedAddress('ScanTraderFunction', -71), 8))
-	SetValue('ClickToMoveFix', '0x' & Hex(GetScannedAddress("ScanClickToMoveFix", 30), 8))
+	SetValue('ClickToMoveFix', '0x' & Hex(GetScannedAddress("ScanClickToMoveFix", 1), 8))
 	SetValue('ChangeStatusFunction', '0x' & Hex(GetScannedAddress("ScanChangeStatusFunction", 12), 8))
 
 	SetValue('QueueSize', '0x00000010')
@@ -419,7 +420,7 @@ Func Initialize($aGW, $bChangeTitle = True, $notUsed1 = 0, $notUsed2 = 0)
 	DllStructSetData($mUseHeroSkill, 1, GetValue('CommandUseHeroSkill'))
 	DllStructSetData($mBuyItem, 1, GetValue('CommandBuyItem'))
 	DllStructSetData($mSendChat, 1, GetValue('CommandSendChat'))
-	DllStructSetData($mSendChat, 2, $SendChatHeader)
+	DllStructSetData($mSendChat, 2, $HEADER_SEND_CHAT)
 	DllStructSetData($mWriteChat, 1, GetValue('CommandWriteChat'))
 	DllStructSetData($mRequestQuote, 1, GetValue('CommandRequestQuote'))
 	DllStructSetData($mRequestQuoteSell, 1, GetValue('CommandRequestQuoteSell'))
@@ -428,7 +429,7 @@ Func Initialize($aGW, $bChangeTitle = True, $notUsed1 = 0, $notUsed2 = 0)
 	DllStructSetData($mSalvage, 1, GetValue('CommandSalvage'))
 	DllStructSetData($mSetAttributes, 1, GetValue('CommandPacketSend'))
 	DllStructSetData($mSetAttributes, 2, 0x90)
-	DllStructSetData($mSetAttributes, 3, $SetAttributesHeader)
+	DllStructSetData($mSetAttributes, 3, $HEADER_SET_ATTRIBUTES)
 	DllStructSetData($mMakeAgentArray, 1, GetValue('CommandMakeAgentArray'))
 	DllStructSetData($mChangeStatus, 1, GetValue('CommandChangeStatus'))
 
@@ -500,7 +501,7 @@ Func Scan()
 	_('ScanSkillCompleteLog:')
 	AddPattern('741D6A006A40')
 	_('ScanSkillCancelLog:')
-	AddPattern('85C0741D6A006A42')
+	AddPattern('741D6A006A48')
 	_('ScanChatLog:')
 	AddPattern('8B45F48B138B4DEC50')
 	_('ScanSellItemFunction:')
@@ -508,9 +509,9 @@ Func Scan()
 	_('ScanStringLog:')
 	AddPattern('893E8B7D10895E04397E08')
 	_('ScanStringFilter1:')
-	AddPattern('5E8BE55DC204008B55088BCE52')
+	AddPattern('51568B7508578BF9833E00')
 	_('ScanStringFilter2:')
-	AddPattern('D85DF85F5E5BDFE0F6C441')
+	AddPattern('515356578BF933D28B4F2C')
 	_('ScanActionFunction:')
 	AddPattern('8B7D0883FF098BF175116876010000')
 	_('ScanActionBase:')
@@ -536,16 +537,16 @@ Func Scan()
 	_('ScanSkillTimer:')
 	AddPattern('85c974158bd62bd183fa64')
 	_('ScanClickToMoveFix:')
-	AddPattern('568BF1578B460883F80F')
+	AddPattern('3DD301000074')
 	_('ScanZoomStill:')
-	AddPattern('3B448BCB')
+	AddPattern('558BEC8B41085685C0')
 	_('ScanZoomMoving:')
-	AddPattern('50EB116800803B448BCE')
+	AddPattern('EB358B4304')
 	_('ScanBuildNumber:')
 	AddPattern('8D8500FCFFFF8D')
 	_('ScanChangeStatusFunction:')
 	AddPattern('C390909090909090909090568BF183FE04')
-	_('ScanCharslots:')
+    _('ScanCharslots:')
 	AddPattern('8B551041897E38897E3C897E34897E48897E4C890D')
 
 	_('ScanProc:')
@@ -716,12 +717,12 @@ EndFunc   ;==>StartSalvage
 
 ;~ Description: Salvage the materials out of an item.
 Func SalvageMaterials()
-	Return SendPacket(0x4, $SalvageMaterialsHeader)
+	Return SendPacket(0x4, $HEADER_SALVAGE_MATS)
 EndFunc   ;==>SalvageMaterials
 
 ;~ Description: Salvages a mod out of an item.
 Func SalvageMod($aModIndex)
-	Return SendPacket(0x8, $SalvageModHeader, $aModIndex)
+	Return SendPacket(0x8, $HEADER_SALVAGE_MODS, $aModIndex)
 EndFunc   ;==>SalvageMod
 
 ;~ Description: Identifies an item.
@@ -738,7 +739,7 @@ Func IdentifyItem($aItem)
 	Local $lIDKit = FindIDKit()
 	If $lIDKit == 0 Then Return
 
-	SendPacket(0xC, $IdentifyItemHeader, $lIDKit, $lItemID)
+	SendPacket(0xC, $HEADER_ITEM_ID, $lIDKit, $lItemID)
 
 	Local $lDeadlock = TimerInit()
 	Do
@@ -771,7 +772,7 @@ Func EquipItem($aItem)
 		$lItemID = DllStructGetData($aItem, 'ID')
 	EndIf
 
-	Return SendPacket(0x8, $EquipItemHeader, $lItemID)
+	Return SendPacket(0x8, $HEADER_ITEM_EQUIP, $lItemID)
 EndFunc   ;==>EquipItem
 
 ;~ Description: Uses an item.
@@ -784,7 +785,7 @@ Func UseItem($aItem)
 		$lItemID = DllStructGetData($aItem, 'ID')
 	EndIf
 
-	Return SendPacket(0x8, $UseItemHeader, $lItemID)
+	Return SendPacket(0x8, $HEADER_ITEM_USE, $lItemID)
 EndFunc   ;==>UseItem
 
 ;~ Description: Picks up an item.
@@ -799,7 +800,7 @@ Func PickUpItem($aItem)
 		$lAgentID = DllStructGetData($aItem, 'ID')
 	EndIf
 
-	Return SendPacket(0xC, $PickUpItemHeader, $lAgentID, 0)
+	Return SendPacket(0xC, $HEADER_ITEM_PICKUP, $lAgentID, 0)
 EndFunc   ;==>PickUpItem
 
 ;~ Description: Drops an item.
@@ -822,7 +823,7 @@ Func DropItem($aItem, $aAmount = 0)
 		EndIf
 	EndIf
 
-	Return SendPacket(0xC, $DropItemHeader, $lItemID, $lAmount)
+	Return SendPacket(0xC, $HEADER_ITEM_DROP, $lItemID, $lAmount)
 EndFunc   ;==>DropItem
 
 ;~ Description: Moves an item.
@@ -841,12 +842,12 @@ Func MoveItem($aItem, $aBag, $aSlot)
 		$lBagID = DllStructGetData($aBag, 'ID')
 	EndIf
 
-	Return SendPacket(0x10, $MoveItemHeader, $lItemID, $lBagID, $aSlot - 1)
+	Return SendPacket(0x10, $HEADER_ITEM_MOVE, $lItemID, $lBagID, $aSlot - 1)
 EndFunc   ;==>MoveItem
 
 ;~ Description: Accepts unclaimed items after a mission.
 Func AcceptAllItems()
-	Return SendPacket(0x8, $AcceptAllItemsHeader, DllStructGetData(GetBag(7), 'ID'))
+	Return SendPacket(0x8, $HEADER_ITEMS_ACCEPT_UNCLAIMED, DllStructGetData(GetBag(7), 'ID'))
 EndFunc   ;==>AcceptAllItems
 
 ;~ Description: Sells an item.
@@ -884,7 +885,7 @@ EndFunc   ;==>BuyIdentificationKit
 
 ;~ Description: Legacy function, use BuySuperiorIdentificationKit instead.
 Func BuySuperiorIDKit($aQuantity = 1)
-	BuySuperiorIdentificationKit($Quantity)
+	BuySuperiorIdentificationKit($aQuantity)
 EndFunc   ;==>BuySuperiorIDKit
 
 ;~ Description: Buys a superior ID kit.
@@ -902,7 +903,7 @@ endFunc   ;==>buyExpertSalvageKit
 
 ;~ Description: Request a quote to buy an item from a trader. Returns true if successful.
 Func TraderRequest($aModelID, $aExtraID = -1)
-	Local $lItemStruct = DllStructCreate('long id;long agentId;byte unknown1[4];ptr bag;ptr modstruct;long modstructsize;ptr customized;byte unknown2[4];byte type;byte unknown3;short extraId;short value;byte unknown4[2];short interaction;long modelId;ptr modString;byte unknown5[4];ptr NameString;byte unknown6[15];byte quantity;byte equipped;byte unknown7[1];byte slot')
+	Local $lItemStruct = DllStructCreate('long Id;long AgentId;byte Unknown1[4];ptr Bag;ptr ModStruct;long ModStructSize;ptr Customized;byte unknown2[4];byte Type;byte unknown4;short ExtraId;short Value;byte unknown4[2];short Interaction;long ModelId;ptr ModString;byte unknown5[4];ptr NameString;ptr SingleItemName;byte Unknown4[10];byte IsSalvageable;byte Unknown6;byte Quantity;byte Equiped;byte Profession;byte Type2;byte Slot')
 	Local $lOffset[4] = [0, 0x18, 0x40, 0xC0]
 	Local $lItemArraySize = MemoryReadPtr($mBasePointer, $lOffset)
 	Local $lOffset[5] = [0, 0x18, 0x40, 0xB8, 0]
@@ -984,7 +985,7 @@ Func DropGold($aAmount = 0)
 		$lAmount = GetGoldCharacter()
 	EndIf
 
-	Return SendPacket(0x8, $DropGoldHeader, $lAmount)
+	Return SendPacket(0x8, $HEADER_GOLD_DROP, $lAmount)
 EndFunc   ;==>DropGold
 
 ;~ Description: Deposit gold into storage.
@@ -1023,80 +1024,68 @@ EndFunc   ;==>WithdrawGold
 
 ;~ Description: Internal use for moving gold.
 Func ChangeGold($aCharacter, $aStorage)
-	Return SendPacket(0xC, $ChangeGoldHeader, $aCharacter, $aStorage)
+	Return SendPacket(0xC, $HEADER_GOLD_MOVE, $aCharacter, $aStorage)
 EndFunc   ;==>ChangeGold
 #EndRegion Item
 
 #Region H&H
 ;~ Description: Adds a hero to the party.
 Func AddHero($aHeroId)
-	Return SendPacket(0x8, $AddHeroHeader, $aHeroId)
+	Return SendPacket(0x8, $HEADER_HERO_ADD, $aHeroId)
 EndFunc   ;==>AddHero
 
 ;~ Description: Kicks a hero from the party.
 Func KickHero($aHeroId)
-	Return SendPacket(0x8, $KickHeroHeader, $aHeroId)
+	Return SendPacket(0x8, $HEADER_HERO_KICK, $aHeroId)
 EndFunc   ;==>KickHero
 
 ;~ Description: Kicks all heroes from the party.
 Func KickAllHeroes()
-	Return SendPacket(0x8, $KickHeroHeader, 0x26)
+	Return SendPacket(0x8, $HEADER_HEROES_KICK, 0x24)
 EndFunc   ;==>KickAllHeroes
 
 ;~ Description: Add a henchman to the party.
 Func AddNpc($aNpcId)
-	Return SendPacket(0x8, $AddNpcHeader, $aNpcId)
+	Return SendPacket(0x8, $HEADER_HENCHMAN_ADD, $aNpcId)
 EndFunc   ;==>AddNpc
 
 ;~ Description: Kick a henchman from the party.
 Func KickNpc($aNpcId)
-	Return SendPacket(0x8, $KickNpcHeader, $aNpcId)
+	Return SendPacket(0x8, $HEADER_HENCHMAN_KICK, $aNpcId)
 EndFunc   ;==>KickNpc
 
 ;~ Description: Clear the position flag from a hero.
 Func CancelHero($aHeroNumber)
 	Local $lAgentID = GetHeroID($aHeroNumber)
-	Return SendPacket(0x14, $CommandHeroHeader, $lAgentID, 0x7F800000, 0x7F800000, 0)
+	Return SendPacket(0x14, $HEADER_HERO_CLEAR_FLAG, $lAgentID, 0x7F800000, 0x7F800000, 0)
 EndFunc   ;==>CancelHero
 
 ;~ Description: Clear the position flag from all heroes.
 Func CancelAll()
-	Return SendPacket(0x10, $CommandAllHeader, 0x7F800000, 0x7F800000, 0)
+	Return SendPacket(0x10, $HEADER_PARTY_CLEAR_FLAG, 0x7F800000, 0x7F800000, 0)
 EndFunc   ;==>CancelAll
 
 ;~ Description: Place a hero's position flag.
 Func CommandHero($aHeroNumber, $aX, $aY)
-	Return SendPacket(0x14, $CommandHeroHeader, GetHeroID($aHeroNumber), FloatToInt($aX), FloatToInt($aY), 0)
+	Return SendPacket(0x14, $HEADER_HERO_PLACE_FLAG, GetHeroID($aHeroNumber), FloatToInt($aX), FloatToInt($aY), 0)
 EndFunc   ;==>CommandHero
 
 ;~ Description: Place the full-party position flag.
 Func CommandAll($aX, $aY)
-	Return SendPacket(0x10, $CommandAllHeader, FloatToInt($aX), FloatToInt($aY), 0)
+	Return SendPacket(0x10, $HEADER_PARTY_PLACE_FLAG, FloatToInt($aX), FloatToInt($aY), 0)
 EndFunc   ;==>CommandAll
 
 ;~ Description: Lock a hero onto a target.
 Func LockHeroTarget($aHeroNumber, $aAgentID = 0) ;$aAgentID=0 Cancels Lock
 	Local $lHeroID = GetHeroID($aHeroNumber)
-	Return SendPacket(0xC, $LockHeroTargetHeader, $lHeroID, $aAgentID)
+	Return SendPacket(0xC, $HEADER_HERO_LOCK, $lHeroID, $aAgentID)
 EndFunc   ;==>LockHeroTarget
-
-;~ Description: Drops an Bundle item like protective was kaolai from a heros
-Func DropHerosBundle($aHeroNumber)
-	Local $lHeroID = GetHeroID($aHeroNumber)
-	Return SendPacket(0x8, $DropHerosBundleHeader, $lHeroID)
-EndFunc   ;==>DropHerosBundle
 
 ;~ Description: Change a hero's aggression level.
 Func SetHeroAggression($aHeroNumber, $aAggression) ;0=Fight, 1=Guard, 2=Avoid
 	Local $lHeroID = GetHeroID($aHeroNumber)
-	Return SendPacket(0xC, $SetHeroAggressionHeader, $lHeroID, $aAggression)
+	Return SendPacket(0xC, $HEADER_HERO_AGGRESSION, $lHeroID, $aAggression)
 EndFunc   ;==>SetHeroAggression
-
-;~ Description: Drops an Bundle item like protective was kaolai from a heros
-Func DropHerosBundle($aHeroNumber, $aAggression)
-	Local $lHeroID = GetHeroID($aHeroNumber)
-	Return SendPacket(0x8, $DropsHerosBundleHeader, $lHeroID)
-EndFunc   ;==>DropHerosBundle
 
 ;~ Description: Disable a skill on a hero's skill bar.
 Func DisableHeroSkillSlot($aHeroNumber, $aSkillSlot)
@@ -1110,7 +1099,7 @@ EndFunc   ;==>EnableHeroSkillSlot
 
 ;~ Description: Internal use for enabling or disabling hero skills
 Func ChangeHeroSkillSlotState($aHeroNumber, $aSkillSlot)
-	Return SendPacket(0xC, $ChangeHeroSkillSlotStateHeader, GetHeroID($aHeroNumber), $aSkillSlot - 1)
+	Return SendPacket(0xC, $HEADER_HERO_TOGGLE_SKILL, GetHeroID($aHeroNumber), $aSkillSlot - 1)
 EndFunc   ;==>ChangeHeroSkillSlotState
 
 ;~ Description: Order a hero to use a skill.
@@ -1131,9 +1120,9 @@ EndFunc   ;==>UseHeroSkill
 
 Func SetDisplayedTitle($aTitle = 0)
 	If $aTitle Then
-		Return SendPacket(0x8, $SetDisplayedTitleHeader, $aTitle)
+		Return SendPacket(0x8, $HEADER_TITLE_DISPLAY, $aTitle)
 	Else
-		Return SendPacket(0x4, $RemoveDisplayedTitleHeader)
+		Return SendPacket(0x4, $HEADER_TITLE_CLEAR)
 	EndIf
 EndFunc   ;==>SetDisplayedTitle
 #EndRegion H&H
@@ -1191,7 +1180,7 @@ Func GoPlayer($aAgent)
 		$lAgentID = DllStructGetData($aAgent, 'ID')
 	EndIf
 
-	Return SendPacket(0x8, $GoPlayerHeader, $lAgentID)
+	Return SendPacket(0x8, $HEADER_AGENT_FOLLOW, $lAgentID)
 EndFunc   ;==>GoPlayer
 
 ;~ Description: Talk to an NPC
@@ -1204,7 +1193,7 @@ Func GoNPC($aAgent)
 		$lAgentID = DllStructGetData($aAgent, 'ID')
 	EndIf
 
-	Return SendPacket(0xC, $GoNPCHeader, $lAgentID)
+	Return SendPacket(0xC, $HEADER_NPC_TALK, $lAgentID)
 EndFunc   ;==>GoNPC
 
 ;~ Description: Talks to NPC and waits until you reach them.
@@ -1235,7 +1224,7 @@ Func GoToNPC($aAgent)
 			GoNPC($aAgent)
 		EndIf
 	Until ComputeDistance(DllStructGetData($lMe, 'X'), DllStructGetData($lMe, 'Y'), DllStructGetData($aAgent, 'X'), DllStructGetData($aAgent, 'Y')) < 250 Or $lBlocked > 14
-	Sleep(GetPing() + 300)
+	Sleep(GetPing() + Random(1500, 2000, 1))
 EndFunc   ;==>GoToNPC
 
 ;~ Description: Run to a signpost.
@@ -1248,7 +1237,7 @@ Func GoSignpost($aAgent)
 		$lAgentID = DllStructGetData($aAgent, 'ID')
 	EndIf
 
-	Return SendPacket(0xC, $GoSignpostHeader, $lAgentID, 0)
+	Return SendPacket(0xC, $HEADER_SIGNPOST_RUN, $lAgentID, 0)
 EndFunc   ;==>GoSignpost
 
 ;~ Description: Go to signpost and waits until you reach it.
@@ -1292,71 +1281,71 @@ Func Attack($aAgent, $aCallTarget = False)
 		$lAgentID = DllStructGetData($aAgent, 'ID')
 	EndIf
 
-	Return SendPacket(0xC, $AttackHeader, $lAgentID, $aCallTarget)
+	Return SendPacket(0xC, $HEADER_ATTACK_AGENT, $lAgentID, $aCallTarget)
 EndFunc   ;==>Attack
 
 ;~ Description: Turn character to the left.
 Func TurnLeft($aTurn)
 	If $aTurn Then
-		Return PerformAction(0xA2, 0x18)
+		Return PerformAction(0xA2, 0x1E)
 	Else
-		Return PerformAction(0xA2, 0x1A)
+		Return PerformAction(0xA2, 0x20)
 	EndIf
 EndFunc   ;==>TurnLeft
 
 ;~ Description: Turn character to the right.
 Func TurnRight($aTurn)
 	If $aTurn Then
-		Return PerformAction(0xA3, 0x18)
+		Return PerformAction(0xA3, 0x1E)
 	Else
-		Return PerformAction(0xA3, 0x1A)
+		Return PerformAction(0xA3, 0x20)
 	EndIf
 EndFunc   ;==>TurnRight
 
 ;~ Description: Move backwards.
 Func MoveBackward($aMove)
 	If $aMove Then
-		Return PerformAction(0xAC, 0x18)
+		Return PerformAction(0xAC, 0x1E)
 	Else
-		Return PerformAction(0xAC, 0x1A)
+		Return PerformAction(0xAC, 0x20)
 	EndIf
 EndFunc   ;==>MoveBackward
 
 ;~ Description: Run forwards.
 Func MoveForward($aMove)
 	If $aMove Then
-		Return PerformAction(0xAD, 0x18)
+		Return PerformAction(0xAD, 0x1E)
 	Else
-		Return PerformAction(0xAD, 0x1A)
+		Return PerformAction(0xAD, 0x20)
 	EndIf
 EndFunc   ;==>MoveForward
 
 ;~ Description: Strafe to the left.
 Func StrafeLeft($aStrafe)
 	If $aStrafe Then
-		Return PerformAction(0x91, 0x18)
+		Return PerformAction(0x91, 0x1E)
 	Else
-		Return PerformAction(0x91, 0x1A)
+		Return PerformAction(0x91, 0x20)
 	EndIf
 EndFunc   ;==>StrafeLeft
 
 ;~ Description: Strafe to the right.
 Func StrafeRight($aStrafe)
 	If $aStrafe Then
-		Return PerformAction(0x92, 0x18)
+		Return PerformAction(0x92, 0x1E)
 	Else
-		Return PerformAction(0x92, 0x1A)
+		Return PerformAction(0x92, 0x20)
 	EndIf
 EndFunc   ;==>StrafeRight
 
 ;~ Description: Auto-run.
 Func ToggleAutoRun()
-	Return PerformAction(0xB7, 0x18)
+	Return PerformAction(0xB7, 0x1E)
 EndFunc   ;==>ToggleAutoRun
 
 ;~ Description: Turn around.
 Func ReverseDirection()
-	Return PerformAction(0xB1, 0x18)
+	Return PerformAction(0xB1, 0x1E)
 EndFunc   ;==>ReverseDirection
 #EndRegion Movement
 
@@ -1376,35 +1365,35 @@ EndFunc   ;==>ZoneMap
 
 ;~ Description: Internal use for map travel.
 Func MoveMap($aMapID, $aRegion, $aDistrict, $aLanguage)
-	Return SendPacket(0x18, $MoveMapHeader, $aMapID, $aRegion, $aDistrict, $aLanguage, False)
+	Return SendPacket(0x18, $HEADER_MAP_TRAVEL, $aMapID, $aRegion, $aDistrict, $aLanguage, False)
 EndFunc   ;==>MoveMap
 
 ;~ Description: Returns to outpost after resigning/failure.
 Func ReturnToOutpost()
-	Return SendPacket(0x4, $ReturnToOutpostHeader)
+	Return SendPacket(0x4, $HEADER_OUTPOST_RETURN)
 EndFunc   ;==>ReturnToOutpost
 
 ;~ Description: Enter a challenge mission/pvp.
 Func EnterChallenge()
-	Return SendPacket(0x8, $EnterChallengeHeader, 1)
+	Return SendPacket(0x8, $HEADER_MISSION_ENTER, 1)
 EndFunc   ;==>EnterChallenge
 
 ;~ Description: Enter a foreign challenge mission/pvp.
 Func EnterChallengeForeign()
-	Return SendPacket(0x8, $EnterChallengeHeader, 0)
+	Return SendPacket(0x8, $HEADER_MISSION_FOREIGN_ENTER, 0)
 EndFunc   ;==>EnterChallengeForeign
 
 ;~ Description: Travel to your guild hall.
 Func TravelGH()
     Local $lOffset[3] = [0, 0x18, 0x3C]
     Local $lGH = MemoryReadPtr($mBasePointer, $lOffset)
-    SendPacket(0x18, $TravelGHHeader, MemoryRead($lGH[1] + 0x64), MemoryRead($lGH[1] + 0x68), MemoryRead($lGH[1] + 0x6C), MemoryRead($lGH[1] + 0x70), 1)
+    SendPacket(0x18, $HEADER_GUILDHALL_TRAVEL, MemoryRead($lGH[1] + 0x64), MemoryRead($lGH[1] + 0x68), MemoryRead($lGH[1] + 0x6C), MemoryRead($lGH[1] + 0x70), 1)
     Return WaitMapLoading()
 EndFunc   ;==>TravelGH
 
 ;~ Description: Leave your guild hall.
 Func LeaveGH()
-	SendPacket(0x8, $LeaveGHHeader, 1)
+	SendPacket(0x8, $HEADER_GUILDHALL_LEAVE, 1)
 	Return WaitMapLoading()
 EndFunc   ;==>LeaveGH
 #EndRegion Travel
@@ -1412,122 +1401,122 @@ EndFunc   ;==>LeaveGH
 #Region Quest
 ;~ Description: Accept a quest from an NPC.
 Func AcceptQuest($aQuestID)
-	Return SendPacket(0x8, $DialogHeader, '0x008' & Hex($aQuestID, 3) & '01')
+	Return SendPacket(0x8, $HEADER_QUEST_ACCEPT, '0x008' & Hex($aQuestID, 3) & '01')
 EndFunc   ;==>AcceptQuest
 
 ;~ Description: Accept the reward for a quest.
 Func QuestReward($aQuestID)
-	Return SendPacket(0x8, $DialogHeader, '0x008' & Hex($aQuestID, 3) & '07')
+	Return SendPacket(0x8, $HEADER_QUEST_REWARD, '0x008' & Hex($aQuestID, 3) & '07')
 EndFunc   ;==>QuestReward
 
 ;~ Description: Abandon a quest.
 Func AbandonQuest($aQuestID)
-	Return SendPacket(0x8, $AbandonQuestHeader, $aQuestID)
+	Return SendPacket(0x8, $HEADER_QUEST_ABANDON, $aQuestID)
 EndFunc   ;==>AbandonQuest
 #EndRegion Quest
 
 #Region Windows
 ;~ Description: Close all in-game windows.
 Func CloseAllPanels()
-	Return PerformAction(0x85, 0x18)
+	Return PerformAction(0x85, 0x1E)
 EndFunc   ;==>CloseAllPanels
 
 ;~ Description: Toggle hero window.
 Func ToggleHeroWindow()
-	Return PerformAction(0x8A, 0x18)
+	Return PerformAction(0x8A, 0x1E)
 EndFunc   ;==>ToggleHeroWindow
 
 ;~ Description: Toggle inventory window.
 Func ToggleInventory()
-	Return PerformAction(0x8B, 0x18)
+	Return PerformAction(0x8B, 0x1E)
 EndFunc   ;==>ToggleInventory
 
 ;~ Description: Toggle all bags window.
 Func ToggleAllBags()
-	Return PerformAction(0xB8, 0x18)
+	Return PerformAction(0xB8, 0x1E)
 EndFunc   ;==>ToggleAllBags
 
 ;~ Description: Toggle world map.
 Func ToggleWorldMap()
-	Return PerformAction(0x8C, 0x18)
+	Return PerformAction(0x8C, 0x1E)
 EndFunc   ;==>ToggleWorldMap
 
 ;~ Description: Toggle options window.
 Func ToggleOptions()
-	Return PerformAction(0x8D, 0x18)
+	Return PerformAction(0x8D, 0x1E)
 EndFunc   ;==>ToggleOptions
 
 ;~ Description: Toggle quest window.
 Func ToggleQuestWindow()
-	Return PerformAction(0x8E, 0x18)
+	Return PerformAction(0x8E, 0x1E)
 EndFunc   ;==>ToggleQuestWindow
 
 ;~ Description: Toggle skills window.
 Func ToggleSkillWindow()
-	Return PerformAction(0x8F, 0x18)
+	Return PerformAction(0x8F, 0x1E)
 EndFunc   ;==>ToggleSkillWindow
 
 ;~ Description: Toggle mission map.
 Func ToggleMissionMap()
-	Return PerformAction(0xB6, 0x18)
+	Return PerformAction(0xB6, 0x1E)
 EndFunc   ;==>ToggleMissionMap
 
 ;~ Description: Toggle friends list window.
 Func ToggleFriendList()
-	Return PerformAction(0xB9, 0x18)
+	Return PerformAction(0xB9, 0x1E)
 EndFunc   ;==>ToggleFriendList
 
 ;~ Description: Toggle guild window.
 Func ToggleGuildWindow()
-	Return PerformAction(0xBA, 0x18)
+	Return PerformAction(0xBA, 0x1E)
 EndFunc   ;==>ToggleGuildWindow
 
 ;~ Description: Toggle party window.
 Func TogglePartyWindow()
-	Return PerformAction(0xBF, 0x18)
+	Return PerformAction(0xBF, 0x1E)
 EndFunc   ;==>TogglePartyWindow
 
 ;~ Description: Toggle score chart.
 Func ToggleScoreChart()
-	Return PerformAction(0xBD, 0x18)
+	Return PerformAction(0xBD, 0x1E)
 EndFunc   ;==>ToggleScoreChart
 
 ;~ Description: Toggle layout window.
 Func ToggleLayoutWindow()
-	Return PerformAction(0xC1, 0x18)
+	Return PerformAction(0xC1, 0x1E)
 EndFunc   ;==>ToggleLayoutWindow
 
 ;~ Description: Toggle minions window.
 Func ToggleMinionList()
-	Return PerformAction(0xC2, 0x18)
+	Return PerformAction(0xC2, 0x1E)
 EndFunc   ;==>ToggleMinionList
 
 ;~ Description: Toggle a hero panel.
 Func ToggleHeroPanel($aHero)
 	If $aHero < 4 Then
-		Return PerformAction(0xDB + $aHero, 0x18)
+		Return PerformAction(0xDB + $aHero, 0x1E)
 	ElseIf $aHero < 8 Then
-		Return PerformAction(0xFE + $aHero, 0x18)
+		Return PerformAction(0xFE + $aHero, 0x1E)
 	EndIf
 EndFunc   ;==>ToggleHeroPanel
 
 ;~ Description: Toggle hero's pet panel.
 Func ToggleHeroPetPanel($aHero)
 	If $aHero < 4 Then
-		Return PerformAction(0xDF + $aHero, 0x18)
+		Return PerformAction(0xDF + $aHero, 0x1E)
 	ElseIf $aHero < 8 Then
-		Return PerformAction(0xFA + $aHero, 0x18)
+		Return PerformAction(0xFA + $aHero, 0x1E)
 	EndIf
 EndFunc   ;==>ToggleHeroPetPanel
 
 ;~ Description: Toggle pet panel.
 Func TogglePetPanel()
-	Return PerformAction(0xDF, 0x18)
+	Return PerformAction(0xDF, 0x1E)
 EndFunc   ;==>TogglePetPanel
 
 ;~ Description: Toggle help window.
 Func ToggleHelpWindow()
-	Return PerformAction(0xE4, 0x18)
+	Return PerformAction(0xE4, 0x1E)
 EndFunc   ;==>ToggleHelpWindow
 #EndRegion Windows
 
@@ -1556,72 +1545,74 @@ Func CallTarget($aTarget)
 		$lTargetID = DllStructGetData($aTarget, 'ID')
 	EndIf
 
-	Return SendPacket(0xC, $CallTargetHeader, 0xA, $lTargetID)
+	Return SendPacket(0xC, $HEADER_CALL_TARGET, 0xA, $lTargetID)
 EndFunc   ;==>CallTarget
 
 ;~ Description: Clear current target.
 Func ClearTarget()
-	Return PerformAction(0xE3, 0x18)
+	Return PerformAction(0xE3, 0x1E)
 EndFunc   ;==>ClearTarget
 
 ;~ Description: Target the nearest enemy.
 Func TargetNearestEnemy()
-	Return PerformAction(0x93, 0x18)
+	Local $target = GetNearestEnemyToAgent(-2)
+    ChangeTarget($target)
+	;Return PerformAction(0x93, 0x1E)
 EndFunc   ;==>TargetNearestEnemy
 
 ;~ Description: Target the next enemy.
 Func TargetNextEnemy()
-	Return PerformAction(0x95, 0x18)
+	Return PerformAction(0x95, 0x1E)
 EndFunc   ;==>TargetNextEnemy
 
 ;~ Description: Target the next party member.
 Func TargetPartyMember($aNumber)
-	If $aNumber > 0 And $aNumber < 13 Then Return PerformAction(0x95 + $aNumber, 0x18)
+	If $aNumber > 0 And $aNumber < 13 Then Return PerformAction(0x95 + $aNumber, 0x1E)
 EndFunc   ;==>TargetPartyMember
 
 ;~ Description: Target the previous enemy.
 Func TargetPreviousEnemy()
-	Return PerformAction(0x9E, 0x18)
+	Return PerformAction(0x9E, 0x1E)
 EndFunc   ;==>TargetPreviousEnemy
 
 ;~ Description: Target the called target.
 Func TargetCalledTarget()
-	Return PerformAction(0x9F, 0x18)
+	Return PerformAction(0x9F, 0x1E)
 EndFunc   ;==>TargetCalledTarget
 
 ;~ Description: Target yourself.
 Func TargetSelf()
-	Return PerformAction(0xA0, 0x18)
+	Return PerformAction(0xA0, 0x1E)
 EndFunc   ;==>TargetSelf
 
 ;~ Description: Target the nearest ally.
 Func TargetNearestAlly()
-	Return PerformAction(0xBC, 0x18)
+	Return PerformAction(0xBC, 0x1E)
 EndFunc   ;==>TargetNearestAlly
 
 ;~ Description: Target the nearest item.
 Func TargetNearestItem()
-	Return PerformAction(0xC3, 0x18)
+	Return PerformAction(0xC3, 0x1E)
 EndFunc   ;==>TargetNearestItem
 
 ;~ Description: Target the next item.
 Func TargetNextItem()
-	Return PerformAction(0xC4, 0x18)
+	Return PerformAction(0xC4, 0x1E)
 EndFunc   ;==>TargetNextItem
 
 ;~ Description: Target the previous item.
 Func TargetPreviousItem()
-	Return PerformAction(0xC5, 0x18)
+	Return PerformAction(0xC5, 0x1E)
 EndFunc   ;==>TargetPreviousItem
 
 ;~ Description: Target the next party member.
 Func TargetNextPartyMember()
-	Return PerformAction(0xCA, 0x18)
+	Return PerformAction(0xCA, 0x1E)
 EndFunc   ;==>TargetNextPartyMember
 
 ;~ Description: Target the previous party member.
 Func TargetPreviousPartyMember()
-	Return PerformAction(0xCB, 0x18)
+	Return PerformAction(0xCB, 0x1E)
 EndFunc   ;==>TargetPreviousPartyMember
 #EndRegion Targeting
 
@@ -1645,7 +1636,7 @@ EndFunc   ;==>DisplayAll
 ;~ Description: Display the names of allies.
 Func DisplayAllies($aDisplay)
 	If $aDisplay Then
-		Return PerformAction(0x89, 0x18)
+		Return PerformAction(0x89, 0x1E)
 	Else
 		Return PerformAction(0x89, 0x1A)
 	EndIf
@@ -1654,7 +1645,7 @@ EndFunc   ;==>DisplayAllies
 ;~ Description: Display the names of enemies.
 Func DisplayEnemies($aDisplay)
 	If $aDisplay Then
-		Return PerformAction(0x94, 0x18)
+		Return PerformAction(0x94, 0x1E)
 	Else
 		Return PerformAction(0x94, 0x1A)
 	EndIf
@@ -1726,7 +1717,7 @@ Func SendChat($aMessage, $aChannel = '!')
 		$lMessage = $aMessage
 	EndIf
 
-	MemoryWrite($lAddress + 8, $aChannel & $lMessage, 'wchar[122]')
+	MemoryWrite($lAddress + 12, $aChannel & $lMessage, 'wchar[122]')
 	DllCall($mKernelHandle, 'int', 'WriteProcessMemory', 'int', $mGWProcHandle, 'int', $lAddress, 'ptr', $mSendChatPtr, 'int', 8, 'int', '')
 
 	If StringLen($aMessage) > 120 Then SendChat(StringTrimLeft($aMessage, 120), $aChannel)
@@ -1736,7 +1727,7 @@ EndFunc   ;==>SendChat
 #Region Misc
 ;~ Description: Change weapon sets.
 Func ChangeWeaponSet($aSet)
-	Return PerformAction(0x80 + $aSet, 0x18)
+	Return PerformAction(0x80 + $aSet, 0x1E)
 EndFunc   ;==>ChangeWeaponSet
 
 ;~ Description: Use a skill.
@@ -1757,41 +1748,41 @@ EndFunc   ;==>UseSkill
 
 ;~ Description: Cancel current action.
 Func CancelAction()
-	Return SendPacket(0x4, $CancelActionHeader)
+	Return SendPacket(0x4, $HEADER_CANCEL_ACTION)
 EndFunc   ;==>CancelAction
 
 ;~ Description: Same as hitting spacebar.
 Func ActionInteract()
-	Return PerformAction(0x80, 0x18)
+	Return PerformAction(0x80, 0x1E)
 EndFunc   ;==>ActionInteract
 
 ;~ Description: Follow a player.
 Func ActionFollow()
-	Return PerformAction(0xCC, 0x18)
+	Return PerformAction(0xCC, 0x1E)
 EndFunc   ;==>ActionFollow
 
 ;~ Description: Drop environment object.
 Func DropBundle()
-	Return PerformAction(0xCD, 0x18)
+	Return PerformAction(0xCD, 0x1E)
 EndFunc   ;==>DropBundle
 
 ;~ Description: Clear all hero flags.
 Func ClearPartyCommands()
-	Return PerformAction(0xDB, 0x18)
+	Return PerformAction(0xDB, 0x1E)
 EndFunc   ;==>ClearPartyCommands
 
 ;~ Description: Suppress action.
 Func SuppressAction($aSuppress)
 	If $aSuppress Then
-		Return PerformAction(0xD0, 0x18)
+		Return PerformAction(0xD0, 0x1E)
 	Else
-		Return PerformAction(0xD0, 0x1A)
+		Return PerformAction(0xD0, 0x20)
 	EndIf
 EndFunc   ;==>SuppressAction
 
 ;~ Description: Open a chest.
 Func OpenChest()
-	Return SendPacket(0x8, $OpenChestHeader, 2)
+	Return SendPacket(0x8, $HEADER_CHEST_OPEN, 2)
 EndFunc   ;==>OpenChest
 
 ;~ Description: Stop maintaining enchantment on target.
@@ -1819,7 +1810,7 @@ Func DropBuff($aSkillID, $aAgentID, $aHeroNumber = 0)
 				$lBuffStructAddress = MemoryReadPtr($mBasePointer, $lOffset)
 				DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lBuffStructAddress[0], 'ptr', DllStructGetPtr($lBuffStruct), 'int', DllStructGetSize($lBuffStruct), 'int', '')
 				If (DllStructGetData($lBuffStruct, 'SkillID') == $aSkillID) And (DllStructGetData($lBuffStruct, 'TargetId') == ConvertID($aAgentID)) Then
-					Return SendPacket(0x8, $DropBuffHeader, DllStructGetData($lBuffStruct, 'BuffId'))
+					Return SendPacket(0x8, $HEADER_STOP_MAINTAIN_ENCH, DllStructGetData($lBuffStruct, 'BuffId'))
 					ExitLoop 2
 				EndIf
 			Next
@@ -1829,7 +1820,7 @@ EndFunc   ;==>DropBuff
 
 ;~ Description: Take a screenshot.
 Func MakeScreenshot()
-	Return PerformAction(0xAE, 0x18)
+	Return PerformAction(0xAE, 0x1E)
 EndFunc   ;==>MakeScreenshot
 
 ;~ Description: Invite a player to the party.
@@ -1840,12 +1831,12 @@ EndFunc   ;==>InvitePlayer
 ;~ Description: Leave your party.
 Func LeaveGroup($aKickHeroes = True)
 	If $aKickHeroes Then KickAllHeroes()
-	Return SendPacket(0x4, $LeaveGroupHeader)
+	Return SendPacket(0x4, $HEADER_PARTY_LEAVE)
 EndFunc   ;==>LeaveGroup
 
 ;~ Description: Switches to/from Hard Mode.
 Func SwitchMode($aMode)
-	Return SendPacket(0x8, $SwitchModeHeader, $aMode)
+	Return SendPacket(0x8, $HEADER_MODE_SWITCH, $aMode)
 EndFunc   ;==>SwitchMode
 
 ;~ Description: Resign.
@@ -1856,30 +1847,30 @@ EndFunc   ;==>Resign
 ;~ Description: Donate Kurzick or Luxon faction.
 Func DonateFaction($aFaction)
 	If StringLeft($aFaction, 1) = 'k' Then
-		Return SendPacket(0x10, $DonateFactionHeader, 0, 0, 0x1388)
+		Return SendPacket(0x10, $HEADER_FACTION_DONATE, 0, 0, 0x1388)
 	ElseIf StringLeft($aFaction, 1) = 'l' Then
-		Return SendPacket(0x10, $DonateFactionHeader, 0, 1, 0x1388)
+		Return SendPacket(0x10, $HEADER_FACTION_DONATE, 0, 1, 0x1388)
 	EndIf
 EndFunc   ;==>DonateFaction
 
 ;~ Description: Open a dialog.
 Func Dialog($aDialogID)
-	Return SendPacket(0x8, $DialogHeader, $aDialogID)
+	Return SendPacket(0x8, $HEADER_DIALOG, $aDialogID)
 EndFunc   ;==>Dialog
 
 ;~ Description: Skip a cinematic.
 Func SkipCinematic()
-	Return SendPacket(0x4, $SkipCinematicHeader)
+	Return SendPacket(0x4, $HEADER_CINEMATIC_SKIP)
 EndFunc   ;==>SkipCinematic
 
 ;~ Description: Change a skill on the skillbar.
 Func SetSkillbarSkill($aSlot, $aSkillID, $aHeroNumber = 0)
-	Return SendPacket(0x14, $SetSkillbarSkillHeader, GetHeroID($aHeroNumber), $aSlot - 1, $aSkillID, 0)
+	Return SendPacket(0x14, $HEADER_SKILL_CHANGE, GetHeroID($aHeroNumber), $aSlot - 1, $aSkillID, 0)
 EndFunc   ;==>SetSkillbarSkill
 
 ;~ Description: Load all skills onto a skillbar simultaneously.
 Func LoadSkillBar($aSkill1 = 0, $aSkill2 = 0, $aSkill3 = 0, $aSkill4 = 0, $aSkill5 = 0, $aSkill6 = 0, $aSkill7 = 0, $aSkill8 = 0, $aHeroNumber = 0)
-	SendPacket(0x2C, $LoadSkillBarHeader, GetHeroID($aHeroNumber), 8, $aSkill1, $aSkill2, $aSkill3, $aSkill4, $aSkill5, $aSkill6, $aSkill7, $aSkill8)
+	SendPacket(0x2C, $HEADER_BUILD_LOAD, GetHeroID($aHeroNumber), 8, $aSkill1, $aSkill2, $aSkill3, $aSkill4, $aSkill5, $aSkill6, $aSkill7, $aSkill8)
 EndFunc   ;==>LoadSkillBar
 
 ;~ Description: Loads skill template code.
@@ -1963,7 +1954,7 @@ EndFunc   ;==>SetAttributes
 
 ;~ Description: Change your secondary profession.
 Func ChangeSecondProfession($aProfession, $aHeroNumber = 0)
-	Return SendPacket(0xC, $ChangeSecondProfessionHeader, GetHeroID($aHeroNumber), $aProfession)
+	Return SendPacket(0xC, $HEADER_CHANGE_SECONDARY, GetHeroID($aHeroNumber), $aProfession)
 EndFunc   ;==>ChangeSecondProfession
 
 ;~ Description: Sets value of GetMapIsLoaded() to 0.
@@ -2005,9 +1996,10 @@ EndFunc   ;==>SetMaxMemory
 
 #Region Online Status
  ;~ Description: Change online status. 0 = Offline, 1 = Online, 2 = Do not disturb, 3 = Away
- Func SetPlayerStatus($aStatus)
-    If ($aStatus >= 0 And $aStatus <= 3) And GetPlayerStatus() <> $aStatus Then
-        DllStructSetData($mChangeStatus, 2, $aStatus)
+ Func SetPlayerStatus($iStatus)
+    If (($iStatus >= 0 And $iStatus <= 3) And (GetPlayerStatus() <> $iStatus)) Then
+        DllStructSetData($mChangeStatus, 2, $iStatus)
+
         Enqueue($mChangeStatusPtr, 8)
         Return True
     Else
@@ -2291,6 +2283,7 @@ Func GetRarity($aItem)
 	Return MemoryRead($lPtr, 'ushort')
 EndFunc   ;==>GetRarity
 
+
 ;~ Description: Returns if material is Rare.
 Func GetIsRareMaterial($aItem)
 	If Not IsDllStruct($aItem) Then $aItem = GetItemByItemID($aItem)
@@ -2314,6 +2307,7 @@ Func GetIsIdentified($aItem)
 	If Not IsDllStruct($aItem) Then $aItem = GetItemByItemID($aItem)
 	Return BitAND(DllStructGetData($aItem, 'interaction'), 1) > 0
 EndFunc   ;==>GetIsIdentified
+
 
 ;~ Description: Returns a weapon or shield's minimum required attribute.
 Func GetItemReq($aItem)
@@ -2387,7 +2381,7 @@ Func GetItemBySlot($aBag, $aSlot)
 
 	Local $lItemPtr = DllStructGetData($lBag, 'ItemArray')
 	Local $lBuffer = DllStructCreate('ptr')
-	Local $lItemStruct = DllStructCreate('long id;long agentId;byte unknown1[4];ptr bag;ptr modstruct;long modstructsize;ptr customized;byte unknown2[4];byte type;byte unknown3;short extraId;short value;byte unknown4[2];short interaction;long modelId;ptr modString;byte unknown5[4];ptr NameString;byte unknown6[15];byte quantity;byte equipped;byte unknown7[1];byte slot')
+	Local $lItemStruct = DllStructCreate('long Id;long AgentId;byte Unknown1[4];ptr Bag;ptr ModStruct;long ModStructSize;ptr Customized;byte unknown2[4];byte Type;byte unknown4;short ExtraId;short Value;byte unknown4[2];short Interaction;long ModelId;ptr ModString;byte unknown5[4];ptr NameString;ptr SingleItemName;byte Unknown4[10];byte IsSalvageable;byte Unknown6;byte Quantity;byte Equiped;byte Profession;byte Type2;byte Slot')
 	DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', DllStructGetData($lBag, 'ItemArray') + 4 * ($aSlot - 1), 'ptr', DllStructGetPtr($lBuffer), 'int', DllStructGetSize($lBuffer), 'int', '')
 	DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', DllStructGetData($lBuffer, 1), 'ptr', DllStructGetPtr($lItemStruct), 'int', DllStructGetSize($lItemStruct), 'int', '')
 	Return $lItemStruct
@@ -2395,7 +2389,7 @@ EndFunc   ;==>GetItemBySlot
 
 ;~ Description: Returns item struct.
 Func GetItemByItemID($aItemID)
-	Local $lItemStruct = DllStructCreate('long id;long agentId;byte unknown1[4];ptr bag;ptr modstruct;long modstructsize;ptr customized;byte unknown2[4];byte type;byte unknown3;short extraId;short value;byte unknown4[2];short interaction;long modelId;ptr modString;byte unknown5[4];ptr NameString;byte unknown6[15];byte quantity;byte equipped;byte unknown7[1];byte slot')
+	Local $lItemStruct = DllStructCreate('long Id;long AgentId;byte Unknown1[4];ptr Bag;ptr ModStruct;long ModStructSize;ptr Customized;byte unknown2[4];byte Type;byte unknown4;short ExtraId;short Value;byte unknown4[2];short Interaction;long ModelId;ptr ModString;byte unknown5[4];ptr NameString;ptr SingleItemName;byte Unknown4[10];byte IsSalvageable;byte Unknown6;byte Quantity;byte Equiped;byte Profession;byte Type2;byte Slot')
 	Local $lOffset[5] = [0, 0x18, 0x40, 0xB8, 0x4 * $aItemID]
 	Local $lItemPtr = MemoryReadPtr($mBasePointer, $lOffset)
 	DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lItemPtr[1], 'ptr', DllStructGetPtr($lItemStruct), 'int', DllStructGetSize($lItemStruct), 'int', '')
@@ -2404,7 +2398,7 @@ EndFunc   ;==>GetItemByItemID
 
 ;~ Description: Returns item by agent ID.
 Func GetItemByAgentID($aAgentID)
-	Local $lItemStruct = DllStructCreate('long id;long agentId;byte unknown1[4];ptr bag;ptr modstruct;long modstructsize;ptr customized;byte unknown2[4];byte type;byte unknown3;short extraId;short value;byte unknown4[2];short interaction;long modelId;ptr modString;byte unknown5[4];ptr NameString;byte unknown6[15];byte quantity;byte equipped;byte unknown7[1];byte slot')
+	Local $lItemStruct = DllStructCreate('long Id;long AgentId;byte Unknown1[4];ptr Bag;ptr ModStruct;long ModStructSize;ptr Customized;byte unknown2[4];byte Type;byte unknown4;short ExtraId;short Value;byte unknown4[2];short Interaction;long ModelId;ptr ModString;byte unknown5[4];ptr NameString;ptr SingleItemName;byte Unknown4[10];byte IsSalvageable;byte Unknown6;byte Quantity;byte Equiped;byte Profession;byte Type2;byte Slot')
 	Local $lOffset[4] = [0, 0x18, 0x40, 0xC0]
 	Local $lItemArraySize = MemoryReadPtr($mBasePointer, $lOffset)
 	Local $lOffset[5] = [0, 0x18, 0x40, 0xB8, 0]
@@ -2423,7 +2417,7 @@ EndFunc   ;==>GetItemByAgentID
 
 ;~ Description: Returns item by model ID.
 Func GetItemByModelID($aModelID)
-	Local $lItemStruct = DllStructCreate('long id;long agentId;byte unknown1[4];ptr bag;ptr modstruct;long modstructsize;ptr customized;byte unknown2[4];byte type;byte unknown3;short extraId;short value;byte unknown4[2];short interaction;long modelId;ptr modString;byte unknown5[4];ptr NameString;byte unknown6[15];byte quantity;byte equipped;byte unknown7[1];byte slot')
+	Local $lItemStruct = DllStructCreate('long Id;long AgentId;byte Unknown1[4];ptr Bag;ptr ModStruct;long ModStructSize;ptr Customized;byte unknown2[4];byte Type;byte unknown4;short ExtraId;short Value;byte unknown4[2];short Interaction;long ModelId;ptr ModString;byte unknown5[4];ptr NameString;ptr SingleItemName;byte Unknown4[10];byte IsSalvageable;byte Unknown6;byte Quantity;byte Equiped;byte Profession;byte Type2;byte Slot')
 	Local $lOffset[4] = [0, 0x18, 0x40, 0xC0]
 	Local $lItemArraySize = MemoryReadPtr($mBasePointer, $lOffset)
 	Local $lOffset[5] = [0, 0x18, 0x40, 0xB8, 0]
@@ -2441,14 +2435,14 @@ EndFunc   ;==>GetItemByModelID
 
 ;~ Description: Returns amount of gold in storage.
 Func GetGoldStorage()
-	Local $lOffset[5] = [0, 0x18, 0x40, 0xF8, $GoldStorageHeader]
+	Local $lOffset[5] = [0, 0x18, 0x40, 0xF8, 0x94]
 	Local $lReturn = MemoryReadPtr($mBasePointer, $lOffset)
 	Return $lReturn[1]
 EndFunc   ;==>GetGoldStorage
 
 ;~ Description: Returns amount of gold being carried.
 Func GetGoldCharacter()
-	Local $lOffset[5] = [0, 0x18, 0x40, 0xF8, $GoldCharacterHeader]
+	Local $lOffset[5] = [0, 0x18, 0x40, 0xF8, 0x90]
 	Local $lReturn = MemoryReadPtr($mBasePointer, $lOffset)
 	Return $lReturn[1]
 EndFunc   ;==>GetGoldCharacter
@@ -2458,7 +2452,7 @@ Func FindSalvageKit()
 	Local $lItem
 	Local $lKit = 0
 	Local $lUses = 101
-	For $i = 1 To 4
+	For $i = 1 To 16
 		For $j = 1 To DllStructGetData(GetBag($i), 'Slots')
 			$lItem = GetItemBySlot($i, $j)
 			Switch DllStructGetData($lItem, 'ModelID')
@@ -2467,8 +2461,7 @@ Func FindSalvageKit()
 						$lKit = DllStructGetData($lItem, 'ID')
 						$lUses = DllStructGetData($lItem, 'Value') / 2
 					EndIf
-				Case Else
-					ContinueLoop
+						ContinueLoop
 			EndSwitch
 		Next
 	Next
@@ -2956,6 +2949,30 @@ Func GetPartySize()
     Return $lSize
 EndFunc
 
+;~ 	Description: Returns different States about Party. Check with BitAND.
+;~ 	0x8 = Leader starts Mission / Leader is travelling with Party
+;~ 	0x10 = Hardmode enabled
+;~ 	0x20 = Party defeated
+;~ 	0x40 = Guild Battle
+;~ 	0x80 = Party Leader
+;~ 	0x100 = Observe-Mode
+Func GetPartyState($aFlag)
+    Local $lOffset[4] = [0, 0x18, 0x4C, 0x14]
+    Local $lBitMask = MemoryReadPtr($mBasePointer,$lOffset)
+    Return BitAND($lBitMask[1], $aFlag) > 0
+EndFunc   ;==>GetPartyState
+
+Func GetPartyWaitingForMission()
+	Return GetPartyState(0x8)
+EndFunc
+
+Func GetIsHardMode()
+	Return GetPartyState(0x10)
+EndFunc
+
+Func GetPartyDefeated()
+	Return GetPartyState(0x20)
+EndFunc
 ;~ Description Returns the "danger level" of each party member
 ;~ Param1: an array returned by GetAgentArray(). This is totally optional, but can greatly improve script speed.
 ;~ Param2: an array returned by GetParty() This is totally optional, but can greatly improve script speed.
@@ -3564,7 +3581,7 @@ EndFunc   ;==>GetCharname
 
 ;~ Description: Returns if you're logged in.
 Func GetLoggedIn()
-	Return MemoryRead($mLoggedIn)
+	Return MemoryRead($mLoggedIn) > 0 ? 1 : 0
 EndFunc   ;==>GetLoggedIn
 
 ;~ Description: Returns the number of character slots you have. Only works on character select.
@@ -4242,7 +4259,7 @@ Func CreateSkillCancelLog()
 
 	_('popad')
 	_('push 0')
-	_('push 42')
+	_('push 48')				; Incremented from 42
 	_('mov ecx,esi')
 	_('ljmp SkillCancelLogReturn')
 EndFunc   ;==>CreateSkillCancelLog
@@ -4534,6 +4551,7 @@ Func CreateCommands()
 	_('push eax')
 	_('push 1')
 	_('mov ecx,b')
+	_('mov ebx,1')
 	_('xor edx,edx')
 	_('call SellItemFunction')
 	_('ljmp CommandReturn')
@@ -4712,10 +4730,10 @@ Func CreateCommands()
 	_('mov dword[AgentCopyCount],edx')
 	_('ljmp CommandReturn')
 
-	_('CommandChangeStatus:')
-	_('mov ecx,dword[eax+4]')
-	_('call ChangeStatusFunction')
-	_('ljmp CommandReturn')
+    _('CommandChangeStatus:')
+    _('mov ecx,dword[eax+4]')
+    _('call ChangeStatusFunction')
+    _('ljmp CommandReturn')
 EndFunc   ;==>CreateCommands
 #EndRegion Modification
 
@@ -5329,4 +5347,50 @@ Func ASMNumber($aNumber, $aSmall = False)
 	EndIf
 EndFunc   ;==>ASMNumber
 #EndRegion Assembler
+
+Func ToggleRendering()
+	If $Rendering Then
+		DisableRendering()
+		WinSetState(GetWindowHandle(), "", @SW_HIDE)
+		ClearMemory()
+	Else
+		EnableRendering()
+		WinSetState(GetWindowHandle(), "", @SW_SHOW)
+	EndIf
+	$Rendering = Not $Rendering
+EndFunc
+
+Func GetNumberOfFoesInRangeOfAgent($aAgent = -2, $aRange = 1250)
+	Local $lAgent, $lDistance
+	Local $lCount = 0
+
+	If Not IsDllStruct($aAgent) Then $aAgent = GetAgentByID($aAgent)
+
+	For $i = 1 To GetMaxAgents()
+		$lAgent = GetAgentByID($i)
+		If BitAND(DllStructGetData($lAgent, 'typemap'), 262144) Then ContinueLoop
+		If DllStructGetData($lAgent, 'Type') <> 0xDB Then ContinueLoop
+		If DllStructGetData($lAgent, 'Allegiance') <> 3 Then ContinueLoop
+
+		     If DllStructGetData($lAgent, 'HP') <= 0 Then ContinueLoop
+		If BitAND(DllStructGetData($lAgent, 'Effects'), 0x0010) > 0 Then ContinueLoop
+		$lDistance = GetDistance($lAgent)
+
+		If $lDistance > $aRange Then ContinueLoop
+		$lCount += 1
+	Next
+	Return $lCount
+ EndFunc   ;==>GetNumberOfFoesInRangeOfAgent
+
+Func IsRecharged($lSkill)
+	Return GetSkillbarSkillRecharge($lSkill) == 0
+EndFunc   ;==>IsRecharged
+
+
+Func _PurgeHook()
+	; ToggleRendering()
+	Sleep(Random(4000, 5000))
+	; ToggleRendering()
+EndFunc   ;==>_PurgeHook
+
 #EndRegion Other Functions
