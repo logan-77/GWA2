@@ -1,4 +1,4 @@
-# Game Headers for AutoIt Scripting
+# Game Headers
 
 This repository provides a comprehensive collection of game constants, or "headers," essential for scripting in AutoIt for enhanced game interactions. These headers enable scripters to automate and modify a wide range of in-game actions and commands.
 
