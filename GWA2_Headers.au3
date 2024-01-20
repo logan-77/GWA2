@@ -29,7 +29,6 @@ Global Const $HEADER_PING_REQUEST = 0x000B ; Requests a ping to check the connec
 Global Const $HEADER_ATTRIBUTE_DECREASE = 0x000C ; Decreases a player's attribute level
 Global Const $HEADER_ATTRIBUTE_INCREASE = 0x000D ; Increases a player's attribute level
 Global Const $HEADER_ATTRIBUTE_LOAD = 0x000E ; Loads a set of player attributes
-Global Const $HEADER_USE_SKILL = 0x0044 ; Triggers the use of a player's skill
 Global Const $HEADER_SKILLBAR_SKILL_SET = 0x005A ; Sets a skill in the player's skill bar
 Global Const $HEADER_SKILLBAR_LOAD = 0x005B ; Loads a complete skill bar setup
 Global Const $HEADER_SKILLBAR_SKILL_REPLACE = 0x005C ; Replaces a skill in the skill bar
@@ -50,7 +49,6 @@ Global Const $HEADER_HERO_ADD = 0x001C ; Adds a hero to the party
 Global Const $HEADER_HERO_KICK = 0x001D ; Removes a hero from the party
 
 ; GAME_CMSG_ - Targeting and Movement
-Global Const $HEADER_TARGET_CALL = 0x0021 ; Calls a target without attacking
 Global Const $HEADER_ATTACK_AGENT = 0x0024 ; Initiates an attack on a selected agent
 Global Const $HEADER_CANCEL_MOVEMENT = 0x0026 ; Cancels the current movement or action
 Global Const $HEADER_MOVE_TO_COORD = 0x003C ; Moves to specified coordinates
@@ -66,7 +64,6 @@ Global Const $HEADER_UNEQUIP_ITEM = 0x004D ; Unequips an item
 Global Const $HEADER_INTERACT_GADGET = 0x004F ; Interacts with a gadget or device in the game
 Global Const $HEADER_SEND_SIGNPOST_DIALOG = 0x0051 ; Sends a dialog or interaction to a signpost
 Global Const $HEADER_EQUIP_VISIBILITY = 0x0055 ; Toggles the visibility of equipped items
-Global Const $HEADER_ITEM_DESTROY = 0x0067 ; Destroys an item
 Global Const $HEADER_ITEM_APPLY_DYE = 0x0068 ; Applies dye to an item
 Global Const $HEADER_ITEM_IDENTIFY = 0x006A ; Identifies an item
 Global Const $HEADER_TOME_UNLOCK_SKILL = 0x006B ; Unlocks a skill using a tome
@@ -79,7 +76,6 @@ Global Const $HEADER_ITEM_SALVAGE_SESSION_DONE = 0x0077 ; Completes a salvage se
 Global Const $HEADER_ITEM_SALVAGE_MATERIALS = 0x0078 ; Salvages materials from an item
 Global Const $HEADER_ITEM_SALVAGE_UPGRADE = 0x0079 ; Salvages upgrades from an item
 Global Const $HEADER_ITEM_CHANGE_GOLD = 0x007A ; Moves gold between the player and storage
-Global Const $HEADER_ITEM_USE = 0x007C ; Uses an item from the inventory
 
 ; GAME_CMSG_ - Instance Management
 Global Const $HEADER_INSTANCE_LOAD_REQUEST_SPAWN = 0x0086 ; Requests spawn in an instance
@@ -134,7 +130,6 @@ Global Const $HEADER_INVITE_ACCEPT = 0x9A ;Accept invitation to party
 
 ;=TARGET (Enemies or NPC)=
 Global Const $HEADER_CALL_TARGET = 0x21 ;Calls the target without attacking (Ctrl+Shift+Space)
-Global Const $HEADER_ATTACK_AGENT = 0x24 ;Attacks agent (Space IIRC)
 Global Const $HEADER_CANCEL_ACTION = 0x26 ;Cancels the current action
 Global Const $HEADER_AGENT_FOLLOW = 0x31 ;Follows the agent/npc. Ctrl+Click triggers "I am following Person" in chat
 Global Const $HEADER_NPC_TALK = 0x37 ;talks/goes to npc
@@ -154,7 +149,6 @@ Global Const $HEADER_ITEM_EQUIP = 0x2E ;Equips item from inventory/chest/no idea
 Global Const $HEADER_ITEM_PICKUP = 0x3D ;Picks up an item from ground
 Global Const $HEADER_ITEM_DESTROY = 0x67 ;Destroys the item
 Global Const $HEADER_ITEM_ID = 0x6A ;Identifies item in inventory
-Global Const $HEADER_ITEM_MOVE = 0x70 ;Moves item in inventory
 Global Const $HEADER_ITEMS_ACCEPT_UNCLAIMED = 0x71 ;Accepts ITEMS not picked up in missions
 Global Const $HEADER_ITEM_MOVE_EX = 0x73 ;Moves an item, with amount to be moved.
 Global Const $HEADER_SALVAGE_MATS = 0x78 ;Salvages materials from item
