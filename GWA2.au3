@@ -345,8 +345,8 @@ Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSy
 
 	SetValue('PostMessage', '0x' & Hex(MemoryRead(GetScannedAddress('ScanPostMessage', 11)), 8))
 	SetValue('Sleep', MemoryRead(MemoryRead(GetValue('ScanSleep') + 8) + 3))
-	SetValue('SalvageFunction', MemoryRead(GetValue('ScanSalvageFunction') + 8) - 18)
-	SetValue('SalvageGlobal', MemoryRead(MemoryRead(GetValue('ScanSalvageGlobal') + 8) + 1))
+	SetValue('SalvageFunction', '0x' & Hex(GetScannedAddress('ScanSalvageFunction', -10), 8))
+	SetValue('SalvageGlobal', '0x' & Hex(MemoryRead(GetScannedAddress('ScanSalvageGlobal', 1) - 0x4), 8))
 	SetValue('IncreaseAttributeFunction', '0x' & Hex(GetScannedAddress('ScanIncreaseAttributeFunction', -0x5A), 8))
 	SetValue("DecreaseAttributeFunction", "0x" & Hex(GetScannedAddress("ScanDecreaseAttributeFunction", 25), 8))
 	SetValue('MoveFunction', '0x' & Hex(GetScannedAddress('ScanMoveFunction', 1), 8))
@@ -533,9 +533,9 @@ Func Scan()
 	_('ScanSleep:')
 	AddPattern('5F5E5B741A6860EA0000')
 	_('ScanSalvageFunction:')
-	AddPattern('8BFA8BD9897DF0895DF4') ;8BD9897DG0895DF4
+	AddPattern('33C58945FC8B45088945F08B450C8945F48B45108945F88D45EC506A10C745EC75') ; was 'ec76' dec 18th, 2020 fix -P34
 	_('ScanSalvageGlobal:')
-	AddPattern('8B018B4904A3')
+	AddPattern('8B5104538945F48B4108568945E88B410C578945EC8B4110528955E48945F0')
 	_('ScanIncreaseAttributeFunction:')
 	AddPattern('8B7D088B702C8B1F3B9E00050000') ;8B702C8B3B8B86
 	_("ScanDecreaseAttributeFunction:")
@@ -735,31 +735,41 @@ EndFunc   ;==>ScanForCharname
 
 #Region Commands
 #Region Item
-;~ Description: Starts a salvaging session of an item.
-Func StartSalvage($aItem, $aExpert = False)
-	Local $lOffset[4] = [0, 0x18, 0x2C, 0x690]
-	Local $lSalvageSessionID = MemoryReadPtr($mBasePointer, $lOffset)
 
-	If IsDllStruct($aItem) = 0 Then
-		Local $lItemID = $aItem
-	Else
-		Local $lItemID = DllStructGetData($aItem, 'ID')
-	EndIf
+Func StartSalvage($aItem, $aCheap = False, $useExpert = True)
+    Local $lOffset[4] = [0, 0x18, 0x2C, 0x690]
+    Local $lSalvageSessionID = MemoryReadPtr($mBasePointer, $lOffset)
+    Local $lItemID = MemoryRead($aItem, "long")
 
-	Local $lSalvageKit = 0
-	If $aExpert Then
-		$lSalvageKit = FindExpertSalvageKit()
-	Else
-		$lSalvageKit = FindSalvageKit()
-	EndIf
-	If $lSalvageKit = 0 Then Return
+    Local $lSalvageKit
 
-	DllStructSetData($mSalvage, 2, $lItemID)
-	DllStructSetData($mSalvage, 3, $lSalvageKit)
-	DllStructSetData($mSalvage, 4, $lSalvageSessionID[1])
+    If $aCheap Then
+        $lSalvageKit = FindCheapSalvageKit()
+    ElseIf $useExpert Then
+        $lSalvageKit = FindExpertSalvageKit()
+    Else
+        $lSalvageKit = FindSalvageKit()
+    EndIf
 
-	Enqueue($mSalvagePtr, 16)
+    If $lSalvageKit = 0 Then Return False
+
+    DllStructSetData($mSalvage, 2, ItemID($aItem))
+    DllStructSetData($mSalvage, 3, $lSalvageKit)
+    DllStructSetData($mSalvage, 4, $lSalvageSessionID[1])
+
+    Enqueue($mSalvagePtr, 16)
 EndFunc   ;==>StartSalvage
+
+
+Func ItemID($aItem)
+	If IsPtr($aItem) Then
+		Return MemoryRead($aItem, "long")
+	ElseIf IsDllStruct($aItem) Then
+		Return DllStructGetData($aItem, "ID")
+	Else
+		Return $aItem
+	EndIf
+EndFunc   ;==>ItemID
 
 ;~ Description: Salvage the materials out of an item.
 Func SalvageMaterials()
@@ -796,14 +806,14 @@ EndFunc   ;==>IdentifyItem
 
 ;~ Description: Identifies all items in a bag.
 Func IdentifyBag($aBag, $aWhites = False, $aGolds = True)
-	Local $lItem
+	Local $LITEM
 	If Not IsDllStruct($aBag) Then $aBag = GetBag($aBag)
 	For $i = 1 To DllStructGetData($aBag, 'Slots')
-		$lItem = GetItemBySlot($aBag, $i)
-		If DllStructGetData($lItem, 'ID') == 0 Then ContinueLoop
-		If GetRarity($lItem) == 2621 And $aWhites == False Then ContinueLoop
-		If GetRarity($lItem) == 2624 And $aGolds == False Then ContinueLoop
-		IdentifyItem($lItem)
+		$LITEM = GetItemBySlot($aBag, $i)
+		If DllStructGetData($LITEM, 'ID') == 0 Then ContinueLoop
+		If GetRarity($LITEM) == 2621 And $aWhites == False Then ContinueLoop
+		If GetRarity($LITEM) == 2624 And $aGolds == False Then ContinueLoop
+		IdentifyItem($LITEM)
 		Sleep(GetPing())
 	Next
 EndFunc   ;==>IdentifyBag
@@ -2887,15 +2897,6 @@ Func GetItemBySlot($aBag, $aSlot)
 	Return $lItemStruct
 EndFunc   ;==>GetItemBySlot
 
-;~ Description: Returns item struct.
-Func GetItemByItemID($aItemID)
-	Local $lItemStruct = DllStructCreate('long Id;long AgentId;byte Unknown1[4];ptr Bag;ptr ModStruct;long ModStructSize;ptr Customized;byte unknown2[4];byte Type;byte unknown4;short ExtraId;short Value;byte unknown4[2];short Interaction;long ModelId;ptr ModString;byte unknown5[4];ptr NameString;ptr SingleItemName;byte Unknown4[10];byte IsSalvageable;byte Unknown6;byte Quantity;byte Equiped;byte Profession;byte Type2;byte Slot')
-	Local $lOffset[5] = [0, 0x18, 0x40, 0xB8, 0x4 * $aItemID]
-	Local $lItemPtr = MemoryReadPtr($mBasePointer, $lOffset)
-	DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lItemPtr[1], 'ptr', DllStructGetPtr($lItemStruct), 'int', DllStructGetSize($lItemStruct), 'int', '')
-	Return $lItemStruct
-EndFunc   ;==>GetItemByItemID
-
 ;~ Description: Returns item by agent ID.
 Func GetItemByAgentID($aAgentID)
 	Local $lItemStruct = DllStructCreate('long Id;long AgentId;byte Unknown1[4];ptr Bag;ptr ModStruct;long ModStructSize;ptr Customized;byte unknown2[4];byte Type;byte unknown4;short ExtraId;short Value;byte unknown4[2];short Interaction;long ModelId;ptr ModString;byte unknown5[4];ptr NameString;ptr SingleItemName;byte Unknown4[10];byte IsSalvageable;byte Unknown6;byte Quantity;byte Equiped;byte Profession;byte Type2;byte Slot')
@@ -2933,6 +2934,15 @@ Func GetItemByModelID($aModelID)
 	Next
 EndFunc   ;==>GetItemByModelID
 
+;~ Description: Returns item struct.
+Func GetItemByItemID($aItemID)
+	Local $lItemStruct = DllStructCreate('long Id;long AgentId;byte Unknown1[4];ptr Bag;ptr ModStruct;long ModStructSize;ptr Customized;byte unknown2[4];byte Type;byte unknown4;short ExtraId;short Value;byte unknown4[2];short Interaction;long ModelId;ptr ModString;byte unknown5[4];ptr NameString;ptr SingleItemName;byte Unknown4[10];byte IsSalvageable;byte Unknown6;byte Quantity;byte Equiped;byte Profession;byte Type2;byte Slot')
+	Local $lOffset[5] = [0, 0x18, 0x40, 0xB8, 0x4 * $aItemID]
+	Local $lItemPtr = MemoryReadPtr($mBasePointer, $lOffset)
+	DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lItemPtr[1], 'ptr', DllStructGetPtr($lItemStruct), 'int', DllStructGetSize($lItemStruct), 'int', '')
+	Return $lItemStruct
+EndFunc   ;==>GetItemByItemID
+
 ;~ Description: Returns the nearest item by model ID to an agent.
 Func GetNearestItemByModelIDToAgent($aModelID, $aAgent = -2, $aCanPickUp = True)
 	Local $lNearestAgent, $lNearestDistance = 100000000
@@ -2969,27 +2979,6 @@ Func GetGoldCharacter()
 	Return $lReturn[1]
 EndFunc   ;==>GetGoldCharacter
 
-;~ Description: Returns item ID of salvage kit in inventory.
-Func FindSalvageKit()
-	Local $lItem
-	Local $lKit = 0
-	Local $lUses = 101
-	For $i = 1 To 16
-		For $j = 1 To DllStructGetData(GetBag($i), 'Slots')
-			$lItem = GetItemBySlot($i, $j)
-			Switch DllStructGetData($lItem, 'ModelID')
-				Case 2992
-					If DllStructGetData($lItem, 'Value') / 2 < $lUses Then
-						$lKit = DllStructGetData($lItem, 'ID')
-						$lUses = DllStructGetData($lItem, 'Value') / 2
-					EndIf
-						ContinueLoop
-			EndSwitch
-		Next
-	Next
-	Return $lKit
-EndFunc   ;==>FindSalvageKit
-
 ;~ Description: Returns item ID of expert salvage kit in inventory.
 Func FindExpertSalvageKit()
 	Local $lItem
@@ -3016,6 +3005,58 @@ Func FindExpertSalvageKit()
 	Next
 	Return $lKit
 EndFunc   ;==>FindExpertSalvageKit
+
+Func FindSalvageKit()
+	Local $LITEM
+	Local $LKIT = 0
+	Local $LUSES = 101
+	For $i = 1 To 16
+		For $J = 1 To DllStructGetData(GetBag($i), 'Slots')
+			$LITEM = GetItemBySlot($i, $J)
+			Switch DllStructGetData($LITEM, 'ModelID')
+				Case 2991
+					If DllStructGetData($LITEM, 'Value') / 8 < $LUSES Then
+						$LKIT = DllStructGetData($LITEM, 'ID')
+						$LUSES = DllStructGetData($LITEM, 'Value') / 8
+					EndIf
+				Case 2992
+					If DllStructGetData($LITEM, 'Value') / 2 < $LUSES Then
+						$LKIT = DllStructGetData($LITEM, 'ID')
+						$LUSES = DllStructGetData($LITEM, 'Value') / 2
+					EndIf
+				Case 5900
+					If DllStructGetData($LITEM, 'Value') / 10 < $LUSES Then
+						$LKIT = DllStructGetData($LITEM, 'ID')
+						$LUSES = DllStructGetData($LITEM, 'Value') / 10
+					EndIf
+				Case Else
+					ContinueLoop
+			EndSwitch
+		Next
+	Next
+	Return $LKIT
+EndFunc   ;==>FindSalvageKit
+
+Func FindCheapSalvageKit()
+	Local $LITEM
+	Local $LKIT = 0
+	Local $LUSES = 101
+	For $i = 1 To 16
+		For $J = 1 To DllStructGetData(GetBag($i), 'Slots')
+			$LITEM = GetItemBySlot($i, $J)
+			Switch DllStructGetData($LITEM, 'ModelID')
+				Case 2992
+					If DllStructGetData($LITEM, 'Value') / 2 < $LUSES Then
+						$LKIT = DllStructGetData($LITEM, 'ID')
+						$LUSES = DllStructGetData($LITEM, 'Value') / 2
+					EndIf
+				Case Else
+					ContinueLoop
+			EndSwitch
+		Next
+	Next
+	Return $LKIT
+EndFunc   ;==>FindCheapSalvageKit
 
 ;~ Description: Legacy function, use FindIdentificationKit instead.
 Func FindIDKit()
@@ -5058,15 +5099,15 @@ Func CreateCommands()
 	_('pop eax')
 	_('ljmp CommandReturn')
 
-	_('CommandChangeTarget:')
-	_('xor edx,edx')
-	_('push edx')
-	_('mov eax,dword[eax+4]')
-	_('push eax')
-	_('call ChangeTargetFunction')
-	_('pop eax')
-	_('pop edx')
-	_('ljmp CommandReturn')
+	_("CommandChangeTarget:")
+	_("xor edx,edx")
+	_("push edx")
+	_("mov eax,dword[eax+4]")
+	_("push eax")
+	_("call ChangeTargetFunction")
+	_("pop eax")
+	_("pop edx")
+	_("ljmp CommandReturn")
 
 	_('CommandPacketSend:')
 	_('lea edx,dword[eax+8]')
@@ -5088,28 +5129,17 @@ Func CreateCommands()
 	_('pop eax')
 	_('ljmp CommandReturn')
 
-;~ 	_('CommandWriteChat:')
-;~ 	_('add eax,4')
-;~ 	_('mov edx,eax')
-;~ 	_('xor ecx,ecx')
-;~ 	_('add eax,28')
-;~ 	_('push eax')
-;~ 	_('call WriteChatFunction')
-;~ 	_('ljmp CommandReturn')
-
-	_('CommandWriteChat:')
-	_('add eax,4')
-;~ 	_('mov edx,eax')
-;~ 	_('xor ecx,ecx')
-;~ 	_('add eax,28')
-	_('push eax')
-	_('call WriteChatFunction')
-	_('pop eax')
-	_('ljmp CommandReturn')
+	_("CommandWriteChat:")
+	_("push 0")    ; new from April update
+	_("add eax,4")
+	_("push eax")
+	_("call WriteChatFunction")
+	_("add esp,8")                ; was _('pop eax') before April change
+	_("ljmp CommandReturn")
 
 	_('CommandSellItem:')
 	_('mov esi,eax')
-	_('add esi,C') ;01239A20
+	_('add esi,C')
 	_('push 0')
 	_('push 0')
 	_('push 0')
@@ -5145,41 +5175,51 @@ Func CreateCommands()
 	_('add esp,24')
 	_('ljmp CommandReturn')
 
-;~ 	_('CommandCraftItemEx:')
-;~ 	_('add eax,4')
-;~ 	_('push eax')
-;~ 	_('add eax,4')
-;~ 	_('push eax')
-;~ 	_('push 1')
-;~ 	_('push 0')
-;~ 	_('push 0')
-;~ 	_('push dword[eax+4]')
-;~ 	_('add eax,4')
-;~ 	_('push dword[eax+4]')
-;~ 	_('add eax,4')
-;~ 	_('mov edx,esp')
-;~ 	_('mov ecx,dword[E1D684]')
-;~ 	_('mov dword[edx-0x70],ecx')
-;~ 	_('mov ecx,dword[edx+0x1C]')
-;~ 	_('mov dword[edx+0x54],ecx')
-;~ 	_('mov ecx,dword[edx+4]')
-;~ 	_('mov dword[edx-0x14],ecx')
-;~ 	_('mov ecx,3')
-;~ 	_('mov ebx,dword[eax]')
-;~ 	_('mov edx,dword[eax+4]')
-;~ 	_('call BuyItemFunction')
-;~ 	_('ljmp CommandReturn')
-
-	_('CommandAction:')
-	_('mov ecx,dword[ActionBase]')
-	_('mov ecx,dword[ecx+�]')
-	_('add ecx,A0')
-	_('push 0')
+	_('CommandCraftItemEx:')
 	_('add eax,4')
 	_('push eax')
-	_('push dword[eax+4]')
-	_('mov edx,0')
-	_('call ActionFunction')
+	_('add eax,4')
+	_('push eax')
+	_('push 1')
+	_('push 0')
+	_('push 0')
+	_('mov ecx,dword[TradeID]')
+	_('mov ecx,dword[ecx]')
+	;_('mov ebx,dword[ecx+148]')
+	_('mov edx,dword[eax+4]')
+	;_('mov ecx,dword[ecx+edx]')
+	;_('lea ecx,dword[ecx+ecx*2]')
+	_('lea ecx,dword[ebx+ecx*4]')
+	_('push ecx')
+	_('push 1')
+	_('push dword[eax+8]')
+	_('push dword[eax+C]')
+	_('call TraderFunction')
+	_('add esp,24')
+	_('mov dword[TraderCostID],0')
+	_('ljmp CommandReturn')
+
+	_("CommandAction:")
+	_("mov ecx,dword[ActionBase]")
+	_("mov ecx,dword[ecx+c]")    ; was _("mov ecx,dword[ecx+!]")
+	_("add ecx,A0")
+	_("push 0")
+	_("add eax,4")
+	_("push eax")
+	_("push dword[eax+4]")
+	_("mov edx,0")
+	_("call ActionFunction")
+	_("ljmp CommandReturn")
+
+	_('CommandUseHeroSkill:')
+	_('mov ecx,dword[eax+8]')
+	_('push ecx')
+	_('mov ecx,dword[eax+c]')
+	_('push ecx')
+	_('mov ecx,dword[eax+4]')
+	_('push ecx')
+	_('call UseHeroSkillFunction')
+	_('add esp,C')
 	_('ljmp CommandReturn')
 
 ;~ 	_('CommandToggleLanguage:')
@@ -5199,17 +5239,6 @@ Func CreateCommands()
 ;~ 	_('pop ebx')
 ;~ 	_('pop ecx')
 ;~ 	_('ljmp CommandReturn')
-
-	_('CommandUseHeroSkill:')
-	_('mov ecx,dword[eax+8]')
-	_('push ecx')
-	_('mov ecx,dword[eax+c]')
-	_('push ecx')
-	_('mov ecx,dword[eax+4]')
-	_('push ecx')
-	_('call UseHeroSkillFunction')
-	_('add esp,C')
-	_('ljmp CommandReturn')
 
 	_('CommandSendChat:')
 	_('lea edx,dword[eax+4]')
@@ -5237,25 +5266,28 @@ Func CreateCommands()
 	_('push 0')
 	_('push 0')
 	_('push C')
-	_('xor edx,edx')
+	_('mov ecx,0')
+	_('mov edx,2')
 	_('call RequestQuoteFunction')
 	_('add esp,20')
 	_('ljmp CommandReturn')
 
-;~ 	_('CommandRequestQuoteSell:')
-;~ 	_('mov dword[TraderCostID],0')
-;~ 	_('mov dword[TraderCostValue],0')
-;~ 	_('push 0')
-;~ 	_('push 0')
-;~ 	_('push 0')
-;~ 	_('add eax,4')
-;~ 	_('push eax')
-;~ 	_('push 1')
-;~ 	_('push 0')
-;~ 	_('mov ecx,d')
-;~ 	_('xor edx,edx')
-;~ 	_('call RequestQuoteFunction')
-;~ 	_('ljmp CommandReturn')
+	_('CommandRequestQuoteSell:')
+	_('mov dword[TraderCostID],0')
+	_('mov dword[TraderCostValue],0')
+	_('push 0')
+	_('push 0')
+	_('push 0')
+	_('add eax,4')
+	_('push eax')
+	_('push 1')
+	_('push 0')
+	_('push 0')
+	_('push D')
+	_('xor edx,edx')
+	_('call RequestQuoteFunction')
+	_('add esp,20')
+	_('ljmp CommandReturn')
 
 	_('CommandTraderBuy:')
 	_('push 0')
@@ -5265,60 +5297,91 @@ Func CreateCommands()
 	_('push 0')
 	_('push 0')
 	_('push 0')
-	_('mov ecx,c')
 	_('mov edx,dword[TraderCostValue]')
+	_('push edx')
+	_('push C')
+	_('mov ecx,C')
 	_('call TraderFunction')
+	_('add esp,24')
 	_('mov dword[TraderCostID],0')
 	_('mov dword[TraderCostValue],0')
 	_('ljmp CommandReturn')
 
-	_('mov esi,eax')
-	_('add esi,10') ;01239A20
-	_('mov ecx,eax')
-	_('add ecx,4')
-	_('push ecx')
-	_('mov edx,eax')
-	_('add edx,8')
-	_('push edx')
+	_('CommandTraderSell:')
+	_('push 0')
+	_('push 0')
+	_('push 0')
+	_('push dword[TraderCostValue]')
+	_('push 0')
+	_('push TraderCostID')
 	_('push 1')
 	_('push 0')
-	_('push 0')
-	_('push 0')
-	_('push 0')
-	_('mov eax,dword[eax+C]')
-	_('push eax')
-	_('push 1')
-	_('call TransactionFunction')
+	_('push D')
+	_('mov ecx,d')
+	_('xor edx,edx')
+	_('call TransactionFunction')  ; 	_('call TraderFunction')
 	_('add esp,24')
+	_('mov dword[TraderCostID],0')
+	_('mov dword[TraderCostValue],0')
 	_('ljmp CommandReturn')
 
-;~ 	_('CommandTraderSell:')
-;~ 	_('push 0')
-;~ 	_('push 0')
-;~ 	_('push 0')
-;~ 	_('push dword[TraderCostValue]')
-;~ 	_('push 0')
-;~ 	_('push TraderCostID')
-;~ 	_('push 1')
-;~ 	_('mov ecx,d')
-;~ 	_('xor edx,edx')
-;~ 	_('call TraderFunction')
-;~ 	_('mov dword[TraderCostID],0')
-;~ 	_('mov dword[TraderCostValue],0')
-;~ 	_('ljmp CommandReturn')
+	_('CommandSalvage:')
+	_('push eax')
+	_('push ecx')
+	_('push ebx')
+	_('mov ebx,SalvageGlobal')
+	_('mov ecx,dword[eax+4]')
+	_('mov dword[ebx],ecx')
+	_('add ebx,4')
+	_('mov ecx,dword[eax+8]')
+	_('mov dword[ebx],ecx')
+	_('mov ebx,dword[eax+4]')
+	_('push ebx')
+	_('mov ebx,dword[eax+8]')
+	_('push ebx')
+	_('mov ebx,dword[eax+c]')
+	_('push ebx')
+	_('call SalvageFunction')
+	_('add esp,C')
+	_('pop ebx')
+	_('pop ecx')
+	_('pop eax')
+	_('ljmp CommandReturn')
 
-;~ 	_('CommandSalvage:')
-;~ 	_('mov ebx,SalvageGlobal')
-;~ 	_('mov ecx,dword[eax+4]')
-;~ 	_('mov dword[ebx],ecx')
-;~ 	_('push ecx')
-;~ 	_('mov ecx,dword[eax+8]')
-;~ 	_('add ebx,4')
-;~ 	_('mov dword[ebx],ecx')
-;~ 	_('mov edx,dword[eax+c]')
-;~ 	_('mov dword[ebx],ecx')
-;~ 	_('call SalvageFunction')
-;~ 	_('ljmp CommandReturn')
+	_("CommandCraftItemEx2:")    ; this was added
+	_("add eax,4")
+	_("push eax")
+	_("add eax,4")
+	_("push eax")
+	_("push 1")
+	_("push 0")
+	_("push 0")
+	_("mov ecx,dword[TradeID]")
+	_("mov ecx,dword[ecx]")
+	;_("mov ebx,dword[ecx+148]")
+	_("mov edx,dword[eax+8]")
+	;_("mov ecx,dword[ecx+edx]")
+	;_("lea ecx,dword[ecx+ecx*2]")
+	_("lea ecx,dword[ebx+ecx*4]")
+	_("mov ecx,dword[ecx]")
+	_("mov [eax+8],ecx")
+	_("mov ecx,dword[TradeID]")
+	_("mov ecx,dword[ecx]")
+	_("mov ecx,dword[ecx+0xF4]")
+	_("lea ecx,dword[ecx+ecx*2]")
+	_("lea ecx,dword[ebx+ecx*4]")
+	_("mov ecx,dword[ecx]")
+	_("mov [eax+C],ecx")
+	_("mov ecx,eax")
+	_("add ecx,8")
+	_("push ecx")
+	_("push 2")
+	_("push dword[eax+4]")
+	_("push 3")
+	_("call TransactionFunction")
+	_("add esp,24")
+	_("mov dword[TraderCostID],0")
+	_("ljmp CommandReturn")
 
 	_('CommandIncreaseAttribute:')
 	_('mov edx,dword[eax+4]')
@@ -5368,9 +5431,21 @@ Func CreateCommands()
 	_('repe movsb')
 	_('inc edx')
 	_('jmp AgentCopyLoopStart')
-
 	_('AgentCopyLoopExit:')
 	_('mov dword[AgentCopyCount],edx')
+	_('ljmp CommandReturn')
+
+	_('CommandSendChatPartySearch:')
+	_('lea edx,dword[eax+4]')
+	_('push edx')
+	_('mov ebx,4C')
+	_('push ebx')
+	_('mov eax,dword[PacketLocation]')
+	_('push eax')
+	_('call PacketSendFunction')
+	_('pop eax')
+	_('pop ebx')
+	_('pop edx')
 	_('ljmp CommandReturn')
 EndFunc   ;==>CreateCommands
 #EndRegion Modification
@@ -5394,13 +5469,27 @@ EndFunc   ;==>GetPlayerStatus
 #EndRegion Online Status
 
 #Region Assembler
-;~ Description: Internal use only.
 Func _($aASM)
-	;quick and dirty x86assembler unit:
-	;relative values stringregexp
-	;static values hardcoded
 	Local $lBuffer
+	Local $lOpCode
 	Select
+		Case StringInStr($aASM, ' -> ')
+			Local $split = StringSplit($aASM, ' -> ', 1)
+			$lOpCode = StringReplace($split[2], ' ', '')
+			$mASMSize += 0.5 * StringLen($lOpCode)
+			$mASMString &= $lOpCode
+		Case StringLeft($aASM, 3) = 'jb '
+			$mASMSize += 2
+			$mASMString &= '72(' & StringRight($aASM, StringLen($aASM) - 3) & ')'
+		Case StringLeft($aASM, 3) = 'je '
+			$mASMSize += 2
+			$mASMString &= '74(' & StringRight($aASM, StringLen($aASM) - 3) & ')'
+		Case StringRegExp($aASM, 'cmp ebx,[a-z,A-Z]{4,}') And StringInStr($aASM, ',dword') = 0
+			$mASMSize += 6
+			$mASMString &= '81FB[' & StringRight($aASM, StringLen($aASM) - 8) & ']'
+		Case StringRegExp($aASM, 'cmp edx,[a-z,A-Z]{4,}') And StringInStr($aASM, ',dword') = 0
+			$mASMSize += 6
+			$mASMString &= '81FA[' & StringRight($aASM, StringLen($aASM) - 8) & ']'
 		Case StringRight($aASM, 1) = ':'
 			SetValue('Label_' & StringLeft($aASM, StringLen($aASM) - 1), $mASMSize)
 		Case StringInStr($aASM, '/') > 0
@@ -5475,14 +5564,14 @@ Func _($aASM)
 			$mASMSize += 7
 			$mASMString &= '8D3C15[' & StringMid($aASM, 19, StringLen($aASM) - 19) & ']'
 		Case StringRegExp($aASM, 'cmp dword[[][a-z,A-Z]{4,}[]],[-[:xdigit:]]')
-			$lBuffer = StringInStr($aASM, ",")
+			$lBuffer = StringInStr($aASM, ',')
 			$lBuffer = ASMNumber(StringMid($aASM, $lBuffer + 1), True)
 			If @extended Then
 				$mASMSize += 7
-				$mASMString &= '833D[' & StringMid($aASM, 11, StringInStr($aASM, ",") - 12) & ']' & $lBuffer
+				$mASMString &= '833D[' & StringMid($aASM, 11, StringInStr($aASM, ',') - 12) & ']' & $lBuffer
 			Else
 				$mASMSize += 10
-				$mASMString &= '813D[' & StringMid($aASM, 11, StringInStr($aASM, ",") - 12) & ']' & $lBuffer
+				$mASMString &= '813D[' & StringMid($aASM, 11, StringInStr($aASM, ',') - 12) & ']' & $lBuffer
 			EndIf
 		Case StringRegExp($aASM, 'cmp ecx,[a-z,A-Z]{4,}') And StringInStr($aASM, ',dword') = 0
 			$mASMSize += 6
@@ -5548,7 +5637,7 @@ Func _($aASM)
 			$mASMSize += 5
 			$mASMString &= 'E8{' & StringMid($aASM, 6, StringLen($aASM) - 5) & '}'
 		Case StringRegExp($aASM, 'mov dword\[[a-z,A-Z]{4,}\],[-[:xdigit:]]{1,8}\z')
-			$lBuffer = StringInStr($aASM, ",")
+			$lBuffer = StringInStr($aASM, ',')
 			$mASMSize += 10
 			$mASMString &= 'C705[' & StringMid($aASM, 11, $lBuffer - 12) & ']' & ASMNumber(StringMid($aASM, $lBuffer + 1))
 		Case StringRegExp($aASM, 'push [-[:xdigit:]]{1,8}\z')
@@ -5625,7 +5714,7 @@ Func _($aASM)
 			Else
 				$mASMSize += 6
 				$mASMString &= '81C6' & $lBuffer
-			 EndIf
+			EndIf
 		Case StringRegExp($aASM, 'add esp,[-[:xdigit:]]{1,8}\z')
 			$lBuffer = ASMNumber(StringMid($aASM, 9), True)
 			If @extended Then
@@ -5634,7 +5723,7 @@ Func _($aASM)
 			Else
 				$mASMSize += 6
 				$mASMString &= '81C4' & $lBuffer
-			 EndIf
+			EndIf
 		Case StringRegExp($aASM, 'cmp ebx,[-[:xdigit:]]{1,8}\z')
 			$lBuffer = ASMNumber(StringMid($aASM, 9), True)
 			If @extended Then
@@ -5651,6 +5740,8 @@ Func _($aASM)
 		Case Else
 			Local $lOpCode
 			Switch $aASM
+				Case 'Flag_'
+					$lOpCode = '9090903434'
 				Case 'nop'
 					$lOpCode = '90'
 				Case 'pushad'
@@ -5659,6 +5750,10 @@ Func _($aASM)
 					$lOpCode = '61'
 				Case 'mov ebx,dword[eax]'
 					$lOpCode = '8B18'
+				Case 'mov ebx,dword[ecx]'            ; added
+					$lOpCode = '8B19'                ; added
+				Case 'mov ecx,dword[ebx+ecx]'        ; added
+					$lOpCode = '8B0C0B'                ; added
 				Case 'test eax,eax'
 					$lOpCode = '85C0'
 				Case 'test ebx,ebx'
@@ -5725,8 +5820,12 @@ Func _($aASM)
 					$lOpCode = '8BEC'
 				Case 'sub esp,8'
 					$lOpCode = '83EC08'
+				Case 'sub esi,4'
+					$lOpCode = '83EE04'
 				Case 'sub esp,14'
 					$lOpCode = '83EC14'
+				Case 'sub eax,C'
+					$lOpCode = '83E80C'
 				Case 'cmp ecx,4'
 					$lOpCode = '83F904'
 				Case 'cmp ecx,32'
@@ -5749,6 +5848,8 @@ Func _($aASM)
 					$lOpCode = '8B4704'
 				Case 'mov dword[eax+4],ecx'
 					$lOpCode = '894804'
+				Case 'mov dword[eax+8],ebx'
+					$lOpCode = '895808'
 				Case 'mov dword[eax+8],ecx'
 					$lOpCode = '894808'
 				Case 'mov dword[eax+C],ecx'
@@ -5763,6 +5864,8 @@ Func _($aASM)
 					$lOpCode = '8918'
 				Case 'mov edx,dword[eax+4]'
 					$lOpCode = '8B5004'
+				Case 'mov edx,dword[eax+8]'
+					$lOpCode = '8B5008'
 				Case 'mov edx,dword[eax+c]'
 					$lOpCode = '8B500C'
 				Case 'mov edx,dword[esi+1c]'
@@ -5803,8 +5906,16 @@ Func _($aASM)
 					$lOpCode = '8B5808'
 				Case 'mov ebx,dword[eax+C]'
 					$lOpCode = '8B580C'
+				Case 'mov ebx,dword[ecx+148]'
+					$lOpCode = '8B9948010000'
+				Case 'mov ecx,dword[ebx+13C]'
+					$lOpCode = '8B9B3C010000'
+				Case 'mov ebx,dword[ebx+F0]'
+					$lOpCode = '8B9BF0000000'
 				Case 'mov ecx,dword[eax+C]'
 					$lOpCode = '8B480C'
+				Case 'mov ecx,dword[eax+10]'
+					$lOpCode = '8B4810'
 				Case 'mov eax,dword[eax+4]'
 					$lOpCode = '8B4004'
 				Case 'push dword[eax+4]'
@@ -5963,8 +6074,8 @@ Func _($aASM)
 					$lOpCode = '8B4140'
 				Case 'mov ecx,dword[ecx+4]'
 					$lOpCode = '8B4904'
-				Case 'mov ecx,dword[ecx+�]'
-					$lOpCode = '8B490C'
+					;			Case 'mov ecx,dword[ecx+Ñ]'		; Removed following April update
+					;				$lOpCode = '8B490C'			; Removed following April update
 				Case 'mov ecx,dword[ecx+8]'
 					$lOpCode = '8B4908'
 				Case 'mov ecx,dword[ecx+34]'
@@ -5981,12 +6092,18 @@ Func _($aASM)
 					$lOpCode = '8B494C'
 				Case 'mov ecx,dword[ecx+50]'
 					$lOpCode = '8B4950'
+				Case 'mov ecx,dword[ecx+148]'    ; this was added following April update
+					$lOpCode = '8B8948010000'    ; this was added following April update
 				Case 'mov ecx,dword[ecx+170]'
 					$lOpCode = '8B8970010000'
 				Case 'mov ecx,dword[ecx+194]'
 					$lOpCode = '8B8994010000'
 				Case 'mov ecx,dword[ecx+250]'
 					$lOpCode = '8B8950020000'
+				Case 'mov ecx,dword[ecx+134]'
+					$lOpCode = '8B8934010000'
+				Case 'mov ecx,dword[ecx+13C]'
+					$lOpCode = '8B893C010000'
 				Case 'mov al,byte[ecx+4f]'
 					$lOpCode = '8A414F'
 				Case 'mov al,byte[ecx+3f]'
@@ -6019,8 +6136,60 @@ Func _($aASM)
 					$lOpCode = 'D94508'
 				Case 'mov esi,eax'
 					$lOpCode = '8BF0'
+				Case 'mov edx,dword[ecx]'
+					$lOpCode = '8B11'
+				Case 'mov dword[eax],edx'
+					$lOpCode = '8910'
+				Case 'test edx,edx'
+					$lOpCode = '85D2'
+				Case 'mov dword[eax],F'
+					$lOpCode = 'C7000F000000'
+				Case 'mov ebx,[ebx+0]'
+					$lOpCode = '8B1B'
+				Case 'mov ebx,[ebx+AC]'
+					$lOpCode = '8B9BAC000000'
+				Case 'mov ebx,[ebx+C]'
+					$lOpCode = '8B5B0C'
+				Case 'mov eax,dword[ebx+28]'
+					$lOpCode = '8B4328'
+				Case 'mov eax,[eax]'
+					$lOpCode = '8B00'
+				Case 'mov eax,[eax+4]'
+					$lOpCode = '8B4004'
+				Case 'mov ebx,dword[ebp+C]'
+					$lOpCode = '8B5D0C'
+				Case 'add ebx,ecx'
+					$lOpCode = '03D9'
+				Case 'lea ecx,dword[ecx+ecx*2]'
+					$lOpCode = '8D0C49'
+				Case 'lea ecx,dword[ebx+ecx*4]'
+					$lOpCode = '8D0C8B'
+				Case 'lea ecx,dword[ecx+18]'    ; this was added for crafting
+					$lOpCode = '8D4918'            ; this was added for crafting
+				Case 'mov ecx,dword[ecx+edx]'
+					$lOpCode = '8B0C11'
+				Case 'push dword[ebp+8]'
+					$lOpCode = 'FF7508'
+				Case 'mov dword[eax],edi'
+					$lOpCode = '8938'
+				Case 'mov [eax+8],ecx'             ; this was added for crafting
+					$lOpCode = '894808'            ; this was added for crafting
+				Case 'mov [eax+C],ecx'             ; this was added for crafting
+					$lOpCode = '89480C'            ; this was added for crafting
+				Case 'mov ebx,dword[ecx-C]'        ; this was added
+					$lOpCode = '8B59F4'            ; this was added
+				Case 'mov [eax+!],ebx'             ; this was added
+					$lOpCode = '89580C'            ; this was added
+				Case 'mov ecx,[eax+8]'             ; this was added
+					$lOpCode = '8B4808'            ; this was added
+				Case 'lea ecx,dword[ebx+18]'       ; this was added
+					$lOpCode = '8D4B18'            ; this was added
+				Case 'mov ebx,dword[ebx+18]'       ; this was added
+					$lOpCode = '8B5B18'            ; this was added
+				Case 'mov ecx,dword[ecx+0xF4]'     ; this was added for crafting
+					$lOpCode = '8B89F4000000'      ; this was added for crafting
 				Case Else
-					MsgBox(0, 'ASM', 'Could not assemble: ' & $aASM)
+					MsgBox(0x0, 'ASM', 'Could not assemble: ' & $aASM)
 					Exit
 			EndSwitch
 			$mASMSize += 0.5 * StringLen($lOpCode)
@@ -6074,6 +6243,8 @@ Func CompleteASMCode()
 		EndSwitch
 	Next
 EndFunc   ;==>CompleteASMCode
+
+
 
 ;~ Description: Internal use only.
 ;~ Func GetLabelInfo($aLabel)

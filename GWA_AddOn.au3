@@ -53,6 +53,12 @@ Global $aChestID[9000]
 ;~ Dungeon Key
 Global Const $TYPE_KEY = 18
 
+;Kits
+Global Const $MODEL_ID_CHEAP_SALVAGE_KIT	= 2992
+Global Const $MODEL_ID_SALVAGE_KIT			= 5900
+Global Const $MODEL_ID_CHEAP_ID_KIT			= 2989
+Global Const $MODEL_ID_ID_KIT				= 5899
+
 ;~ Charr Carving
 Global Const $Carving = 27052 
 
