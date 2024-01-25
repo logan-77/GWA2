@@ -345,8 +345,10 @@ Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSy
 
 	SetValue('PostMessage', '0x' & Hex(MemoryRead(GetScannedAddress('ScanPostMessage', 11)), 8))
 	SetValue('Sleep', MemoryRead(MemoryRead(GetValue('ScanSleep') + 8) + 3))
-	SetValue('SalvageFunction', '0x' & Hex(GetScannedAddress('ScanSalvageFunction', -10), 8))
-	SetValue('SalvageGlobal', '0x' & Hex(MemoryRead(GetScannedAddress('ScanSalvageGlobal', 1) - 0x4), 8))
+	SetValue('SalvageFunction', MemoryRead(GetValue('ScanSalvageFunction') + 8) - 18)
+	SetValue('SalvageGlobal', MemoryRead(MemoryRead(GetValue('ScanSalvageGlobal') + 8) + 1))
+;SetValue('SalvageFunction', '0x' & Hex(GetScannedAddress('ScanSalvageFunction', -10), 8))
+;SetValue('SalvageGlobal', '0x' & Hex(MemoryRead(GetScannedAddress('ScanSalvageGlobal', 1) - 0x4), 8))
 	SetValue('IncreaseAttributeFunction', '0x' & Hex(GetScannedAddress('ScanIncreaseAttributeFunction', -0x5A), 8))
 	SetValue("DecreaseAttributeFunction", "0x" & Hex(GetScannedAddress("ScanDecreaseAttributeFunction", 25), 8))
 	SetValue('MoveFunction', '0x' & Hex(GetScannedAddress('ScanMoveFunction', 1), 8))
@@ -531,12 +533,21 @@ Func Scan()
 	_('ScanTraderHook:')
 	AddPattern('8955FC6A008D55F8B9BB') ;50516A466A06 ;007BA579
 	_('ScanSleep:')
-	AddPattern('5F5E5B741A6860EA0000')
+	
+	AddPattern('5F5E5B741A6860EA0000') 
 	_('ScanSalvageFunction:')
+	
+	AddPattern('8BFA8BD9897DF0895DF4') ;8BD9897DG0895DF4
 	AddPattern('33C58945FC8B45088945F08B450C8945F48B45108945F88D45EC506A10C745EC75') ; was 'ec76' dec 18th, 2020 fix -P34
 	_('ScanSalvageGlobal:')
-	AddPattern('8B5104538945F48B4108568945E88B410C578945EC8B4110528955E48945F0')
+	
+	
+	
+	
+	AddPattern('8B018B4904A3')
+;AddPattern('8B5104538945F48B4108568945E88B410C578945EC8B4110528955E48945F0')
 	_('ScanIncreaseAttributeFunction:')
+	
 	AddPattern('8B7D088B702C8B1F3B9E00050000') ;8B702C8B3B8B86
 	_("ScanDecreaseAttributeFunction:")
 	AddPattern("8B8AA800000089480C5DC3CC") ;8B402C8BCE059C0000008B1089118B50
@@ -753,10 +764,15 @@ Func StartSalvage($aItem, $aCheap = False, $useExpert = True)
 
     If $lSalvageKit = 0 Then Return False
 
+;DllStructSetData($mSalvage, 2, $lItemID)
+;DllStructSetData($mSalvage, 3, $lSalvageKit)
+;DllStructSetData($mSalvage, 4, $lSalvageSessionID[1])
+
     DllStructSetData($mSalvage, 2, ItemID($aItem))
     DllStructSetData($mSalvage, 3, $lSalvageKit)
     DllStructSetData($mSalvage, 4, $lSalvageSessionID[1])
 
+;	Enqueue($mSalvagePtr, 16)
     Enqueue($mSalvagePtr, 16)
 EndFunc   ;==>StartSalvage
 
@@ -806,9 +822,15 @@ EndFunc   ;==>IdentifyItem
 
 ;~ Description: Identifies all items in a bag.
 Func IdentifyBag($aBag, $aWhites = False, $aGolds = True)
+;	Local $lItem
 	Local $LITEM
 	If Not IsDllStruct($aBag) Then $aBag = GetBag($aBag)
 	For $i = 1 To DllStructGetData($aBag, 'Slots')
+	;	$lItem = GetItemBySlot($aBag, $i)
+	;If DllStructGetData($lItem, 'ID') == 0 Then ContinueLoop
+	;If GetRarity($lItem) == 2621 And $aWhites == False Then ContinueLoop
+	;If GetRarity($lItem) == 2624 And $aGolds == False Then ContinueLoop
+	;IdentifyItem($lItem)
 		$LITEM = GetItemBySlot($aBag, $i)
 		If DllStructGetData($LITEM, 'ID') == 0 Then ContinueLoop
 		If GetRarity($LITEM) == 2621 And $aWhites == False Then ContinueLoop
