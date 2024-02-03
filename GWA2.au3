@@ -345,10 +345,10 @@ Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSy
 
 	SetValue('PostMessage', '0x' & Hex(MemoryRead(GetScannedAddress('ScanPostMessage', 11)), 8))
 	SetValue('Sleep', MemoryRead(MemoryRead(GetValue('ScanSleep') + 8) + 3))
-	SetValue('SalvageFunction', MemoryRead(GetValue('ScanSalvageFunction') + 8) - 18)
-	SetValue('SalvageGlobal', MemoryRead(MemoryRead(GetValue('ScanSalvageGlobal') + 8) + 1))
-;SetValue('SalvageFunction', '0x' & Hex(GetScannedAddress('ScanSalvageFunction', -10), 8))
-;SetValue('SalvageGlobal', '0x' & Hex(MemoryRead(GetScannedAddress('ScanSalvageGlobal', 1) - 0x4), 8))
+	;SetValue('SalvageFunction', MemoryRead(GetValue('ScanSalvageFunction') + 8) - 18)
+	SetValue('SalvageFunction', '0x' & Hex(GetScannedAddress('ScanSalvageFunction', -10), 8))
+	SetValue('SalvageGlobal', '0x' & Hex(MemoryRead(GetScannedAddress('ScanSalvageGlobal', 1) - 0x4), 8))
+	;SetValue('SalvageGlobal', MemoryRead(MemoryRead(GetValue('ScanSalvageGlobal') + 8) + 1))
 	SetValue('IncreaseAttributeFunction', '0x' & Hex(GetScannedAddress('ScanIncreaseAttributeFunction', -0x5A), 8))
 	SetValue("DecreaseAttributeFunction", "0x" & Hex(GetScannedAddress("ScanDecreaseAttributeFunction", 25), 8))
 	SetValue('MoveFunction', '0x' & Hex(GetScannedAddress('ScanMoveFunction', 1), 8))
@@ -360,7 +360,6 @@ Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSy
 	SetValue('ActionBase', '0x' & Hex(MemoryRead(GetScannedAddress('ScanActionBase', -3)), 8))
 	SetValue('ActionFunction', '0x' & Hex(GetScannedAddress('ScanActionFunction', -3), 8))
 	SetValue('UseHeroSkillFunction', '0x' & Hex(GetScannedAddress('ScanUseHeroSkillFunction', -0x59), 8))
-;~	SetValue('BuyItemFunction', '0x' & Hex(MemoryRead(GetScannedAddress('ScanBuyItemFunction', 15)), 8))
 	SetValue('BuyItemBase', '0x' & Hex(MemoryRead(GetScannedAddress('ScanBuyItemBase', 15)), 8))
 	SetValue('TransactionFunction', '0x' & Hex(GetScannedAddress('ScanTransactionFunction', -0x7E), 8))
 	SetValue('RequestQuoteFunction', '0x' & Hex(GetScannedAddress('ScanRequestQuoteFunction', -0x34), 8)) ;-2
@@ -533,21 +532,14 @@ Func Scan()
 	_('ScanTraderHook:')
 	AddPattern('8955FC6A008D55F8B9BB') ;50516A466A06 ;007BA579
 	_('ScanSleep:')
-	
-	AddPattern('5F5E5B741A6860EA0000') 
+	AddPattern('5F5E5B741A6860EA0000')
 	_('ScanSalvageFunction:')
-	
-	AddPattern('8BFA8BD9897DF0895DF4') ;8BD9897DG0895DF4
-	AddPattern('33C58945FC8B45088945F08B450C8945F48B45108945F88D45EC506A10C745EC75') ; was 'ec76' dec 18th, 2020 fix -P34
+	AddPattern('33C58945FC8B45088945F08B450C8945F48B45108945F88D45EC506A10C745EC75')
+	;AddPattern('8BFA8BD9897DF0895DF4')
 	_('ScanSalvageGlobal:')
-	
-	
-	
-	
-	AddPattern('8B018B4904A3')
-;AddPattern('8B5104538945F48B4108568945E88B410C578945EC8B4110528955E48945F0')
+	AddPattern('8B5104538945F48B4108568945E88B410C578945EC8B4110528955E48945F0')
+	;AddPattern('8B018B4904A3')
 	_('ScanIncreaseAttributeFunction:')
-	
 	AddPattern('8B7D088B702C8B1F3B9E00050000') ;8B702C8B3B8B86
 	_("ScanDecreaseAttributeFunction:")
 	AddPattern("8B8AA800000089480C5DC3CC") ;8B402C8BCE059C0000008B1089118B50
@@ -747,33 +739,24 @@ EndFunc   ;==>ScanForCharname
 #Region Commands
 #Region Item
 
-Func StartSalvage($aItem, $aCheap = False, $useExpert = True)
-    Local $lOffset[4] = [0, 0x18, 0x2C, 0x690]
-    Local $lSalvageSessionID = MemoryReadPtr($mBasePointer, $lOffset)
-    Local $lItemID = MemoryRead($aItem, "long")
+Func StartSalvage($aItem)
+	Local $lOffset[4] = [0, 0x18, 0x2C, 0x690]
+	Local $lSalvageSessionID = MemoryReadPtr($mBasePointer, $lOffset)
 
-    Local $lSalvageKit
+	If IsDllStruct($aItem) = 0 Then
+		Local $lItemID = $aItem
+	Else
+		Local $lItemID = DllStructGetData($aItem, 'ID')
+	EndIf
 
-    If $aCheap Then
-        $lSalvageKit = FindCheapSalvageKit()
-    ElseIf $useExpert Then
-        $lSalvageKit = FindExpertSalvageKit()
-    Else
-        $lSalvageKit = FindSalvageKit()
-    EndIf
+	Local $lSalvageKit = FindSalvageKit()
+	If $lSalvageKit = 0 Then Return
 
-    If $lSalvageKit = 0 Then Return False
+	DllStructSetData($mSalvage, 2, $lItemID)
+	DllStructSetData($mSalvage, 3, FindSalvageKit())
+	DllStructSetData($mSalvage, 4, $lSalvageSessionID[1])
 
-;DllStructSetData($mSalvage, 2, $lItemID)
-;DllStructSetData($mSalvage, 3, $lSalvageKit)
-;DllStructSetData($mSalvage, 4, $lSalvageSessionID[1])
-
-    DllStructSetData($mSalvage, 2, ItemID($aItem))
-    DllStructSetData($mSalvage, 3, $lSalvageKit)
-    DllStructSetData($mSalvage, 4, $lSalvageSessionID[1])
-
-;	Enqueue($mSalvagePtr, 16)
-    Enqueue($mSalvagePtr, 16)
+	Enqueue($mSalvagePtr, 16)
 EndFunc   ;==>StartSalvage
 
 
