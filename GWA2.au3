@@ -4178,9 +4178,14 @@ Func TolSleep($aAmount = 150, $aTolerance = 50)
 EndFunc   ;==>TolSleep
 
 ;~ Description: Returns window handle of Guild Wars.
+;Func GetWindowHandle()
+;	Return $mGWWindowHandle
+;EndFunc   ;==>GetWindowHandle
+
 Func GetWindowHandle()
-	Return $mGWWindowHandle
-EndFunc   ;==>GetWindowHandle
+    Local $hWnd = WinGetHandle("Guild Wars") ; Adjust window title as necessary
+    Return $hWnd
+EndFunc
 
 ;~ Description: Returns the distance between two coordinate pairs.
 Func ComputeDistance($aX1, $aY1, $aX2, $aY2)
