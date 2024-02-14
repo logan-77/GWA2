@@ -6306,15 +6306,15 @@ Func __ProcessGetName($i_PID)
 	Return SetError(1, 0, '')
 EndFunc   ;==>__ProcessGetName
 
-Func CheckArea($aX, $aY)
-	$ret = False
-	$pX = DllStructGetData(GetAgentByID(-2), "X")
-	$pY = DllStructGetData(GetAgentByID(-2), "Y")
+Func CheckArea($aX, $aY, $range)
+    $ret = False
+    $pX = DllStructGetData(GetAgentByID(-2), "X")
+    $pY = DllStructGetData(GetAgentByID(-2), "Y")
 
-	If ($pX < $aX + 500) And ($pX > $aX - 500) And ($pY < $aY + 500) And ($pY > $aY - 500) Then
-		$ret = True
-	EndIf
-	Return $ret
+    If ($pX < $aX + $range) And ($pX > $aX - $range) And ($pY < $aY + $range) And ($pY > $aY - $range) Then
+        $ret = True
+    EndIf
+    Return $ret
 EndFunc   ;==>CheckArea
 
 Func CountItemInBagsByModelID($ItemModelID)
