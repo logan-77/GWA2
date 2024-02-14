@@ -2984,84 +2984,35 @@ Func GetGoldCharacter()
 	Return $lReturn[1]
 EndFunc   ;==>GetGoldCharacter
 
-;~ Description: Returns item ID of expert salvage kit in inventory.
-Func FindExpertSalvageKit()
-	Local $lItem
-	Local $lKit = 0
-	Local $lUses = 101
-	For $i = 1 To 4
-		For $j = 1 To DllStructGetData(GetBag($i), 'Slots')
-			$lItem = GetItemBySlot($i, $j)
-			Switch DllStructGetData($lItem, 'ModelID')
-				Case 2991
-					If DllStructGetData($lItem, 'Value') / 8 < $lUses Then
-						$lKit = DllStructGetData($lItem, 'ID')
-						$lUses = DllStructGetData($lItem, 'Value') / 8
-					EndIf
-				Case 5900
-					If DllStructGetData($lItem, 'Value') / 10 < $lUses Then
-						$lKit = DllStructGetData($lItem, 'ID')
-						$lUses = DllStructGetData($lItem, 'Value') / 10
-					EndIf
-				Case Else
-					ContinueLoop
-			EndSwitch
-		Next
-	Next
-	Return $lKit
-EndFunc   ;==>FindExpertSalvageKit
+Func FindSalvageKit($maxBags = 16)
+    Local $bestKitID = 0
+    Local $lowestUses = 101  ; High number ensures any found kit will have lower uses
 
-Func FindSalvageKit()
-	Local $LITEM
-	Local $LKIT = 0
-	Local $LUSES = 101
-	For $i = 1 To 16
-		For $J = 1 To DllStructGetData(GetBag($i), 'Slots')
-			$LITEM = GetItemBySlot($i, $J)
-			Switch DllStructGetData($LITEM, 'ModelID')
-				Case 2991
-					If DllStructGetData($LITEM, 'Value') / 8 < $LUSES Then
-						$LKIT = DllStructGetData($LITEM, 'ID')
-						$LUSES = DllStructGetData($LITEM, 'Value') / 8
-					EndIf
-				Case 2992
-					If DllStructGetData($LITEM, 'Value') / 2 < $LUSES Then
-						$LKIT = DllStructGetData($LITEM, 'ID')
-						$LUSES = DllStructGetData($LITEM, 'Value') / 2
-					EndIf
-				Case 5900
-					If DllStructGetData($LITEM, 'Value') / 10 < $LUSES Then
-						$LKIT = DllStructGetData($LITEM, 'ID')
-						$LUSES = DllStructGetData($LITEM, 'Value') / 10
-					EndIf
-				Case Else
-					ContinueLoop
-			EndSwitch
-		Next
-	Next
-	Return $LKIT
+    ; Define salvage kit types and their use divisors in an array for easy iteration
+    Local $kitTypes[3][2] = [[2991, 8], [2992, 2], [5900, 10]]  ; ModelID, Uses divisor
+
+    For $bagIndex = 1 To $maxBags
+        Local $bagSlots = DllStructGetData(GetBag($bagIndex), 'Slots')
+        For $slotIndex = 1 To $bagSlots
+            Local $item = GetItemBySlot($bagIndex, $slotIndex)
+            Local $modelID = DllStructGetData($item, 'ModelID')
+            Local $itemUses = DllStructGetData($item, 'Value')
+
+            For $kitIndex = 0 To UBound($kitTypes) - 1
+                If $modelID == $kitTypes[$kitIndex][0] Then
+                    Local $usesLeft = $itemUses / $kitTypes[$kitIndex][1]
+                    If $usesLeft < $lowestUses Then
+                        $bestKitID = DllStructGetData($item, 'ID')
+                        $lowestUses = $usesLeft
+                    EndIf
+                    ExitLoop  ; Found a match, no need to check other types
+                EndIf
+            Next
+        Next
+    Next
+
+    Return $bestKitID
 EndFunc   ;==>FindSalvageKit
-
-Func FindCheapSalvageKit()
-	Local $LITEM
-	Local $LKIT = 0
-	Local $LUSES = 101
-	For $i = 1 To 16
-		For $J = 1 To DllStructGetData(GetBag($i), 'Slots')
-			$LITEM = GetItemBySlot($i, $J)
-			Switch DllStructGetData($LITEM, 'ModelID')
-				Case 2992
-					If DllStructGetData($LITEM, 'Value') / 2 < $LUSES Then
-						$LKIT = DllStructGetData($LITEM, 'ID')
-						$LUSES = DllStructGetData($LITEM, 'Value') / 2
-					EndIf
-				Case Else
-					ContinueLoop
-			EndSwitch
-		Next
-	Next
-	Return $LKIT
-EndFunc   ;==>FindCheapSalvageKit
 
 ;~ Description: Legacy function, use FindIdentificationKit instead.
 Func FindIDKit()
@@ -4500,70 +4451,85 @@ Func SetEvent($aSkillActivate = '', $aSkillCancel = '', $aSkillComplete = '', $a
 EndFunc   ;==>SetEvent
 
 ;~ Description: Internal use for event system.
-;~ modified by gigi, avoid getagentbyid, just pass agent id to callback
 Func Event($hwnd, $msg, $wparam, $lparam)
-	Switch $lparam
-		Case 0x1
-			DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $wparam, 'ptr', $mSkillLogStructPtr, 'int', 16, 'int', '')
-			Call($mSkillActivate, DllStructGetData($mSkillLogStruct, 1), DllStructGetData($mSkillLogStruct, 2), DllStructGetData($mSkillLogStruct, 3), DllStructGetData($mSkillLogStruct, 4))
-		Case 0x2
-			DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $wparam, 'ptr', $mSkillLogStructPtr, 'int', 16, 'int', '')
-			Call($mSkillCancel, DllStructGetData($mSkillLogStruct, 1), DllStructGetData($mSkillLogStruct, 2), DllStructGetData($mSkillLogStruct, 3))
-		Case 0x3
-			DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $wparam, 'ptr', $mSkillLogStructPtr, 'int', 16, 'int', '')
-			Call($mSkillComplete, DllStructGetData($mSkillLogStruct, 1), DllStructGetData($mSkillLogStruct, 2), DllStructGetData($mSkillLogStruct, 3))
-		Case 0x4
-			DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $wparam, 'ptr', $mChatLogStructPtr, 'int', 512, 'int', '')
-			Local $lMessage = DllStructGetData($mChatLogStruct, 2)
-			Local $lChannel
-			Local $lSender
-			Switch DllStructGetData($mChatLogStruct, 1)
-				Case 0
-					$lChannel = "Alliance"
-					$lSender = StringMid($lMessage, 6, StringInStr($lMessage, "</a>") - 6)
-					$lMessage = StringTrimLeft($lMessage, StringInStr($lMessage, "<quote>") + 6)
-				Case 3
-					$lChannel = "All"
-					$lSender = StringMid($lMessage, 6, StringInStr($lMessage, "</a>") - 6)
-					$lMessage = StringTrimLeft($lMessage, StringInStr($lMessage, "<quote>") + 6)
-				Case 9
-					$lChannel = "Guild"
-					$lSender = StringMid($lMessage, 6, StringInStr($lMessage, "</a>") - 6)
-					$lMessage = StringTrimLeft($lMessage, StringInStr($lMessage, "<quote>") + 6)
-				Case 11
-					$lChannel = "Team"
-					$lSender = StringMid($lMessage, 6, StringInStr($lMessage, "</a>") - 6)
-					$lMessage = StringTrimLeft($lMessage, StringInStr($lMessage, "<quote>") + 6)
-				Case 12
-					$lChannel = "Trade"
-					$lSender = StringMid($lMessage, 6, StringInStr($lMessage, "</a>") - 6)
-					$lMessage = StringTrimLeft($lMessage, StringInStr($lMessage, "<quote>") + 6)
-				Case 10
-					If StringLeft($lMessage, 3) == "-> " Then
-						$lChannel = "Sent"
-						$lSender = StringMid($lMessage, 10, StringInStr($lMessage, "</a>") - 10)
-						$lMessage = StringTrimLeft($lMessage, StringInStr($lMessage, "<quote>") + 6)
-					Else
-						$lChannel = "Global"
-						$lSender = "Guild Wars"
-					EndIf
-				Case 13
-					$lChannel = "Advisory"
-					$lSender = "Guild Wars"
-					$lMessage = StringTrimLeft($lMessage, StringInStr($lMessage, "<quote>") + 6)
-				Case 14
-					$lChannel = "Whisper"
-					$lSender = StringMid($lMessage, 7, StringInStr($lMessage, "</a>") - 7)
-					$lMessage = StringTrimLeft($lMessage, StringInStr($lMessage, "<quote>") + 6)
-				Case Else
-					$lChannel = "Other"
-					$lSender = "Other"
-			EndSwitch
-			Call($mChatReceive, $lChannel, $lSender, $lMessage)
-		Case 0x5
-			Call($mLoadFinished)
-	EndSwitch
+    ; Initial check for skill-related events to avoid unnecessary DllCalls for chat events
+    If $lparam >= 0x1 And $lparam <= 0x3 Then
+        Local $skillLogStruct = DllStructCreate("int skillID;int param1;int param2;int param3")
+        DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $wparam, 'ptr', DllStructGetPtr($skillLogStruct), 'int', 16, 'int', '')
+        HandleSkillEvent($lparam, $skillLogStruct)
+        DllStructDelete($skillLogStruct) ; Clean up
+    ElseIf $lparam == 0x4 Then
+        Local $chatLogStruct = DllStructCreate("int messageType;char message[512]")
+        DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $wparam, 'ptr', DllStructGetPtr($chatLogStruct), 'int', 512, 'int', '')
+        ProcessChatMessage($chatLogStruct)
+        DllStructDelete($chatLogStruct) ; Clean up
+    ElseIf $lparam == 0x5 Then
+        Call($mLoadFinished)
+    EndIf
 EndFunc   ;==>Event
+
+Func HandleSkillEvent($eventType, $skillLogStruct)
+    Local $skillID = DllStructGetData($skillLogStruct, 1)
+    Local $param1 = DllStructGetData($skillLogStruct, 2)
+    Local $param2 = DllStructGetData($skillLogStruct, 3)
+    Local $param3 = DllStructGetData($skillLogStruct, 4) ; Only used for activation
+
+    Switch $eventType
+        Case 0x1
+            Call($mSkillActivate, $skillID, $param1, $param2, $param3)
+        Case 0x2
+            Call($mSkillCancel, $skillID, $param1, $param2)
+        Case 0x3
+            Call($mSkillComplete, $skillID, $param1, $param2)
+    EndSwitch
+EndFunc   ;==>HandleSkillEvent
+
+Func ProcessChatMessage($chatLogStruct)
+    Local $messageType = DllStructGetData($chatLogStruct, 1)
+    Local $message = DllStructGetData($chatLogStruct, "message[512]")
+    Local $channel = "Unknown"
+    Local $sender = "Unknown"
+
+    Switch $messageType
+        Case 0 ; Alliance
+            $channel = "Alliance"
+        Case 3 ; All
+            $channel = "All"
+        Case 9 ; Guild
+            $channel = "Guild"
+        Case 11 ; Team
+            $channel = "Team"
+        Case 12 ; Trade
+            $channel = "Trade"
+        Case 10 ; Sent or Global
+            If StringLeft($message, 3) == "-> " Then
+                $channel = "Sent"
+            Else
+                $channel = "Global"
+                $sender = "Guild Wars"
+            EndIf
+        Case 13 ; Advisory
+            $channel = "Advisory"
+            $sender = "Guild Wars"
+        Case 14 ; Whisper
+            $channel = "Whisper"
+        Case Else
+            $channel = "Other"
+            $sender = "Other"
+    EndSwitch
+
+    If $channel <> "Global" And $channel <> "Advisory" And $channel <> "Other" Then
+        $sender = StringMid($message, 6, StringInStr($message, "</a>") - 6)
+        $message = StringTrimLeft($message, StringInStr($message, "<quote>") + 6)
+    EndIf
+
+    If $channel == "Sent" Then
+        $sender = StringMid($message, 10, StringInStr($message, "</a>") - 10)
+        $message = StringTrimLeft($message, StringInStr($message, "<quote>") + 6)
+    EndIf
+
+    Call($mChatReceive, $channel, $sender, $message)
+EndFunc   ;==>ProcessChatMessage
 #EndRegion Callback
 
 #Region Modification
@@ -6434,6 +6400,47 @@ Func GetBestTarget($aRange = 1320)
 	Next
 	Return $lBestTarget
 EndFunc   ;==>GetBestTarget
+;=======WORK IN PROGRESS TO IDENTIFY HEALER ENEMIES AS PRIO
+
+;Global $healerModelIDs = [1234, 5678, 9012]  ; Replace these with actual ModelIDs for healers
+
+;Func GetBestTarget($aRange = 1320)
+;    Local $lBestTarget, $lDistance, $lLowestSum = 100000000, $lBestHealer, $lLowestHealerSum = 100000000
+;    Local $lAgentArray = GetAgentArray(0xDB)
+;    For $i = 1 To $lAgentArray[0]
+;        Local $lSumDistances = 0, $lIsHealer = _IsHealer($lAgentArray[$i])
+;        If DllStructGetData($lAgentArray[$i], 'Allegiance') <> 3 Then ContinueLoop
+;        If DllStructGetData($lAgentArray[$i], 'HP') <= 0 Then ContinueLoop
+;        If DllStructGetData($lAgentArray[$i], 'ID') = GetMyID() Then ContinueLoop
+;        If GetDistance($lAgentArray[$i]) > $aRange Then ContinueLoop
+;        For $j = 1 To $lAgentArray[0]
+;            If DllStructGetData($lAgentArray[$j], 'Allegiance') <> 3 Then ContinueLoop
+;            If DllStructGetData($lAgentArray[$j], 'HP') <= 0 Then ContinueLoop
+;            If DllStructGetData($lAgentArray[$j], 'ID') = GetMyID() Then ContinueLoop
+;            If GetDistance($lAgentArray[$j]) > $aRange Then ContinueLoop
+;            $lDistance = GetDistance($lAgentArray[$i], $lAgentArray[$j])
+;            $lSumDistances += $lDistance
+;        Next
+;        If $lIsHealer And $lSumDistances < $lLowestHealerSum Then
+;            $lLowestHealerSum = $lSumDistances
+;            $lBestHealer = $lAgentArray[$i]
+;        ElseIf Not $lIsHealer And $lSumDistances < $lLowestSum Then
+;            $lLowestSum = $lSumDistances
+;            $lBestTarget = $lAgentArray[$i]
+;        EndIf
+;    Next
+;    Return $lBestHealer ? $lBestHealer : $lBestTarget  ; Prioritize healer, otherwise return best target
+;EndFunc   ;==>GetBestTarget
+
+;Func _IsHealer($agent)
+;    Local $modelID = DllStructGetData($agent, 'ModelID')
+;    For $i = 0 To UBound($healerModelIDs) - 1
+;        If $modelID == $healerModelIDs[$i] Then Return True
+;    Next
+;    Return False
+;EndFunc
+
+;=======WORK IN PROGRESS TO IDENTIFY HEALER ENEMIES AS PRIO END =======
 
 ;~ Description: Wait for map to load. Returns true if successful.
 Func WaitMapLoading($aMapID = 0, $aDeadlock = 2000)
@@ -6618,8 +6625,27 @@ Func GetClosestInRangeOfAgent($aAgent = -2, $aRange = $DistanceCasting, $aAllegi
 	Return $lClosest
 EndFunc
 
+; Gets the number of enemy units within a specified range of a given agent.
+; @param $aAgent The agent ID or structure from which to measure distance. Defaults to -2 (current agent).
+; @param $aRange The range within which to count enemy units. Defaults to 1250 units.
+; @return The number of enemy units within the specified range of the specified agent.
 Func GetNumberOfFoesInRangeOfAgent($aAgent = -2, $aRange = 1250)
-	Return GetCountInRangeOfAgent($aAgent, $aRange, $UnitTypeEnemy, $TypeUnit)
+    ; Validate $aAgent as a valid agent or retrieve it if it's an ID.
+    If Not IsDllStruct($aAgent) Then
+        $aAgent = GetAgentByID($aAgent)
+        If @error Then Return SetError(1, 0, 0) ; Ensure $aAgent is valid.
+    EndIf
+
+    ; Validate $aRange as a positive number.
+    If $aRange <= 0 Then Return SetError(2, 0, 0)
+
+    ; Delegate to GetCountInRangeOfAgent function.
+    Return GetCountInRangeOfAgent($aAgent, $aRange, $UnitTypeEnemy, $TypeUnit)
+EndFunc   ;==>GetNumberOfFoesInRangeOfAgent
+
+
+;Func GetNumberOfFoesInRangeOfAgent($aAgent = -2, $aRange = 1250)
+;	Return GetCountInRangeOfAgent($aAgent, $aRange, $UnitTypeEnemy, $TypeUnit)
 ;~ 	Local $lAgent, $lDistance
 ;~ 	Local $lCount = 0
 
@@ -6639,7 +6665,7 @@ Func GetNumberOfFoesInRangeOfAgent($aAgent = -2, $aRange = 1250)
 ;~ 		$lCount += 1
 ;~ 	Next
 ;~ 	Return $lCount
-EndFunc   ;==>GetNumberOfFoesInRangeOfAgent
+;EndFunc   ;==>GetNumberOfFoesInRangeOfAgent
 
 ;~ Description: Returns array with itemIDs of Items in Bags with correct ModelID.
 Func GetBagItemIDByModelID($aModelID)
