@@ -56,7 +56,7 @@ Global Const $TYPE_KEY = 18
 ;Kits
 ;Global Const $MODEL_ID_CHEAP_SALVAGE_KIT	= 2992
 ;Global Const $MODEL_ID_SALVAGE_KIT			= 5900
-Global Const $MODEL_ID_CHEAP_ID_KIT			= 2989
+;Global Const $MODEL_ID_CHEAP_ID_KIT			= 2989
 Global Const $MODEL_ID_ID_KIT				= 5899
 Global Const $EXPERT_SALVAGE_KIT_MODEL_ID = 2991
 Global Const $EXPERT_SALVAGE_KIT_USES_DIVISOR = 8
