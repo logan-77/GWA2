@@ -2,7 +2,6 @@
 ; Updated this (01/20/2024)
 
 #include-once
-#RequireAdmin
 #include "GWA2_Headers.au3"
 
 If @AutoItX64 Then
@@ -15,140 +14,106 @@ EndIf
 #EndRegion Headers
 
 #Region Declarations
-Local $mGWA2Version = '5.0.0' ; Update 01/18/2024
-Local $mKernelHandle
-Local $mGWProcHandle
-Local $mMemory
-Local $mLabels[1][2]
+; General settings and handles
+Local $mGWA2Version = '5.0.0' ; 2/25/2024
+Local $mKernelHandle, $mGWProcHandle, $mMemory
 Local $mBase = 0x00C50000
 Local $mASMString, $mASMSize, $mASMCodeOffset
-Local $SecondInject
-Local $Rendering = True
+Local $SecondInject, $Rendering = True
 
-Local $mGUI = GUICreate('GWA2'), $mSkillActivate, $mSkillCancel, $mSkillComplete, $mChatReceive, $mLoadFinished
+; GUI elements
+Local $mGUI = GUICreate('GWA2')
+GUIRegisterMsg(0x501, 'Event')
+
+; Structs for logging
 Local $mSkillLogStruct = DllStructCreate('dword;dword;dword;float')
 Local $mSkillLogStructPtr = DllStructGetPtr($mSkillLogStruct)
 Local $mChatLogStruct = DllStructCreate('dword;wchar[256]')
 Local $mChatLogStructPtr = DllStructGetPtr($mChatLogStruct)
-GUIRegisterMsg(0x501, 'Event')
 
+; Game-related variables
 Local $mQueueCounter, $mQueueSize, $mQueueBase
 Local $mGWWindowHandle
-Local $mTargetLogBase
-Local $mStringLogBase
-Local $mSkillBase
+Local $mTargetLogBase, $mStringLogBase, $mSkillBase
 Local $mEnsureEnglish
 Local $mMyID, $mCurrentTarget
-Local $mAgentBase
-Local $mBasePointer
+Local $mAgentBase, $mBasePointer
 Local $mRegion, $mLanguage
-Local $mPing
-Local $mCharname
-Local $mMapID
-Local $mMaxAgents
-Local $mMapLoading
-Local $mMapIsLoaded
-Local $mLoggedIn
-Local $mStringHandlerPtr
-Local $mWriteChatSender
+Local $mPing, $mCharname, $mMapID
+Local $mMaxAgents, $mMapLoading, $mMapIsLoaded, $mLoggedIn
+Local $mStringHandlerPtr, $mWriteChatSender
 Local $mTraderQuoteID, $mTraderCostID, $mTraderCostValue
-Local $mSkillTimer
-Local $mBuildNumber
+Local $mSkillTimer, $mBuildNumber
 Local $mZoomStill, $mZoomMoving
-Local $mDisableRendering
-Local $mAgentCopyCount
-Local $mAgentCopyBase
-Local $mCurrentStatus
-Local $mLastDialogID
-
-Local $mUseStringLog
-Local $mUseEventSystem
-;~Local $mCharslots
+Local $mDisableRendering, $mAgentCopyCount, $mAgentCopyBase
+Local $mCurrentStatus, $mLastDialogID
+Local $mUseStringLog, $mUseEventSystem
+;~ Local $mCharslots
 #EndRegion Declarations
 
-#Region CommandStructs
-Local $mInviteGuild = DllStructCreate('ptr;dword;dword header;dword counter;wchar name[32];dword type')
-Local $mInviteGuildPtr = DllStructGetPtr($mInviteGuild)
 
-Local $mUseSkill = DllStructCreate('ptr;dword;dword;dword')
-Local $mUseSkillPtr = DllStructGetPtr($mUseSkill)
+#Region CommandStructs - Reworked
+Func CreateStructAndPtr($definition)
+    Local $struct = DllStructCreate($definition)
+    Return [DllStructGetPtr($struct), $struct]
+EndFunc
 
-Local $mMove = DllStructCreate('ptr;float;float;float')
-Local $mMovePtr = DllStructGetPtr($mMove)
-
-Local $mChangeTarget = DllStructCreate('ptr;dword')
-Local $mChangeTargetPtr = DllStructGetPtr($mChangeTarget)
-
-Local $mPacket = DllStructCreate('ptr;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword')
-Local $mPacketPtr = DllStructGetPtr($mPacket)
-
-Local $mWriteChat = DllStructCreate('ptr')
-Local $mWriteChatPtr = DllStructGetPtr($mWriteChat)
-
-Local $mSellItem = DllStructCreate('ptr;dword;dword;dword')
-Local $mSellItemPtr = DllStructGetPtr($mSellItem)
-
-Local $mAction = DllStructCreate('ptr;dword;dword;')
-Local $mActionPtr = DllStructGetPtr($mAction)
-
-Local $mToggleLanguage = DllStructCreate('ptr;dword')
-Local $mToggleLanguagePtr = DllStructGetPtr($mToggleLanguage)
-
-Local $mUseHeroSkill = DllStructCreate('ptr;dword;dword;dword')
-Local $mUseHeroSkillPtr = DllStructGetPtr($mUseHeroSkill)
-
-Local $mBuyItem = DllStructCreate('ptr;dword;dword;dword;dword')
-Local $mBuyItemPtr = DllStructGetPtr($mBuyItem)
-
-Local $mCraftItemEx = DllStructCreate('ptr;dword;dword;ptr;dword;dword')
-Local $mCraftItemExPtr = DllStructGetPtr($mCraftItemEx)
-
-Local $mSendChat = DllStructCreate('ptr;dword')
-Local $mSendChatPtr = DllStructGetPtr($mSendChat)
-
-Local $mRequestQuote = DllStructCreate('ptr;dword')
-Local $mRequestQuotePtr = DllStructGetPtr($mRequestQuote)
-
-Local $mRequestQuoteSell = DllStructCreate('ptr;dword')
-Local $mRequestQuoteSellPtr = DllStructGetPtr($mRequestQuoteSell)
-
-Local $mTraderBuy = DllStructCreate('ptr')
-Local $mTraderBuyPtr = DllStructGetPtr($mTraderBuy)
-
-Local $mTraderSell = DllStructCreate('ptr')
-Local $mTraderSellPtr = DllStructGetPtr($mTraderSell)
-
-Local $mSalvage = DllStructCreate('ptr;dword;dword;dword')
-Local $mSalvagePtr = DllStructGetPtr($mSalvage)
-
-Local $mIncreaseAttribute = DllStructCreate('ptr;dword;dword')
-Local $mIncreaseAttributePtr = DllStructGetPtr($mIncreaseAttribute)
-
-Local $mDecreaseAttribute = DllStructCreate('ptr;dword;dword')
-Local $mDecreaseAttributePtr = DllStructGetPtr($mDecreaseAttribute)
-
-Local $mMaxAttributes = DllStructCreate("ptr;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword")
-Local $mMaxAttributesPtr = DllStructGetPtr($mMaxAttributes)
-
-Local $mSetAttributes = DllStructCreate("ptr;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword")
-Local $mSetAttributesPtr = DllStructGetPtr($mSetAttributes)
-
-Local $mMakeAgentArray = DllStructCreate('ptr;dword')
-Local $mMakeAgentArrayPtr = DllStructGetPtr($mMakeAgentArray)
-
-Local $mChangeStatus = DllStructCreate('ptr;dword')
-Local $mChangeStatusPtr = DllStructGetPtr($mChangeStatus)
-
+; Create structures and their pointers with a single call for each
+Global $mInviteGuild, $mInviteGuildPtr = CreateStructAndPtr('ptr;dword;dword header;dword counter;wchar name[32];dword type')
+Global $mUseSkill, $mUseSkillPtr = CreateStructAndPtr('ptr;dword;dword;dword')
+Global $mMove, $mMovePtr = CreateStructAndPtr('ptr;float;float;float')
+Global $mChangeTarget, $mChangeTargetPtr = CreateStructAndPtr('ptr;dword')
+Global $mPacket, $mPacketPtr = CreateStructAndPtr('ptr;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword')
+Global $mWriteChat, $mWriteChatPtr = CreateStructAndPtr('ptr')
+Global $mSellItem, $mSellItemPtr = CreateStructAndPtr('ptr;dword;dword;dword')
+Global $mAction, $mActionPtr = CreateStructAndPtr('ptr;dword;dword;')
+Global $mToggleLanguage, $mToggleLanguagePtr = CreateStructAndPtr('ptr;dword')
+Global $mUseHeroSkill, $mUseHeroSkillPtr = CreateStructAndPtr('ptr;dword;dword;dword')
+Global $mBuyItem, $mBuyItemPtr = CreateStructAndPtr('ptr;dword;dword;dword;dword')
+Global $mCraftItemEx, $mCraftItemExPtr = CreateStructAndPtr('ptr;dword;dword;ptr;dword;dword')
+Global $mSendChat, $mSendChatPtr = CreateStructAndPtr('ptr;dword')
+Global $mRequestQuote, $mRequestQuotePtr = CreateStructAndPtr('ptr;dword')
+Global $mRequestQuoteSell, $mRequestQuoteSellPtr = CreateStructAndPtr('ptr;dword')
+Global $mTraderBuy, $mTraderBuyPtr = CreateStructAndPtr('ptr')
+Global $mTraderSell, $mTraderSellPtr = CreateStructAndPtr('ptr')
+Global $mSalvage, $mSalvagePtr = CreateStructAndPtr('ptr;dword;dword;dword')
+Global $mIncreaseAttribute, $mIncreaseAttributePtr = CreateStructAndPtr('ptr;dword;dword')
+Global $mDecreaseAttribute, $mDecreaseAttributePtr = CreateStructAndPtr('ptr;dword;dword')
+Global $mMaxAttributes, $mMaxAttributesPtr = CreateStructAndPtr("ptr;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword")
+Global $mSetAttributes, $mSetAttributesPtr = CreateStructAndPtr("ptr;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword;dword")
+Global $mMakeAgentArray, $mMakeAgentArrayPtr = CreateStructAndPtr('ptr;dword')
+Global $mChangeStatus, $mChangeStatusPtr = CreateStructAndPtr('ptr;dword')
 Global $MTradeHackAddress
-#EndRegion CommandStructs
+#EndRegion CommandStructs - Reworked
 
 #Region Memory
 ;~ Description: Internal use only.
 Func MemoryOpen($aPID)
-	$mKernelHandle = DllOpen('kernel32.dll')
-	Local $lOpenProcess = DllCall($mKernelHandle, 'int', 'OpenProcess', 'int', 0x1F0FFF, 'int', 1, 'int', $aPID)
-	$mGWProcHandle = $lOpenProcess[0]
+    ; Check if the kernel handle is already opened to avoid unnecessary opening
+    If $mKernelHandle = 0 Or $mKernelHandle = -1 Then
+        $mKernelHandle = DllOpen('kernel32.dll')
+    EndIf
+
+    ; Ensure the DllOpen operation was successful
+    If $mKernelHandle = -1 Then
+        ConsoleWrite("Error: Failed to open kernel32.dll" & @CRLF)
+        Return False
+    EndIf
+
+    ; Call OpenProcess with necessary privileges and store the process handle
+    Local $lOpenProcess = DllCall($mKernelHandle, 'ptr', 'OpenProcess', 'dword', 0x1F0FFF, 'bool', True, 'dword', $aPID)
+
+    ; Check if the DllCall was successful
+    If @error Or $lOpenProcess[0] = 0 Then
+        ConsoleWrite("Error: Failed to open process with PID " & $aPID & @CRLF)
+        Return False
+    EndIf
+
+    $mGWProcHandle = $lOpenProcess[0]
+
+    Return True ; Success
 EndFunc   ;==>MemoryOpen
+
 
 ;~ Description: Internal use only.
 Func MemoryClose()
@@ -208,38 +173,34 @@ EndFunc   ;==>SwapEndian
 #Region Initialisation
 ;~ Description: Returns a list of logged characters
 Func GetLoggedCharNames()
-	Local $array = ScanGW()
-	If $array[0] == 1 Then Return $array[1]
-	If $array[0] < 1 Then Return ''
-	Local $ret = $array[1]
-	For $i = 2 To $array[0]
-		$ret &= "|"
-		$ret &= $array[$i]
-	Next
-	Return $ret
+    Local $array = ScanGW()
+    If $array[0] == 0 Then Return '' ; No characters logged
+    Local $ret = $array[1] ; Start with the first character name
+    For $i = 2 To $array[0] ; Concatenate remaining names, if any
+        $ret &= "|" & $array[$i]
+    Next
+    Return $ret
 EndFunc   ;==>GetLoggedCharNames
 
-;~ Description: Returns an array of logged characters of gw windows (at pos 0 there is the size of the array)
 Func ScanGW()
-	Local $lProcessList = ProcessList("gw.exe")
-	Local $lReturnArray[1] = [0]
-	Local $lPid
+    Local $lProcessList = ProcessList("gw.exe")
+    Local $lReturnArray[1] = [0] ; Initialize with size at position 0
+    Local $lPid
 
-	For $i = 1 To $lProcessList[0][0]
-		MemoryOpen($lProcessList[$i][1])
+    For $i = 1 To $lProcessList[0][0]
+        ; Attempt to open memory for the process
+        If MemoryOpen($lProcessList[$i][1]) Then
+            ; If MemoryOpen is successful, increment array size
+            $lReturnArray[0] += 1
+            ReDim $lReturnArray[$lReturnArray[0] + 1] ; Resize array to accommodate new entry
+            $lReturnArray[$lReturnArray[0]] = ScanForCharname() ; Store character name
+            MemoryClose() ; Close memory handle after use
+        EndIf
+        ; Reset process handle after each iteration
+        $mGWProcHandle = 0
+    Next
 
-		If $mGWProcHandle Then
-			$lReturnArray[0] += 1
-			ReDim $lReturnArray[$lReturnArray[0] + 1]
-			$lReturnArray[$lReturnArray[0]] = ScanForCharname()
-		EndIf
-
-		MemoryClose()
-
-		$mGWProcHandle = 0
-	Next
-
-	Return $lReturnArray
+    Return $lReturnArray
 EndFunc   ;==>ScanGW
 
 Func GetHwnd($aProc)
