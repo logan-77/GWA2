@@ -1,6 +1,6 @@
-; Updated (02/29/2024)
+; Version 5
+; Updated this (01/20/2024)
 
-#RequireAdmin
 #include-once
 #include "GWA2_Headers.au3"
 
@@ -8,6 +8,10 @@ If @AutoItX64 Then
 	MsgBox(16, "Error!", "Please run all bots in 32-bit (x86) mode.")
 	Exit
 EndIf
+
+#Region Headers
+
+#EndRegion Headers
 
 #Region Declarations
 ; General settings and handles
@@ -717,8 +721,9 @@ Func ScanForCharname()
 EndFunc   ;==>ScanForCharname
 #EndRegion Initialisation
 
-
+#Region Commands
 #Region Item
+
 Func StartSalvage($aItem)
 	Local $lOffset[4] = [0, 0x18, 0x2C, 0x690]
 	Local $lSalvageSessionID = MemoryReadPtr($mBasePointer, $lOffset)
@@ -6200,7 +6205,15 @@ Func CompleteASMCode()
 	Next
 EndFunc   ;==>CompleteASMCode
 
+
+
 ;~ Description: Internal use only.
+;~ Func GetLabelInfo($aLabel)
+;~ 	Local $lValue = GetValue($aLabel)
+;~ 	If $lValue = -1 Then Exit MsgBox(0, 'Label', 'Label: ' & $aLabel & ' not provided')
+;~ 	Return $lValue ;Dec(StringRight($lValue, 8))
+;~ EndFunc   ;==>GetLabelInfo
+
 Func GetLabelInfo($aLab)
 	Local Const $lVal = GetValue($aLab)
 	Return $lVal
@@ -6217,6 +6230,8 @@ Func ASMNumber($aNumber, $aSmall = False)
 		Return SetExtended(0, SwapEndian(Hex($aNumber, 8)))
 	EndIf
 EndFunc   ;==>ASMNumber
+#EndRegion Assembler
+#EndRegion Other Functions
 
 ; #FUNCTION# ====================================================================================================================
 ; Name...........: _ProcessGetName
@@ -6309,6 +6324,7 @@ Func Disconnected()
 			EndIf
 		EndIf
 	EndIf
+;~ 	Out("Reconnected!")
 	Sleep(5000)
 EndFunc   ;==>Disconnected
 
@@ -6345,35 +6361,75 @@ Func GetPartyWaitingForMission()
 	Return GetPartyState(0x8)
 EndFunc   ;==>GetPartyWaitingForMission
 
+;Func GetBestTarget($aRange = 1320)
+;	Local $lBestTarget, $lDistance, $lLowestSum = 100000000
+;	Local $lAgentArray = GetAgentArray(0xDB)
+;	For $i = 1 To $lAgentArray[0]
+;		Local $lSumDistances = 0
+;		If DllStructGetData($lAgentArray[$i], 'Allegiance') <> 3 Then ContinueLoop
+;		If DllStructGetData($lAgentArray[$i], 'HP') <= 0 Then ContinueLoop
+;		If DllStructGetData($lAgentArray[$i], 'ID') = GetMyID() Then ContinueLoop
+;		If GetDistance($lAgentArray[$i]) > $aRange Then ContinueLoop
+;		For $j = 1 To $lAgentArray[0]
+;			If DllStructGetData($lAgentArray[$j], 'Allegiance') <> 3 Then ContinueLoop
+;			If DllStructGetData($lAgentArray[$j], 'HP') <= 0 Then ContinueLoop
+;			If DllStructGetData($lAgentArray[$j], 'ID') = GetMyID() Then ContinueLoop
+;			If GetDistance($lAgentArray[$j]) > $aRange Then ContinueLoop
+;			$lDistance = GetDistance($lAgentArray[$i], $lAgentArray[$j])
+;			$lSumDistances += $lDistance
+;		Next
+;		If $lSumDistances < $lLowestSum Then
+;			$lLowestSum = $lSumDistances
+;			$lBestTarget = $lAgentArray[$i]
+;		EndIf
+;	Next
+;	Return $lBestTarget
+;EndFunc   ;==>GetBestTarget
+
+;=======WORK IN PROGRESS TO IDENTIFY HEALER ENEMIES AS PRIO
+Global $bestTarget = Null
+Global $healerModelIDs = [3719, 3676, 3714]  ; Adjusted to focus on the specific ModelID for healers
+
 Func GetBestTarget($aRange = 1320)
-	Local $lBestTarget, $lDistance, $lLowestSum = 100000000
-	Local $lAgentArray = GetAgentArray(0xDB)
-	For $i = 1 To $lAgentArray[0]
-		Local $lSumDistances = 0
-		If DllStructGetData($lAgentArray[$i], 'Allegiance') <> 3 Then ContinueLoop
-		If DllStructGetData($lAgentArray[$i], 'HP') <= 0 Then ContinueLoop
-		If DllStructGetData($lAgentArray[$i], 'ID') = GetMyID() Then ContinueLoop
-		If GetDistance($lAgentArray[$i]) > $aRange Then ContinueLoop
-		For $j = 1 To $lAgentArray[0]
-			If DllStructGetData($lAgentArray[$j], 'Allegiance') <> 3 Then ContinueLoop
-			If DllStructGetData($lAgentArray[$j], 'HP') <= 0 Then ContinueLoop
-			If DllStructGetData($lAgentArray[$j], 'ID') = GetMyID() Then ContinueLoop
-			If GetDistance($lAgentArray[$j]) > $aRange Then ContinueLoop
-			$lDistance = GetDistance($lAgentArray[$i], $lAgentArray[$j])
-			$lSumDistances += $lDistance
-		Next
-		If $lSumDistances < $lLowestSum Then
-			$lLowestSum = $lSumDistances
-			$lBestTarget = $lAgentArray[$i]
-		EndIf
-	Next
-	Return $lBestTarget
+    Local $lBestTarget, $lDistance, $lLowestSum = 100000000, $lBestHealer, $lLowestHealerSum = 100000000
+    Local $lAgentArray = GetAgentArray(0xDB)
+    For $i = 1 To $lAgentArray[0]
+        Local $lSumDistances = 0, $lIsHealer = _IsHealer($lAgentArray[$i])
+        If DllStructGetData($lAgentArray[$i], 'Allegiance') <> 3 Then ContinueLoop
+        If DllStructGetData($lAgentArray[$i], 'HP') <= 0 Then ContinueLoop
+        If DllStructGetData($lAgentArray[$i], 'ID') = GetMyID() Then ContinueLoop
+        If GetDistance($lAgentArray[$i]) > $aRange Then ContinueLoop
+        For $j = 1 To $lAgentArray[0]
+            If DllStructGetData($lAgentArray[$j], 'Allegiance') <> 3 Then ContinueLoop
+            If DllStructGetData($lAgentArray[$j], 'HP') <= 0 Then ContinueLoop
+            If DllStructGetData($lAgentArray[$j], 'ID') = GetMyID() Then ContinueLoop
+            If GetDistance($lAgentArray[$j]) > $aRange Then ContinueLoop
+            $lDistance = GetDistance($lAgentArray[$i], $lAgentArray[$j])
+            $lSumDistances += $lDistance
+        Next
+        If $lIsHealer And $lSumDistances < $lLowestHealerSum Then
+            $lLowestHealerSum = $lSumDistances
+            $lBestHealer = $lAgentArray[$i]
+        ElseIf Not $lIsHealer And $lSumDistances < $lLowestSum Then
+            $lLowestSum = $lSumDistances
+            $lBestTarget = $lAgentArray[$i]
+        EndIf
+    Next
+    Return $lBestHealer ? $lBestHealer : $lBestTarget  ; Prioritize healer, otherwise return best target
 EndFunc   ;==>GetBestTarget
 
+Func _IsHealer($agent)
+    Local $modelID = DllStructGetData($agent, 'ModelID')
+    For $i = 0 To UBound($healerModelIDs) - 1
+        If $modelID == $healerModelIDs[$i] Then Return True
+    Next
+    Return False
+EndFunc
+;=======WORK IN PROGRESS TO IDENTIFY HEALER ENEMIES AS PRIO END =======
 
-#Region Map
 ;~ Description: Wait for map to load. Returns true if successful.
 Func WaitMapLoading($aMapID = 0, $aDeadlock = 2000)
+;~ 	Waits $aDeadlock for load to start, and $aDeadLock for agent to load after map is loaded.
 	Local $lMapLoading
 	Local $lDeadlock = TimerInit()
 
@@ -6394,6 +6450,7 @@ EndFunc   ;==>WaitMapLoading
 Func WaitMapLoadingEx($iMap)
 	Local $lDeadlock
 	$lDeadlock = TimerInit()
+;~	Out("Waiting for MapID: " & $iMap & " to load")
 	Do
 		Sleep(250)
 	Until GetMapID() == $iMap Or TimerDiff($lDeadlock) > 20000
@@ -6403,10 +6460,10 @@ Func WaitMapLoadingEx($iMap)
 	EndIf
 	If GetMapID() == $iMap Then
 		PingSleep(2000) ;~ Give time for map load
+;~		Out("Successfully loaded MapID: " & $iMap)
 		Return True
 	EndIf
 EndFunc
-#EndRegion
 
 Func TradePlayer($aAgent)
 	Local $lAgentID
@@ -6494,7 +6551,6 @@ Global $DistanceCasting = 1250
 Global $DistanceSpirit = 2500
 Global $DistanceCompass = 5000
 
-#Region "Agent Detection and Distance Functions"
 Func GetCountInRangeOfAgent($aAgent = -2, $aRange = $DistanceCasting, $aAllegiance = $UnitTypeEnemy, $aType = $TypeUnit)
 	Local $lAgent, $lDistance
 	Local $lCount = 0
@@ -6523,7 +6579,6 @@ Func GetCountInRangeOfAgent($aAgent = -2, $aRange = $DistanceCasting, $aAllegian
 	Return $lCount
 EndFunc
 
-; Function to get the closest agent within a specified range and with specific criteria.
 Func GetClosestInRangeOfAgent($aAgent = -2, $aRange = $DistanceCasting, $aAllegiance = $UnitTypeEnemy, $aType = $TypeUnit)
 	Local $lAgent, $lDistance
 	Local $lClosest
@@ -6540,9 +6595,9 @@ Func GetClosestInRangeOfAgent($aAgent = -2, $aRange = $DistanceCasting, $aAllegi
 			If DllStructGetData($lAgent, 'HP') <= 0 Then ContinueLoop
 			If BitAND(DllStructGetData($lAgent, 'Effects'), 0x0010) > 0 Then ContinueLoop
 		ElseIf $aType == $TypeObject Then
-			; Code for Object type handling
-		ElseIf $aType == $TypeLootable Then
-			; Code for Lootable type handling
+
+		ElseIf $aType == $TypeLooteable Then
+
 		EndIf
 
 		$lDistance = GetDistance($lAgent, $aAgent)
@@ -6555,44 +6610,49 @@ Func GetClosestInRangeOfAgent($aAgent = -2, $aRange = $DistanceCasting, $aAllegi
 	Return $lClosest
 EndFunc
 
-; Function to get the number of enemy units within a specified range.
+; Gets the number of enemy units within a specified range of a given agent.
+; @param $aAgent The agent ID or structure from which to measure distance. Defaults to -2 (current agent).
+; @param $aRange The range within which to count enemy units. Defaults to 1250 units.
+; @return The number of enemy units within the specified range of the specified agent.
 Func GetNumberOfFoesInRangeOfAgent($aAgent = -2, $aRange = 1250)
-	If Not IsDllStruct($aAgent) Then
-		$aAgent = GetAgentByID($aAgent)
-		If @error Then Return SetError(1, 0, 0) ; Ensure $aAgent is valid.
-	EndIf
+    ; Validate $aAgent as a valid agent or retrieve it if it's an ID.
+    If Not IsDllStruct($aAgent) Then
+        $aAgent = GetAgentByID($aAgent)
+        If @error Then Return SetError(1, 0, 0) ; Ensure $aAgent is valid.
+    EndIf
 
-	If $aRange <= 0 Then Return SetError(2, 0, 0) 
+    ; Validate $aRange as a positive number.
+    If $aRange <= 0 Then Return SetError(2, 0, 0)
 
-	Return GetCountInRangeOfAgent($aAgent, $aRange, $UnitTypeEnemy, $TypeUnit)
-EndFunc
-
-Func GetNumberOfFoesInRangeOfAgent2($aAgent = -2, $aRange = 1250)
-    Local $lAgent, $lDistance
-    Local $lCount = 0
-
-    If Not IsDllStruct($aAgent) Then $aAgent = GetAgentByID($aAgent)
-
-    For $i = 1 To GetMaxAgents()
-        $lAgent = GetAgentByID($i)
-        If BitAND(DllStructGetData($lAgent, 'typemap'), 262144) Then ContinueLoop
-        If DllStructGetData($lAgent, 'Type') <> 0xDB Then ContinueLoop
-        If DllStructGetData($lAgent, 'Allegiance') <> 3 Then ContinueLoop
-
-        If DllStructGetData($lAgent, 'HP') <= 0 Then ContinueLoop
-        If BitAND(DllStructGetData($lAgent, 'Effects'), 0x0010) > 0 Then ContinueLoop
-        $lDistance = GetDistance($lAgent, $aAgent)
-
-        If $lDistance > $aRange Then ContinueLoop
-        $lCount += 1
-    Next
-    Return $lCount
+    ; Delegate to GetCountInRangeOfAgent function.
+    Return GetCountInRangeOfAgent($aAgent, $aRange, $UnitTypeEnemy, $TypeUnit)
 EndFunc   ;==>GetNumberOfFoesInRangeOfAgent
 
-#EndRegion
 
-#Region "Item Management"
-; Function to return array with itemIDs of Items in Bags with correct ModelID.
+;Func GetNumberOfFoesInRangeOfAgent($aAgent = -2, $aRange = 1250)
+;	Return GetCountInRangeOfAgent($aAgent, $aRange, $UnitTypeEnemy, $TypeUnit)
+;~ 	Local $lAgent, $lDistance
+;~ 	Local $lCount = 0
+
+;~ 	If Not IsDllStruct($aAgent) Then $aAgent = GetAgentByID($aAgent)
+
+;~ 	For $i = 1 To GetMaxAgents()
+;~ 		$lAgent = GetAgentByID($i)
+;~ 		If BitAND(DllStructGetData($lAgent, 'typemap'), 262144) Then ContinueLoop
+;~ 		If DllStructGetData($lAgent, 'Type') <> 0xDB Then ContinueLoop
+;~ 		If DllStructGetData($lAgent, 'Allegiance') <> 3 Then ContinueLoop
+
+;~ 		If DllStructGetData($lAgent, 'HP') <= 0 Then ContinueLoop
+;~ 		If BitAND(DllStructGetData($lAgent, 'Effects'), 0x0010) > 0 Then ContinueLoop
+;~ 		$lDistance = GetDistance($lAgent, $aAgent)
+
+;~ 		If $lDistance > $aRange Then ContinueLoop
+;~ 		$lCount += 1
+;~ 	Next
+;~ 	Return $lCount
+;EndFunc   ;==>GetNumberOfFoesInRangeOfAgent
+
+;~ Description: Returns array with itemIDs of Items in Bags with correct ModelID.
 Func GetBagItemIDByModelID($aModelID)
 	Local $lRetArr[291][3]
 	Local $lCount = 0
@@ -6613,13 +6673,13 @@ Func GetBagItemIDByModelID($aModelID)
 	Next
 	ReDim $lRetArr[$lCount][3]
 	Return $lItemID
-EndFunc
+EndFunc   ;==>GetBagItemIDByModelID
 
 Func GetBagPtr($aBagNumber)
 	Local $lOffset[5] = [0, 0x18, 0x40, 0xF8, 0x4 * $aBagNumber]
 	Local $lItemStructAddress = MemoryReadPtr($mBasePointer, $lOffset, 'ptr')
 	Return $lItemStructAddress[1]
-EndFunc
+EndFunc   ;==>GetBagPtr
 
 Func GetItemPtrBySlot($aBag, $aSlot)
 	If IsPtr($aBag) Then
@@ -6631,19 +6691,18 @@ Func GetItemPtrBySlot($aBag, $aSlot)
 	EndIf
 	Local $lItemArrayPtr = MemoryRead($lBagPtr + 24, 'ptr')
 	Return MemoryRead($lItemArrayPtr + 4 * ($aSlot - 1), 'ptr')
-EndFunc
+EndFunc   ;==>GetItemPtrBySlot
 
+;~ Description: Returns amount of slots of bag.
 Func GetMaxSlots($aBag)
 	If IsPtr($aBag) Then
 		Return MemoryRead($aBag + 32, 'long')
 	Else
 		Return MemoryRead(GetBagPtr($aBag) + 32, 'long')
 	EndIf
-EndFunc
-#EndRegion
+EndFunc   ;==>GetMaxSlots
 
-#Region "Town and Party Management"
-; Function to check if the player is in town.
+#Region In Town function
 Func CheckInTown($aTown = "null")
 	Local $MapID = GetMapID()
 	If ($aTown <> "null" And IsNumber($aTown)) Then
@@ -6651,15 +6710,17 @@ Func CheckInTown($aTown = "null")
 			Return True
 		EndIf
 	EndIf
-
+		; pre-Seraing these are the only town's:
+		; Ascalon City Or The Barradin Estate Or Ashford Abbey Or Foibles Fair Or Fort Ranik
 	If (($MapID = 148) Or ($MapID = 163) Or ($MapID = 164) Or ($MapID = 165) Or ($MapID = 166)) Then
 		Return True
 	Else
 		Return False
 	EndIf
-EndFunc
+EndFunc   ;==>CheckInTown
+#EndRegion In Town function
 
-; Function to handle resignation and returning to outpost.
+;Resign, wait for defeated status, then return.
 Func ResignAndReturn()
 	If (CheckInTown() == True) Then
 		Sleep(500)
@@ -6674,21 +6735,25 @@ Func ResignAndReturn()
 			Sleep(250)
 		Until TimerDiff($lDeadlock) > $lTimeout
 	EndIf
-EndFunc
+EndFunc   ;==>ResignAndReturn
 
 Func GetPartyDefeated()
 	Return GetPartyState(0x20)
-EndFunc
+EndFunc   ;==>GetPartyDefeated
 
+;~ 	Description: Returns different States about Party. Check with BitAND.
+;~ 	0x8 = Leader starts Mission / Leader is travelling with Party
+;~ 	0x10 = Hardmode enabled
+;~ 	0x20 = Party defeated
+;~ 	0x40 = Guild Battle
+;~ 	0x80 = Party Leader
+;~ 	0x100 = Observe-Mode
 Func GetPartyState($aFlag)
 	Local $lOffset[4] = [0, 0x18, 0x4C, 0x14]
-	Local $lBitMask = MemoryReadPtr($mBasePointer, $lOffset)
+	Local $lBitMask = MemoryReadPtr($mBasePointer,$lOffset)
 	Return BitAND($lBitMask[1], $aFlag) > 0
-EndFunc
-#EndRegion
+EndFunc   ;==>GetPartyState
 
-#Region "Miscellaneous Functions"
-; Function to use a specific item by ID.
 Func UseStone()
 	Local $IgneousID = 30847
 	For $bag = 1 To 4
@@ -6701,29 +6766,28 @@ Func UseStone()
 			EndIf
 		Next
 	Next
-EndFunc
+EndFunc   ;==>UseStone
 
-; Function to check if the player has a specific effect.
+;Pass skill ID, returns True if you're under the effect
 Func HasEffect($aEffectSkillID)
 	If DllStructGetData(GetEffect($aEffectSkillID), "SkillID") == 0 Then
 		Return False
 	Else
 		Return True
 	EndIf
-EndFunc
+EndFunc   ;==>HasEffect
 
 Func GetIsExplorableArea()
 	Return GetMapLoading() == 1
-EndFunc
+EndFunc   ;==>GetIsExplorableArea
 
 Func _PurgeHook()
-	; Code for toggling rendering or performing a hook purge.
+	; ToggleRendering()
 	Sleep(Random(4000, 5000))
-EndFunc
-#EndRegion
+	; ToggleRendering()
+EndFunc   ;==>_PurgeHook
 
-#Region "Structures Definition"
-; Define TitleInfo structure.
+; Define TitleInfo structure
 Func TitleInfo($title_id, $unk_flags, $value, $h000c, $current_rank_minimum_value, $h0014, $next_rank_minimum_value, $num_ranks, $h0020, $progress_display_enc_string, $mouseover_hint_enc_string)
     Local $struct = DllStructCreate("uint32 title_id;uint32 unk_flags;uint32 value;uint32 h000c;uint32 current_rank_minimum_value;uint32 h0014;uint32 next_rank_minimum_value;uint32 num_ranks;uint32 h0020;wchar[16] progress_display_enc_string;wchar[16] mouseover_hint_enc_string")
     DllStructSetData($struct, "title_id", $title_id)
@@ -6740,7 +6804,8 @@ Func TitleInfo($title_id, $unk_flags, $value, $h000c, $current_rank_minimum_valu
     Return $struct
 EndFunc
 
-; Define PlayerAttrUpdate structure.
+
+; Define PlayerAttrUpdate structure
 Func PlayerAttrUpdate($attr_id, $modifier)
     Local $struct = DllStructCreate("uint32 attr_id;int32 modifier")
     DllStructSetData($struct, "attr_id", $attr_id)
@@ -6748,7 +6813,7 @@ Func PlayerAttrUpdate($attr_id, $modifier)
     Return $struct
 EndFunc
 
-; Define PlayerAttrSet structure.
+; Define PlayerAttrSet structure
 Func PlayerAttrSet($experience, $kurzick_faction, $kurzick_faction_total, $luxon_faction, $luxon_faction_total, $imperial_faction, $imperial_faction_total, $hero_skill_points, $hero_skill_points_total, $level, $morale_percent, $balthazar_faction, $balthazar_faction_total, $skill_points, $skill_points_total)
     Local $struct = DllStructCreate("uint32 experience;uint32 kurzick_faction;uint32 kurzick_faction_total;uint32 luxon_faction;uint32 luxon_faction_total;uint32 imperial_faction;uint32 imperial_faction_total;uint32 hero_skill_points;uint32 hero_skill_points_total;uint32 level;uint32 morale_percent;uint32 balthazar_faction;uint32 balthazar_faction_total;uint32 skill_points;uint32 skill_points_total")
     DllStructSetData($struct, "experience", $experience)
@@ -6768,119 +6833,4 @@ Func PlayerAttrSet($experience, $kurzick_faction, $kurzick_faction_total, $luxon
     DllStructSetData($struct, "skill_points_total", $skill_points_total)
     Return $struct
 EndFunc
-#EndRegion
 
-;Global $healerModelIDs = [1234, 5678, 9012]  ; Replace these with actual ModelIDs for healers
-
-;Func GetBestTarget($aRange = 1320)
-;    Local $lBestTarget, $lDistance, $lLowestSum = 100000000, $lBestHealer, $lLowestHealerSum = 100000000
-;    Local $lAgentArray = GetAgentArray(0xDB)
-;    For $i = 1 To $lAgentArray[0]
-;        Local $lSumDistances = 0, $lIsHealer = _IsHealer($lAgentArray[$i])
-;        If DllStructGetData($lAgentArray[$i], 'Allegiance') <> 3 Then ContinueLoop
-;        If DllStructGetData($lAgentArray[$i], 'HP') <= 0 Then ContinueLoop
-;        If DllStructGetData($lAgentArray[$i], 'ID') = GetMyID() Then ContinueLoop
-;        If GetDistance($lAgentArray[$i]) > $aRange Then ContinueLoop
-;        For $j = 1 To $lAgentArray[0]
-;            If DllStructGetData($lAgentArray[$j], 'Allegiance') <> 3 Then ContinueLoop
-;            If DllStructGetData($lAgentArray[$j], 'HP') <= 0 Then ContinueLoop
-;            If DllStructGetData($lAgentArray[$j], 'ID') = GetMyID() Then ContinueLoop
-;            If GetDistance($lAgentArray[$j]) > $aRange Then ContinueLoop
-;            $lDistance = GetDistance($lAgentArray[$i], $lAgentArray[$j])
-;            $lSumDistances += $lDistance
-;        Next
-;        If $lIsHealer And $lSumDistances < $lLowestHealerSum Then
-;            $lLowestHealerSum = $lSumDistances
-;            $lBestHealer = $lAgentArray[$i]
-;        ElseIf Not $lIsHealer And $lSumDistances < $lLowestSum Then
-;            $lLowestSum = $lSumDistances
-;            $lBestTarget = $lAgentArray[$i]
-;        EndIf
-;    Next
-;    Return $lBestHealer ? $lBestHealer : $lBestTarget  ; Prioritize healer, otherwise return best target
-;EndFunc   ;==>GetBestTarget
-
-;Func _IsHealer($agent)
-;    Local $modelID = DllStructGetData($agent, 'ModelID')
-;    For $i = 0 To UBound($healerModelIDs) - 1
-;        If $modelID == $healerModelIDs[$i] Then Return True
-;    Next
-;    Return False
-;EndFunc
-
-
-#Region AgentTracker
-Func GetAllEnemiesInMapToFile()
-    Local $enemies = []
-    Local $mapID = GetCurrentMapID()
-    Local $agentCount = GetTotalAgentCount()
-    Local $filePath = "enemies_location.txt"
-
-    FileOpen($filePath, $FO_OVERWRITE)
-
-    For $i = 0 To $agentCount - 1
-        $agent = GetAgentByID($i)
-        If @error Then ContinueLoop
-
-        If IsEnemy($agent) And $agent.mapID = $mapID Then
-            $line = $mapID & "," & $agent.ID & "," & $agent.location.x & "," & $agent.location.y
-            FileWriteLine($filePath, $line)
-        EndIf
-    Next
-
-    FileClose($filePath)
-EndFunc
-
-Func MoveToEnemyFromFile()
-    Local $filePath = "enemies_location.txt"
-    Local $fileContent = FileRead($filePath)
-    Local $lines = StringSplit($fileContent, @CRLF, $STR_ENTIRESPLIT)
-
-
-    If IsArray($lines) And $lines[0] > 0 Then
-        Local $firstEnemyData = StringSplit($lines[1], ",", $STR_ENTIRESPLIT)
-        If IsArray($firstEnemyData) And $firstEnemyData[0] >= 4 Then 
-            Local $enemyLocation = ObjCreate("StdClass")
-            $enemyLocation.mapID = $firstEnemyData[1]
-            $enemyLocation.x = $firstEnemyData[3]
-            $enemyLocation.y = $firstEnemyData[4]
-            MoveCharacterTo($enemyLocation)
-        EndIf
-    EndIf
-EndFunc
-
-Func CheckAndUpdateEnemies()
-    Local $mapID = GetCurrentMapID()
-    Local $agentCount = GetTotalAgentCount()
-    Local $filePath = "enemies_location.txt"
-    Local $tempData = ""
-
-    For $i = 0 To $agentCount - 1
-        $agent = GetAgentByID($i)
-        If @error Then ContinueLoop
-
-        ; Check if the agent is an enemy, is alive, and is in the same map
-        If IsEnemy($agent) And $agent.mapID = $mapID And IsAlive($agent) Then
-            $tempData &= $mapID & "," & $agent.ID & "," & $agent.location.x & "," & $agent.location.y & @CRLF
-        EndIf
-    Next
-
-    ; Overwrite the text file with new locations of alive enemies
-    If $tempData <> "" Then
-        FileDelete($filePath)
-        FileWrite($filePath, $tempData)
-    Else
-        FileDelete($filePath) ; Optionally clear the file if no alive enemies are found.
-    EndIf
-EndFunc
-
-
-Func GetTotalAgentCount()
-    Local $offsetsForCount = [0, 0x18, 0x2C, 0x850]
-
-    Local $agentCountPtr = MemoryReadPtr($mBasePointer, $offsetsForCount)
-    If @error Or $agentCountPtr[0] == 0 Then Return SetError(1, 0, 0) ; Error handling if reading fails
-    
-    Return $agentCountPtr[1]
-EndFunc   ;==>GetTotalAgentCount 
-#EndRegion
