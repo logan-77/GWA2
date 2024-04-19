@@ -292,34 +292,45 @@ Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSy
 	$lTemp = GetScannedAddress('ScanEngine', -0x6E) ;-16
 	SetValue('MainStart', '0x' & Hex($lTemp, 8))
 	SetValue('MainReturn', '0x' & Hex($lTemp + 5, 8))
+	
 	$lTemp = GetScannedAddress('ScanRenderFunc', -0x67)
 	SetValue('RenderingMod', '0x' & Hex($lTemp, 8))
 	SetValue('RenderingModReturn', '0x' & Hex($lTemp + 10, 8))
+	
 	$lTemp = GetScannedAddress('ScanTargetLog', 1)
+
 	SetValue('TargetLogStart', '0x' & Hex($lTemp, 8))
 	SetValue('TargetLogReturn', '0x' & Hex($lTemp + 5, 8))
-	$lTemp = GetScannedAddress('ScanSkillLog', 1)
+	
+	$lTemp = GetScannedAddress('ScanSkillLog', -46)
 	SetValue('SkillLogStart', '0x' & Hex($lTemp, 8))
 	SetValue('SkillLogReturn', '0x' & Hex($lTemp + 5, 8))
+	
 	$lTemp = GetScannedAddress('ScanSkillCompleteLog', -4)
 	SetValue('SkillCompleteLogStart', '0x' & Hex($lTemp, 8))
 	SetValue('SkillCompleteLogReturn', '0x' & Hex($lTemp + 5, 8))
+	
 	$lTemp = GetScannedAddress('ScanSkillCancelLog', 5)
+
 	SetValue('SkillCancelLogStart', '0x' & Hex($lTemp, 8))
 	SetValue('SkillCancelLogReturn', '0x' & Hex($lTemp + 6, 8))
+	
 	$lTemp = GetScannedAddress('ScanChatLog', 18)
 	SetValue('ChatLogStart', '0x' & Hex($lTemp, 8))
 	SetValue('ChatLogReturn', '0x' & Hex($lTemp + 6, 8))
-	$lTemp = GetScannedAddress('ScanTraderHook', -7)
+	
+	$lTemp = GetScannedAddress('ScanTraderHook', -0x2F) 
 	SetValue('TraderHookStart', '0x' & Hex($lTemp, 8))
 	SetValue('TraderHookReturn', '0x' & Hex($lTemp + 5, 8))
 
 	$lTemp = GetScannedAddress('ScanDialogLog', -4)
 	SetValue('DialogLogStart', '0x' & Hex($lTemp, 8))
 	SetValue('DialogLogReturn', '0x' & Hex($lTemp + 5, 8))
+	
 	$lTemp = GetScannedAddress('ScanStringFilter1', -5); was -0x23
 	SetValue('StringFilter1Start', '0x' & Hex($lTemp, 8))
 	SetValue('StringFilter1Return', '0x' & Hex($lTemp + 5, 8))
+	
 	$lTemp = GetScannedAddress('ScanStringFilter2', 0x16); was 0x61
 	SetValue('StringFilter2Start', '0x' & Hex($lTemp, 8))
 	SetValue('StringFilter2Return', '0x' & Hex($lTemp + 5, 8))
@@ -435,121 +446,156 @@ Func Scan()
 
 	_('MainModPtr/4')
 	_('ScanBasePointer:')
-	AddPattern('506A0F6A00FF35') ;85C0750F8BCE
-	_('ScanAgentBase:') ; Still in use? (16/06-2023)
-	AddPattern('FF50104783C6043BFB75E1') ; Still in use? (16/06-2023)
-	_('ScanAgentBasePointer:')
-	AddPattern('FF50104783C6043BFB75E1')
-	_('ScanCurrentTarget:')
-	AddPattern('83C4085B8BE55DC355')
-	_('ScanMyID:')
-	AddPattern('83EC08568BF13B15')
-	_('ScanEngine:')
-	AddPattern('56FFD083C4048B4E0485C9') ;old 5356DFE0F6C441
-	_('ScanRenderFunc:')
-	AddPattern('F6C401741C68B1010000BA')
-	_('ScanLoadFinished:')
-	AddPattern('8B561C8BCF52E8')
-	_('ScanPostMessage:')
-	AddPattern('6A00680080000051FF15')
-	_('ScanTargetLog:')
-	AddPattern('5356578BFA894DF4E8')
-	_('ScanChangeTargetFunction:')
-	AddPattern('3BDF0F95') ;33C03BDA0F95C033
-	_('ScanMoveFunction:')
-	AddPattern('558BEC83EC208D45F0') ;558BEC83EC2056578BF98D4DF0
-	_('ScanPing:')
-	AddPattern('E8B4FA1500')
-	_('ScanMapID:')
-	AddPattern('558BEC8B450885C074078B') ;B07F8D55
-	_('ScanMapLoading:')
-	AddPattern('549EB20000000000') ; 6A2C50E8
-	_('ScanLoggedIn:')
-	AddPattern('BFFFC70580') ; 85C07411B807
-	_('ScanRegion:')
-	AddPattern('8BF0EB038B750C3B')
-	_('ScanMapInfo:')
-	AddPattern('8BF0EB038B750C3B') ;83F9FD7406
-	_('ScanLanguage:')
-	AddPattern('C38B75FC8B04B5')
-	_('ScanUseSkillFunction:')
-	AddPattern('85F6745B83FE1174') ;558BEC83EC1053568BD9578BF2895DF0
-	_('ScanPacketSendFunction:')
-	AddPattern('F7D9C74754010000001BC981') ;558BEC83EC2C5356578BF985
-	_('ScanBaseOffset:')
-	AddPattern('83C40433C08BE55DC3A1') ;5633F63BCE740E5633D2
-	_('ScanWriteChatFunction:')
-	AddPattern('8D85E0FEFFFF50681C01') ;558BEC5153894DFC8B4D0856578B
-	_('ScanSkillLog:')
-	AddPattern('408946105E5B5D')
-	_('ScanSkillCompleteLog:')
-	AddPattern('741D6A006A40')
-	_('ScanSkillCancelLog:')
-	AddPattern('741D6A006A48')
-	_('ScanChatLog:')
-	AddPattern('8B45F48B138B4DEC50')
-	_('ScanSellItemFunction:')
-	AddPattern('8B4D2085C90F858E')
-	_('ScanStringLog:')
-	AddPattern('893E8B7D10895E04397E08')
-	_('ScanStringFilter1:')
-	AddPattern('8B368B4F2C6A006A008B06')
-	_('ScanStringFilter2:')
-	AddPattern('515356578BF933D28B4F2C')
-	_('ScanActionFunction:')
-	AddPattern('8B7508578BF983FE09750C6876') ;8B7D0883FF098BF175116876010000
-	_('ScanActionBase:')
-	AddPattern('8D1C87899DF4FEFFFF8BC32BC7C1F802') ;8B4208A80175418B4A08
-	_('ScanSkillBase:')
-	AddPattern('8D04B6C1E00505')
-	_('ScanUseHeroSkillFunction:')
-	AddPattern('BA02000000B954080000')
-	_('ScanTransactionFunction:')
-	AddPattern('85FF741D8B4D14EB08') ;558BEC81ECC000000053568B75085783FE108BFA8BD97614
-	_('ScanBuyItemFunction:') ; Still in use? (16/06-2023)
-	AddPattern('D9EED9580CC74004') ; Still in use? (16/06-2023)
-	_('ScanBuyItemBase:')
-	AddPattern('D9EED9580CC74004')
-	_('ScanRequestQuoteFunction:')
-	AddPattern('8B752083FE107614') ;8B750C5783FE107614 ;53568B750C5783FE10
-	_('ScanTraderFunction:')
-	AddPattern('8B45188B551085') ;83FF10761468
-	_('ScanTraderHook:')
-	AddPattern('8955FC6A008D55F8B9BB') ;50516A466A06 ;007BA579
-	_('ScanSleep:')
-	AddPattern('5F5E5B741A6860EA0000')
-	_('ScanSalvageFunction:')
-	AddPattern('33C58945FC8B45088945F08B450C8945F48B45108945F88D45EC506A10C745EC75')
-	;AddPattern('8BFA8BD9897DF0895DF4')
-	_('ScanSalvageGlobal:')
-	AddPattern('8B5104538945F48B4108568945E88B410C578945EC8B4110528955E48945F0')
-	;AddPattern('8B018B4904A3')
-	_('ScanIncreaseAttributeFunction:')
-	AddPattern('8B7D088B702C8B1F3B9E00050000') ;8B702C8B3B8B86
-	_("ScanDecreaseAttributeFunction:")
-	AddPattern("8B8AA800000089480C5DC3CC") ;8B402C8BCE059C0000008B1089118B50
-	_('ScanSkillTimer:')
-	AddPattern('FFD68B4DF08BD88B4708') ;85c974158bd62bd183fa64
-	_('ScanClickToMoveFix:')
-	AddPattern('3DD301000074')
-	_('ScanZoomStill:')
-	AddPattern('558BEC8B41085685C0')
-	_('ScanZoomMoving:')
-	AddPattern('EB358B4304')
-	_('ScanBuildNumber:')
-	AddPattern('558BEC83EC4053568BD9')
-	_('ScanChangeStatusFunction:')
-	AddPattern('558BEC568B750883FE047C14') ;568BF183FE047C14682F020000
-	_('ScanCharslots:')
-	AddPattern('8B551041897E38897E3C897E34897E48897E4C890D')
-	_('ScanReadChatFunction:')
-	AddPattern('A128B6EB00')
-	_('ScanDialogLog:')
-	AddPattern('8B45088945FC8D45F8506A08C745F841');558BEC83EC285356578BF28BD9
-	_("ScanTradeHack:")
-	AddPattern("8BEC8B450883F846")
-	_("ScanClickCoords:")
-	AddPattern("8B451C85C0741CD945F8")
+
+	; ---------------------------
+; Agent and Target Related Functions
+; ---------------------------
+
+; Agent base pointers
+_('ScanAgentBase:') ; Still in use? (16/06-2023)
+AddPattern('FF50104783C6043BFB75E1') ; Still in use? (16/06-2023)
+_('ScanAgentBasePointer:')
+AddPattern('FF50104783C6043BFB75E1')
+
+; Target and movement functions
+_('ScanCurrentTarget:')
+AddPattern('83C4085B8BE55DC355')
+_('ScanChangeTargetFunction:')
+AddPattern('3BDF0F95') ;33C03BDA0F95C033
+_('ScanMoveFunction:')
+AddPattern('558BEC83EC208D45F0') ;558BEC83EC2056578BF98D4DF0
+_('ScanTargetLog:')
+AddPattern('5356578BFA894DF4E8')
+
+; ---------------------------
+; Map Related Functions
+; ---------------------------
+
+; Map details
+_('ScanMapID:')
+AddPattern('558BEC8B450885C074078B') ;B07F8D55
+_('ScanMapLoading:')
+AddPattern('549EB20000000000') ; 6A2C50E8
+_('ScanRegion:')
+AddPattern('8BF0EB038B750C3B')
+_('ScanMapInfo:')
+AddPattern('8BF0EB038B750C3B') ;83F9FD7406
+
+; ---------------------------
+; Skill Related Functions
+; ---------------------------
+
+; Skill use and logs
+_('ScanUseSkillFunction:')
+AddPattern('85F6745B83FE1174') ;558BEC83EC1053568BD9578BF2895DF0
+_('ScanSkillLog:')
+AddPattern('558BEC568B750885F67514680E05') ; was AddPattern('408946105E5B5D')
+_('ScanSkillCompleteLog:')
+AddPattern('741D6A006A40')
+_('ScanSkillCancelLog:')
+AddPattern('741D6A006A48')
+_('ScanUseHeroSkillFunction:')
+AddPattern('BA02000000B954080000')
+_('ScanSkillBase:')
+AddPattern('8D04B6C1E00505')
+_('ScanSkillTimer:')
+AddPattern('FFD68B4DF08BD88B4708') ;85c974158bd62bd183fa64
+
+; ---------------------------
+; Communication and Social Functions
+; ---------------------------
+
+; Chat and messaging functions
+_('ScanPostMessage:')
+AddPattern('6A00680080000051FF15')
+_('ScanWriteChatFunction:')
+AddPattern('8D85E0FEFFFF50681C01') ;558BEC5153894DFC8B4D0856578B
+_('ScanChatLog:')
+AddPattern('8B45F48B138B4DEC50')
+_('ScanReadChatFunction:')
+AddPattern('A128B6EB00')
+_('ScanDialogLog:')
+AddPattern('8B45088945FC8D45F8506A08C745F841');558BEC83EC285356578BF28BD9
+
+; ---------------------------
+; Item and Transaction Functions
+; ---------------------------
+
+; Item management and trading
+_('ScanSellItemFunction:')
+AddPattern('8B4D2085C90F858E')
+_('ScanBuyItemFunction:') ; Still in use? (16/06-2023)
+AddPattern('D9EED9580CC74004') ; Still in use? (16/06-2023)
+_('ScanBuyItemBase:')
+AddPattern('D9EED9580CC74004')
+_('ScanTraderFunction:')
+AddPattern('83FF10761468D2210000')
+AddPattern('8B45188B551085') ;83FF10761468
+_('ScanTraderHook:')
+AddPattern('8955FC6A008D55F8B9BB') ;50516A466A06 ;007BA579
+_('ScanTransactionFunction:')
+AddPattern('85FF741D8B4D14EB08') ;558BEC81ECC000000053568B75085783FE108BFA8BD97614
+
+; ---------------------------
+; Additional Functionalities and Miscellaneous
+; ---------------------------
+
+; Other critical functions and checks
+_('ScanEngine:')
+AddPattern('56FFD083C4048B4E0485C9') ;old 5356DFE0F6C441
+_('ScanRenderFunc:')
+AddPattern('F6C401741C68B1010000BA')
+_('ScanLoadFinished:')
+AddPattern('8B561C8BCF52E8')
+_('ScanLoggedIn:')
+AddPattern('BFFFC70580') ; 85C07411B807
+_('ScanLanguage:')
+AddPattern('C38B75FC8B04B5')
+_('ScanBaseOffset:')
+AddPattern('83C40433C08BE55DC3A1') ;5633F63BCE740E5633D2
+_('ScanStringLog:')
+AddPattern('893E8B7D10895E04397E08')
+_('ScanStringFilter1:')
+AddPattern('8B368B4F2C6A006A008B06')
+_('ScanStringFilter2:')
+AddPattern('515356578BF933D28B4F2C')
+_('ScanActionFunction:')
+AddPattern('8B7508578BF983FE09750C6876') ;8B7D0883FF098BF175116876010000
+_('ScanActionBase:')
+AddPattern('8D1C87899DF4FEFFFF8BC32BC7C1F802') ;8B4208A80175418B4A08
+_('ScanSleep:')
+AddPattern('5F5E5B741A6860EA0000')
+_('ScanSalvageFunction:')
+AddPattern('33C58945FC8B45088945F08B450C8945F48B45108945F88D45EC506A10C745EC75')
+;AddPattern('8BFA8BD9897DF0895DF4')
+_('ScanSalvageGlobal:')
+AddPattern('8B5104538945F48B4108568945E88B410C578945EC8B4110528955E48945F0')
+;AddPattern('8B018B4904A3')
+_('ScanIncreaseAttributeFunction:')
+AddPattern('8B7D088B702C8B1F3B9E00050000') ;8B702C8B3B8B86
+_("ScanDecreaseAttributeFunction:")
+AddPattern("8B8AA800000089480C5DC3CC") ;8B402C8BCE059C0000008B1089118B50
+_('ScanZoomStill:')
+AddPattern('558BEC8B41085685C0')
+_('ScanZoomMoving:')
+AddPattern('EB358B4304')
+_('ScanBuildNumber:')
+AddPattern('558BEC83EC4053568BD9')
+_('ScanChangeStatusFunction:')
+AddPattern('558BEC568B750883FE047C14') ;568BF183FE047C14682F020000
+_('ScanCharslots:')
+AddPattern('8B551041897E38897E3C897E34897E48897E4C890D')
+_("ScanTradeHack:")
+AddPattern("8BEC8B450883F846")
+_("ScanClickCoords:")
+AddPattern("8B451C85C0741CD945F8")
+
+
+	
+	
+	
+	
+	
 	_('ScanProc:')
 	_('pushad')
 	_('mov ecx,' & Hex($lGwBase, 8)) ;401000
@@ -723,27 +769,35 @@ EndFunc   ;==>ScanForCharname
 
 #Region Commands
 #Region Item
-
-Func StartSalvage($aItem)
+;~ Description: Starts a salvaging session of an item.
+Func StartSalvage($aItem, $aCheap = False)
 	Local $lOffset[4] = [0, 0x18, 0x2C, 0x690]
 	Local $lSalvageSessionID = MemoryReadPtr($mBasePointer, $lOffset)
+	Local $lItemID = MemoryRead($aItem, "long")
 
-	If IsDllStruct($aItem) = 0 Then
-		Local $lItemID = $aItem
+	If $aCheap Then
+		Local $lSalvageKit = FindCheapSalvageKit()
 	Else
-		Local $lItemID = DllStructGetData($aItem, 'ID')
+		Local $lSalvageKit = FindSalvageKit()
 	EndIf
+	If $lSalvageKit = 0 Then Return False
 
-	Local $lSalvageKit = FindSalvageKit()
-	If $lSalvageKit = 0 Then Return
-
-	DllStructSetData($mSalvage, 2, $lItemID)
-	DllStructSetData($mSalvage, 3, FindSalvageKit())
+	DllStructSetData($mSalvage, 2, ItemID($aItem))
+	DllStructSetData($mSalvage, 3, ItemID($lSalvageKit))
 	DllStructSetData($mSalvage, 4, $lSalvageSessionID[1])
 
 	Enqueue($mSalvagePtr, 16)
 EndFunc   ;==>StartSalvage
 
+Func BagID($aBag)
+	If IsPtr($aBag) <> 0 Then
+		Return MemoryRead($aBag + 8, "long")
+	ElseIf IsDllStruct($aBag) <> 0 Then
+		Return DllStructGetData($aBag, "ID")
+	Else
+		Return MemoryRead(GetBagPtr($aBag) + 8, "long")
+	EndIf
+EndFunc   ;==>BagID
 
 Func ItemID($aItem)
 	If IsPtr($aItem) Then
@@ -766,47 +820,43 @@ Func SalvageMod($aModIndex)
 EndFunc   ;==>SalvageMod
 
 ;~ Description: Identifies an item.
-Func IdentifyItem($aItem)
-	If GetIsIdentified($aItem) Then Return
-
-	Local $lItemID
-	If IsDllStruct($aItem) = 0 Then
-		$lItemID = $aItem
-	Else
-		$lItemID = DllStructGetData($aItem, 'ID')
-	EndIf
-
-	Local $lIDKit = FindIdentificationKit()
-	If $lIDKit == 0 Then Return
-
-	SendPacket(0xC, $HEADER_ITEM_ID, $lIDKit, $lItemID)
-
-	Local $lDeadlock = TimerInit()
-	Do
-		Sleep(20)
-	Until GetIsIdentified($lItemID) Or TimerDiff($lDeadlock) > 5000
-	If Not GetIsIdentified($lItemID) Then IdentifyItem($lItemID)
-EndFunc   ;==>IdentifyItem
+Func IdentifyItem($aItem, $aIDKit = FindIDKit())
+	While Not GetIsIDed($aItem)
+		If $aIDKit = 0 Then Return False
+		Sendpacket(0xC, $HEADER_ITEM_IDENTIFY, ItemID($aIDKit), ItemID($aItem))
+		Local $lDeadlock = TimerInit()
+		Do
+			Sleep(20)
+		Until GetIsIDed($aItem) Or TimerDiff($lDeadlock) > 5000
+	WEnd
+	Return True
+EndFunc   ;==>identifyitem
 
 ;~ Description: Identifies all items in a bag.
-Func IdentifyBag($aBag, $aWhites = False, $aGolds = True)
-;	Local $lItem
-	Local $LITEM
-	If Not IsDllStruct($aBag) Then $aBag = GetBag($aBag)
-	For $i = 1 To DllStructGetData($aBag, 'Slots')
-	;	$lItem = GetItemBySlot($aBag, $i)
-	;If DllStructGetData($lItem, 'ID') == 0 Then ContinueLoop
-	;If GetRarity($lItem) == 2621 And $aWhites == False Then ContinueLoop
-	;If GetRarity($lItem) == 2624 And $aGolds == False Then ContinueLoop
-	;IdentifyItem($lItem)
-		$LITEM = GetItemBySlot($aBag, $i)
-		If DllStructGetData($LITEM, 'ID') == 0 Then ContinueLoop
-		If GetRarity($LITEM) == 2621 And $aWhites == False Then ContinueLoop
-		If GetRarity($LITEM) == 2624 And $aGolds == False Then ContinueLoop
-		IdentifyItem($LITEM)
+Func IdentifyBag($bag, $aWhites = False, $aGolds = True)
+	Local $lItemPtr
+	local $lBagPtr = GetBagPtr($bag)
+	If $lBagPtr = 0 Then Return
+	For $slot = 1 To Memoryread($lBagPtr + 32, "long")
+		$lItemPtr = GetItemPtrBySlot($bag, $slot)
+		If $lItemPtr = 0 Then ContinueLoop
+		Switch GetRarity($lItemPtr)
+			Case 2621
+				If $aWhites == False Then ContinueLoop
+			Case 2624
+				If $aGolds == False Then ContinueLoop
+		EndSwitch
+		IdentifyItem($lItemPtr)
 		Sleep(GetPing())
 	Next
 EndFunc   ;==>IdentifyBag
+
+;~ Identify all items in selected bags
+Func IdentifyBags($UseBags = 4)
+	For $lBag = 1 To $UseBags
+		IdentifyBag($lBag)
+	Next
+EndFunc   ;==>IdentifyBags
 
 ;~ Description: Equips an item.
 Func EquipItem($aItem)
