@@ -1,5 +1,14 @@
 ; Version 5
-; Updated this (01/20/2024)
+; Updated this (4/19/2024
+#RequireAdmin
+#Region ;**** Directives created by AutoIt3Wrapper_GUI ****
+#AutoIt3Wrapper_Outfile_type=a3x
+#AutoIt3Wrapper_Outfile=..\Exe\Froggy.a3x
+#AutoIt3Wrapper_Run_AU3Check=n
+#AutoIt3Wrapper_Run_Tidy=y
+#AutoIt3Wrapper_Run_Au3Stripper=y
+#Au3Stripper_Parameters=/pe /sf /tl
+#EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 
 #include-once
 #include "GWA2_Headers.au3"
@@ -15,7 +24,7 @@ EndIf
 
 #Region Declarations
 ; General settings and handles
-Local $mGWA2Version = '5.0.0' ; 2/25/2024
+Local $mGWA2Version = '5.0.0'
 Local $mKernelHandle, $mGWProcHandle, $mMemory
 Local $mBase = 0x00C50000
 Local $mASMString, $mASMSize, $mASMCodeOffset
@@ -127,6 +136,11 @@ Local $mChangeStatusPtr = DllStructGetPtr($mChangeStatus)
 
 Global $MTradeHackAddress
 Global $mLabels[1][2] = [[0]]
+Global $traderBuyItemID
+Global $traderBuyCostValue
+Global $traderSellItemID
+Global $MTradeHackAddress
+Global $FirstSalvg = False
 #EndRegion CommandStructs
 
 #Region Memory
@@ -311,7 +325,6 @@ Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSy
 	SetValue('SkillCompleteLogReturn', '0x' & Hex($lTemp + 5, 8))
 	
 	$lTemp = GetScannedAddress('ScanSkillCancelLog', 5)
-
 	SetValue('SkillCancelLogStart', '0x' & Hex($lTemp, 8))
 	SetValue('SkillCancelLogReturn', '0x' & Hex($lTemp + 6, 8))
 	
@@ -358,8 +371,10 @@ Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSy
 	SetValue('UseHeroSkillFunction', '0x' & Hex(GetScannedAddress('ScanUseHeroSkillFunction', -0x59), 8))
 	SetValue('BuyItemBase', '0x' & Hex(MemoryRead(GetScannedAddress('ScanBuyItemBase', 15)), 8))
 	SetValue('TransactionFunction', '0x' & Hex(GetScannedAddress('ScanTransactionFunction', -0x7E), 8))
-	SetValue('RequestQuoteFunction', '0x' & Hex(GetScannedAddress('ScanRequestQuoteFunction', -0x34), 8)) ;-2
-	SetValue('TraderFunction', '0x' & Hex(GetScannedAddress('ScanTraderFunction', -71), 8))
+	;SetValue('RequestQuoteFunction', '0x' & Hex(GetScannedAddress('ScanRequestQuoteFunction', -0x34), 8)) ;-2
+	SetValue('RequestQuoteFunction', '0x' & Hex(GetScannedAddress('ScanRequestQuoteFunction', 0x3B), 8))
+	SetValue('TraderFunction', '0x' & Hex(GetScannedAddress('ScanTraderFunction', -0x1E), 8))
+	;SetValue('TraderFunction', '0x' & Hex(GetScannedAddress('ScanTraderFunction', -71), 8))
 	SetValue('ClickToMoveFix', '0x' & Hex(GetScannedAddress("ScanClickToMoveFix", 1), 8))
 	SetValue('ChangeStatusFunction', '0x' & Hex(GetScannedAddress("ScanChangeStatusFunction", 1), 8))
 
@@ -530,7 +545,7 @@ _('ScanBuyItemBase:')
 AddPattern('D9EED9580CC74004')
 _('ScanTraderFunction:')
 AddPattern('83FF10761468D2210000')
-AddPattern('8B45188B551085') ;83FF10761468
+;AddPattern('8B45188B551085') ;83FF10761468
 _('ScanTraderHook:')
 AddPattern('8955FC6A008D55F8B9BB') ;50516A466A06 ;007BA579
 _('ScanTransactionFunction:')
@@ -1142,40 +1157,31 @@ EndFunc   ;==>GetInventoryItemPtrByModelId
 
 ;~ Description: Request a quote to buy an item from a trader. Returns true if successful.
 Func TraderRequest($aModelID, $aExtraID = -1)
-	Local $lItemStruct = DllStructCreate('long Id;long AgentId;byte Unknown1[4];ptr Bag;ptr ModStruct;long ModStructSize;ptr Customized;byte unknown2[4];byte Type;byte unknown4;short ExtraId;short Value;byte unknown4[2];short Interaction;long ModelId;ptr ModString;byte unknown5[4];ptr NameString;ptr SingleItemName;byte Unknown4[10];byte IsSalvageable;byte Unknown6;byte Quantity;byte Equiped;byte Profession;byte Type2;byte Slot')
-
-	Local $lOffset[4] = [0, 0x18, 0x40, 0xC0]
-	Local $lItemArraySize = MemoryReadPtr($mBasePointer, $lOffset)
-	Local $lOffset[5] = [0, 0x18, 0x40, 0xB8, 0]
-	Local $lItemPtr, $lItemID
-	Local $lFound = False
-	Local $lQuoteID = MemoryRead($mTraderQuoteID)
-
-	For $lItemID = 1 To $lItemArraySize[1]
-		$lOffset[4] = 0x4 * $lItemID
-		$lItemPtr = MemoryReadPtr($mBasePointer, $lOffset)
-		If $lItemPtr[1] = 0 Then ContinueLoop
-
-		DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lItemPtr[1], 'ptr', DllStructGetPtr($lItemStruct), 'int', DllStructGetSize($lItemStruct), 'int', '')
-		If DllStructGetData($lItemStruct, 'ModelID') = $aModelID And DllStructGetData($lItemStruct, 'bag') = 0 And DllStructGetData($lItemStruct, 'AgentID') == 0 Then
-			If $aExtraID = -1 Or DllStructGetData($lItemStruct, 'ExtraID') = $aExtraID Then
-				$lFound = True
-				ExitLoop
-			EndIf
-		EndIf
-	Next
-	If Not $lFound Then Return False
-
-	DllStructSetData($mRequestQuote, 2, DllStructGetData($lItemStruct, 'ID'))
-	Enqueue($mRequestQuotePtr, 8)
-
-	Local $lDeadlock = TimerInit()
-	$lFound = False
-	Do
-		Sleep(20)
-		$lFound = MemoryRead($mTraderQuoteID) <> $lQuoteID
-	Until $lFound Or TimerDiff($lDeadlock) > GetPing() + 5000
-	Return $lFound
+    Local $lOffset[4] = [0, 0x18, 0x40, 0xC0]
+    Local $lItemArraySize = MemoryReadPtr($mBasePointer, $lOffset)
+    Local $lItemPtr = 0
+    Local $lFound = False
+    Local $lQuoteID = MemoryRead($mTraderQuoteID)
+    For $lItemID = 1 To $lItemArraySize[1]
+        $lItemPtr = GetItemPtr($lItemID)
+        If $lItemPtr = 0 Then ContinueLoop
+        If MemoryRead($lItemPtr + 44, 'long') = $aModelID Then
+            Out("Trader request found modelid." & @CRLF)
+            If MemoryRead($lItemPtr + 12, 'ptr') = 0 And MemoryRead($lItemPtr + 4, 'long') = 0 Then        ;
+                If $aExtraID = -1 Or MemoryRead($lItemPtr + 34, 'short') = $aExtraID Then
+                    $lFound = True
+                    ExitLoop
+                EndIf
+            EndIf
+        EndIf
+    Next
+    If Not $lFound Then Return False
+    DllStructSetData($mRequestQuote, 2, ItemID($lItemPtr))
+    If Not Enqueue($mRequestQuotePtr, 8) Then Return False
+    Local $lDeadlock = TimerInit()
+    Do
+        Sleep(100)
+    Until MemoryRead($mTraderQuoteID) <> $lQuoteID Or TimerDiff($lDeadlock) > GetPing() + 5000
 EndFunc   ;==>TraderRequest
 
 ;~ Description: Buy the requested item.
@@ -1187,19 +1193,10 @@ EndFunc   ;==>TraderBuy
 
 ;~ Description: Request a quote to sell an item to the trader.
 Func TraderRequestSell($aItem)
-	Local $lItemID
 	Local $lFound = False
 	Local $lQuoteID = MemoryRead($mTraderQuoteID)
-
-	If IsDllStruct($aItem) = 0 Then
-		$lItemID = $aItem
-	Else
-		$lItemID = DllStructGetData($aItem, 'ID')
-	EndIf
-
-	DllStructSetData($mRequestQuoteSell, 2, $lItemID)
+	DllStructSetData($mRequestQuoteSell, 2, ItemID($aItem))
 	Enqueue($mRequestQuoteSellPtr, 8)
-
 	Local $lDeadlock = TimerInit()
 	Do
 		Sleep(20)
@@ -1207,6 +1204,7 @@ Func TraderRequestSell($aItem)
 	Until $lFound Or TimerDiff($lDeadlock) > GetPing() + 5000
 	Return $lFound
 EndFunc   ;==>TraderRequestSell
+
 
 ;~ Description: ID of the item item being sold.
 Func TraderSell()
@@ -4485,86 +4483,69 @@ Func SetEvent($aSkillActivate = '', $aSkillCancel = '', $aSkillComplete = '', $a
 	$mLoadFinished = $aLoadFinished
 EndFunc   ;==>SetEvent
 
-;~ Description: Internal use for event system.
 Func Event($hwnd, $msg, $wparam, $lparam)
-    ; Initial check for skill-related events to avoid unnecessary DllCalls for chat events
-    If $lparam >= 0x1 And $lparam <= 0x3 Then
-        Local $skillLogStruct = DllStructCreate("int skillID;int param1;int param2;int param3")
-        DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $wparam, 'ptr', DllStructGetPtr($skillLogStruct), 'int', 16, 'int', '')
-        HandleSkillEvent($lparam, $skillLogStruct)
-        DllStructDelete($skillLogStruct) ; Clean up
-    ElseIf $lparam == 0x4 Then
-        Local $chatLogStruct = DllStructCreate("int messageType;char message[512]")
-        DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $wparam, 'ptr', DllStructGetPtr($chatLogStruct), 'int', 512, 'int', '')
-        ProcessChatMessage($chatLogStruct)
-        DllStructDelete($chatLogStruct) ; Clean up
-    ElseIf $lparam == 0x5 Then
-        Call($mLoadFinished)
-    EndIf
+	Switch $lparam
+		Case 0x1
+			DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $wparam, 'ptr', $mSkillLogStructPtr, 'int', 16, 'int', '')
+			Call($mSkillActivate, DllStructGetData($mSkillLogStruct, 1), DllStructGetData($mSkillLogStruct, 2), DllStructGetData($mSkillLogStruct, 3), DllStructGetData($mSkillLogStruct, 4))
+		Case 0x2
+			DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $wparam, 'ptr', $mSkillLogStructPtr, 'int', 16, 'int', '')
+			Call($mSkillCancel, DllStructGetData($mSkillLogStruct, 1), DllStructGetData($mSkillLogStruct, 2), DllStructGetData($mSkillLogStruct, 3))
+		Case 0x3
+			DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $wparam, 'ptr', $mSkillLogStructPtr, 'int', 16, 'int', '')
+			Call($mSkillComplete, DllStructGetData($mSkillLogStruct, 1), DllStructGetData($mSkillLogStruct, 2), DllStructGetData($mSkillLogStruct, 3))
+		Case 0x4
+			DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $wparam, 'ptr', $mChatLogStructPtr, 'int', 512, 'int', '')
+			Local $lMessage = DllStructGetData($mChatLogStruct, 2)
+			Local $lChannel
+			Local $lSender
+			Switch DllStructGetData($mChatLogStruct, 1)
+				Case 0
+					$lChannel = 'Alliance'
+					$lSender = StringMid($lMessage, 6, StringInStr($lMessage, '</a>') - 6)
+					$lMessage = StringTrimLeft($lMessage, StringInStr($lMessage, '<quote>') + 6)
+				Case 3
+					$lChannel = 'All'
+					$lSender = StringMid($lMessage, 6, StringInStr($lMessage, '</a>') - 6)
+					$lMessage = StringTrimLeft($lMessage, StringInStr($lMessage, '<quote>') + 6)
+				Case 9
+					$lChannel = 'Guild'
+					$lSender = StringMid($lMessage, 6, StringInStr($lMessage, '</a>') - 6)
+					$lMessage = StringTrimLeft($lMessage, StringInStr($lMessage, '<quote>') + 6)
+				Case 11
+					$lChannel = 'Team'
+					$lSender = StringMid($lMessage, 6, StringInStr($lMessage, '</a>') - 6)
+					$lMessage = StringTrimLeft($lMessage, StringInStr($lMessage, '<quote>') + 6)
+				Case 12
+					$lChannel = 'Trade'
+					$lSender = StringMid($lMessage, 6, StringInStr($lMessage, '</a>') - 6)
+					$lMessage = StringTrimLeft($lMessage, StringInStr($lMessage, '<quote>') + 6)
+				Case 10
+					If StringLeft($lMessage, 3) == '-> ' Then
+						$lChannel = 'Sent'
+						$lSender = StringMid($lMessage, 10, StringInStr($lMessage, '</a>') - 10)
+						$lMessage = StringTrimLeft($lMessage, StringInStr($lMessage, '<quote>') + 6)
+					Else
+						$lChannel = 'Global'
+						$lSender = 'Guild Wars'
+					EndIf
+				Case 13
+					$lChannel = 'Advisory'
+					$lSender = 'Guild Wars'
+					$lMessage = StringTrimLeft($lMessage, StringInStr($lMessage, '<quote>') + 6)
+				Case 14
+					$lChannel = 'Whisper'
+					$lSender = StringMid($lMessage, 7, StringInStr($lMessage, '</a>') - 7)
+					$lMessage = StringTrimLeft($lMessage, StringInStr($lMessage, '<quote>') + 6)
+				Case Else
+					$lChannel = 'Other'
+					$lSender = 'Other'
+			EndSwitch
+			Call($mChatReceive, $lChannel, $lSender, $lMessage)
+		Case 0x5
+			Call($mLoadFinished)
+	EndSwitch
 EndFunc   ;==>Event
-
-Func HandleSkillEvent($eventType, $skillLogStruct)
-    Local $skillID = DllStructGetData($skillLogStruct, 1)
-    Local $param1 = DllStructGetData($skillLogStruct, 2)
-    Local $param2 = DllStructGetData($skillLogStruct, 3)
-    Local $param3 = DllStructGetData($skillLogStruct, 4) ; Only used for activation
-
-    Switch $eventType
-        Case 0x1
-            Call($mSkillActivate, $skillID, $param1, $param2, $param3)
-        Case 0x2
-            Call($mSkillCancel, $skillID, $param1, $param2)
-        Case 0x3
-            Call($mSkillComplete, $skillID, $param1, $param2)
-    EndSwitch
-EndFunc   ;==>HandleSkillEvent
-
-Func ProcessChatMessage($chatLogStruct)
-    Local $messageType = DllStructGetData($chatLogStruct, 1)
-    Local $message = DllStructGetData($chatLogStruct, "message[512]")
-    Local $channel = "Unknown"
-    Local $sender = "Unknown"
-
-    Switch $messageType
-        Case 0 ; Alliance
-            $channel = "Alliance"
-        Case 3 ; All
-            $channel = "All"
-        Case 9 ; Guild
-            $channel = "Guild"
-        Case 11 ; Team
-            $channel = "Team"
-        Case 12 ; Trade
-            $channel = "Trade"
-        Case 10 ; Sent or Global
-            If StringLeft($message, 3) == "-> " Then
-                $channel = "Sent"
-            Else
-                $channel = "Global"
-                $sender = "Guild Wars"
-            EndIf
-        Case 13 ; Advisory
-            $channel = "Advisory"
-            $sender = "Guild Wars"
-        Case 14 ; Whisper
-            $channel = "Whisper"
-        Case Else
-            $channel = "Other"
-            $sender = "Other"
-    EndSwitch
-
-    If $channel <> "Global" And $channel <> "Advisory" And $channel <> "Other" Then
-        $sender = StringMid($message, 6, StringInStr($message, "</a>") - 6)
-        $message = StringTrimLeft($message, StringInStr($message, "<quote>") + 6)
-    EndIf
-
-    If $channel == "Sent" Then
-        $sender = StringMid($message, 10, StringInStr($message, "</a>") - 10)
-        $message = StringTrimLeft($message, StringInStr($message, "<quote>") + 6)
-    EndIf
-
-    Call($mChatReceive, $channel, $sender, $message)
-EndFunc   ;==>ProcessChatMessage
 #EndRegion Callback
 
 #Region Modification
@@ -4918,8 +4899,19 @@ EndFunc   ;==>CreateChatLog
 ;~ Description: Internal use only.
 Func CreateTraderHook()
 	_('TraderHookProc:')
-	_('mov dword[TraderCostID],ecx')
-	_('mov dword[TraderCostValue],edx')
+
+	_('push eax')
+	_('mov eax,dword[ebx+28] -> 8b 43 28')
+	_('mov eax,[eax] -> 8b 00')
+	_('mov dword[TraderCostID],eax')
+	_('mov eax,dword[ebx+28] -> 8b 43 28')
+	_('mov eax,[eax+4] -> 8b 40 04')
+	_('mov dword[TraderCostValue],eax')
+	_('pop eax')
+
+	_('mov ebx,dword[ebp+C] -> 8B 5D 0C') ; Original bytes
+	_('mov esi,eax') ; Original bytes
+
 	_('push eax')
 	_('mov eax,dword[TraderQuoteID]')
 	_('inc eax')
@@ -4929,8 +4921,7 @@ Func CreateTraderHook()
 	_('TraderSkipReset:')
 	_('mov dword[TraderQuoteID],eax')
 	_('pop eax')
-	_('mov ebp,esp')
-	_('sub esp,8')
+
 	_('ljmp TraderHookReturn')
 EndFunc   ;==>CreateTraderHook
 
