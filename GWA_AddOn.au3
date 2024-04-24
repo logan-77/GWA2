@@ -191,14 +191,54 @@ Global $iItems_Picked = 0
 
 Global $DeadOnTheRun = 0
 
+;===========================================================================
+;======TEST TEST TEST
+;======================
 
+Global $lItemExtraStruct = DllStructCreate("byte rarity;" & _
+                                           "byte unknown1[3];" & _
+                                           "byte modifier;" & _
+                                           "byte unknown2[13];" & _
+                                           "byte lastModifier")
 
-Global $lItemExtraStruct = DllStructCreate( _ ; haha obsolete and wrong^^
-		"byte rarity;" & _  ;Display Color $RARITY_White = 0x3D, $RARITY_Blue = 0x3F, $RARITY_Purple = 0x42, $RARITY_Gold = 0x40, $RARITY_Green = 0x43
-		"byte unknown1[3];" & _
-		"byte modifier;" & _ ;Display Mods (hex values): 30 = Display first mod only (Insignia, 31 = Insignia + "of" Rune, 32 = Insignia + [Rune], 33 = ...
-		"byte unknown2[13];" & _ ;[13]
-		"byte lastModifier")
+; Define rune array
+Local $aRunes[39][2] = [
+    [0x240801F9, "Rune.KnightsInsignia"], [0x24080208, "Rune.LieutenantsInsignia"], [0x24080209, "Rune.StonefistInsignia"],
+    [0x240801FA, "Rune.DreadnoughtInsignia"], [0x240801FB, "Rune.SentinelsInsignia"], [0x240800FC, "Rune.RuneOfMinorAbsorption"],
+    [0x21E81501, "Rune.RuneOfMinorTactics"], [0x21E81101, "Rune.RuneOfMinorStrength"], [0x21E81201, "Rune.RuneOfMinorAxeMastery"],
+    [0x21E81301, "Rune.RuneOfMinorHammerMastery"], [0x21E81401, "Rune.RuneOfMinorSwordsmanship"], [0x240800FD, "Rune.RuneOfMajorAbsorption"],
+    [0x21E81502, "Rune.RuneOfMajorTactics"], [0x21E81102, "Rune.RuneOfMajorStrength"], [0x21E81202, "Rune.RuneOfMajorAxeMastery"],
+    [0x21E81302, "Rune.RuneOfMajorHammerMastery"], [0x21E81402, "Rune.RuneOfMajorSwordsmanship"], [0x240800FE, "Rune.RuneOfSuperiorAbsorption"],
+    [0x21E81503, "Rune.RuneOfSuperiorTactics"], [0x21E81103, "Rune.RuneOfSuperiorStrength"], [0x21E81203, "Rune.RuneOfSuperiorAxeMastery"],
+    [0x21E81303, "Rune.RuneOfSuperiorHammerMastery"], [0x21E81403, "Rune.RuneOfSuperiorSwordsmanship"], [0x240801FC, "Rune.FrostboundInsignia"],
+    [0x240801FE, "Rune.PyreboundInsignia"], [0x240801FF, "Rune.StormboundInsignia"], [0x24080201, "Rune.ScoutsInsignia"],
+    [0x240801FD, "Rune.EarthboundInsignia"], [0x24080200, "Rune.BeastmastersInsignia"], [0x21E81801, "Rune.RuneOfMinorWildernessSurvival"],
+    [0x24080211, "Rune.RuneOfAttunement"], [0x24080213, "Rune.RuneOfRecovery"], [0x24080214, "Rune.RuneOfRestoration"],
+    [0x24080215, "Rune.RuneOfClarity"], [0x24080216, "Rune.RuneOfPurity"], [0x240800FF, "Rune.RuneOfMinorVigor"],
+    [0x24080101, "Rune.RuneOfSuperiorVigor"], [0x24080100, "Rune.RuneOfMajorVigor"], [0x24080212, "Rune.RuneOfVitae"]
+]
+		
+; Function to find rune by modifier
+Func FindRuneByModifier($modifier)
+    For $i = 0 To UBound($aRunes) - 1
+        If Hex($modifier, 8) == $aRunes[$i][0] Then
+            Return $aRunes[$i][1]
+        EndIf
+    Next
+    Return "Unknown Modifier"
+EndFunc	
+
+; Example usage
+; 	DllStructSetData($lItemExtraStruct, "modifier", 0x240801F9)  ; set an example modifier
+; 	Local $runeName = FindRuneByModifier(DllStructGetData($lItemExtraStruct, "modifier"))
+; 	ConsoleWrite("Rune associated with the modifier: " & $runeName & @CRLF)
+;This script helps associate modifiers in an item's data structure with a readable string name from the rune array, facilitating easier processing and display. 
+;
+;======TEST TEST TEST END
+;======================		
+;===========================================================================
+		
+		
 Global $lItemExtraStructPtr = DllStructGetPtr($lItemExtraStruct)
 Global $lItemExtraStructSize = DllStructGetSize($lItemExtraStruct)
 #comments-start
