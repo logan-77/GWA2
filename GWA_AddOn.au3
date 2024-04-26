@@ -146,8 +146,9 @@ Global Enum $BAG_Backpack = 1, $BAG_BeltPouch, $BAG_Bag1, $BAG_Bag2, $BAG_Equipm
 		$BAG_Storage3, $BAG_Storage4, $BAG_StorageAnniversary, $BAG_Storage5, $BAG_Storage6, $BAG_Storage7, $BAG_Storage8
 
 Global Enum $HERO_Norgu = 1, $HERO_Goren, $HERO_Tahlkora, $HERO_MasterOfWhispers, $HERO_AcolyteJin, $HERO_Koss, $HERO_Dunkoro, $HERO_AcolyteSousuke, $HERO_Melonni, _
-		$HERO_ZhedShadowhoof, $HERO_GeneralMorgahn, $HERO_MargridTheSly, $HERO_Olias = 14, $HERO_Razah, $HERO_MOX, $HERO_Jora = 18, $HERO_PyreFierceshot, _
-		$HERO_Livia = 21, $HERO_Hayda, $HERO_Kahmu, $HERO_Gwen, $HERO_Xandra, $HERO_Vekk, $HERO_Ogden
+$HERO_ZhedShadowhoof, $HERO_GeneralMorgahn, $HERO_MargridTheSly, $HERO_Olias = 14, $HERO_Razah, $HERO_MOX, $HERO_Jora = 18, $HERO_PyreFierceshot, _
+$HERO_Livia = 21, $HERO_Hayda, $HERO_Kahmu, $HERO_Gwen, $HERO_Xandra, $HERO_Vekk, $HERO_Ogden
+Global Enum $HERO_MercenaryHero1 = 28, $HERO_MercenaryHero2 = 29, $HERO_MercenaryHero3 = 30, $HERO_MercenaryHero4 = 31, $HERO_MercenaryHero5 = 32, $HERO_MercenaryHero6 = 33, $HERO_MercenaryHero7 = 34, $HERO_MercenaryHero8 = 35
 Global Enum $HEROMODE_Fight, $HEROMODE_Guard, $HEROMODE_Avoid
 
 
@@ -195,6 +196,7 @@ Global $DeadOnTheRun = 0
 ;======TEST TEST TEST
 ;======================
 
+; Define a custom structure via a DLL call for item properties
 Global $lItemExtraStruct = DllStructCreate("byte rarity;" & _
                                            "byte unknown1[3];" & _
                                            "byte modifier;" & _
@@ -202,22 +204,22 @@ Global $lItemExtraStruct = DllStructCreate("byte rarity;" & _
                                            "byte lastModifier")
 
 ; Define rune array
-Local $aRunes[39][2] = [
-    [0x240801F9, "Rune.KnightsInsignia"], [0x24080208, "Rune.LieutenantsInsignia"], [0x24080209, "Rune.StonefistInsignia"],
-    [0x240801FA, "Rune.DreadnoughtInsignia"], [0x240801FB, "Rune.SentinelsInsignia"], [0x240800FC, "Rune.RuneOfMinorAbsorption"],
-    [0x21E81501, "Rune.RuneOfMinorTactics"], [0x21E81101, "Rune.RuneOfMinorStrength"], [0x21E81201, "Rune.RuneOfMinorAxeMastery"],
-    [0x21E81301, "Rune.RuneOfMinorHammerMastery"], [0x21E81401, "Rune.RuneOfMinorSwordsmanship"], [0x240800FD, "Rune.RuneOfMajorAbsorption"],
-    [0x21E81502, "Rune.RuneOfMajorTactics"], [0x21E81102, "Rune.RuneOfMajorStrength"], [0x21E81202, "Rune.RuneOfMajorAxeMastery"],
-    [0x21E81302, "Rune.RuneOfMajorHammerMastery"], [0x21E81402, "Rune.RuneOfMajorSwordsmanship"], [0x240800FE, "Rune.RuneOfSuperiorAbsorption"],
-    [0x21E81503, "Rune.RuneOfSuperiorTactics"], [0x21E81103, "Rune.RuneOfSuperiorStrength"], [0x21E81203, "Rune.RuneOfSuperiorAxeMastery"],
-    [0x21E81303, "Rune.RuneOfSuperiorHammerMastery"], [0x21E81403, "Rune.RuneOfSuperiorSwordsmanship"], [0x240801FC, "Rune.FrostboundInsignia"],
-    [0x240801FE, "Rune.PyreboundInsignia"], [0x240801FF, "Rune.StormboundInsignia"], [0x24080201, "Rune.ScoutsInsignia"],
-    [0x240801FD, "Rune.EarthboundInsignia"], [0x24080200, "Rune.BeastmastersInsignia"], [0x21E81801, "Rune.RuneOfMinorWildernessSurvival"],
-    [0x24080211, "Rune.RuneOfAttunement"], [0x24080213, "Rune.RuneOfRecovery"], [0x24080214, "Rune.RuneOfRestoration"],
-    [0x24080215, "Rune.RuneOfClarity"], [0x24080216, "Rune.RuneOfPurity"], [0x240800FF, "Rune.RuneOfMinorVigor"],
-    [0x24080101, "Rune.RuneOfSuperiorVigor"], [0x24080100, "Rune.RuneOfMajorVigor"], [0x24080212, "Rune.RuneOfVitae"]
+Local $aRunes[39][2] = [ _
+    [0x240801F9, "Rune.KnightsInsignia"], [0x24080208, "Rune.LieutenantsInsignia"], [0x24080209, "Rune.StonefistInsignia"], _
+    [0x240801FA, "Rune.DreadnoughtInsignia"], [0x240801FB, "Rune.SentinelsInsignia"], [0x240800FC, "Rune.RuneOfMinorAbsorption"], _
+    [0x21E81501, "Rune.RuneOfMinorTactics"], [0x21E81101, "Rune.RuneOfMinorStrength"], [0x21E81201, "Rune.RuneOfMinorAxeMastery"], _
+    [0x21E81301, "Rune.RuneOfMinorHammerMastery"], [0x21E81401, "Rune.RuneOfMinorSwordsmanship"], [0x240800FD, "Rune.RuneOfMajorAbsorption"], _
+    [0x21E81502, "Rune.RuneOfMajorTactics"], [0x21E81102, "Rune.RuneOfMajorStrength"], [0x21E81202, "Rune.RuneOfMajorAxeMastery"], _
+    [0x21E81302, "Rune.RuneOfMajorHammerMastery"], [0x21E81402, "Rune.RuneOfMajorSwordsmanship"], [0x240800FE, "Rune.RuneOfSuperiorAbsorption"], _
+    [0x21E81503, "Rune.RuneOfSuperiorTactics"], [0x21E81103, "Rune.RuneOfSuperiorStrength"], [0x21E81203, "Rune.RuneOfSuperiorAxeMastery"], _
+    [0x21E81303, "Rune.RuneOfSuperiorHammerMastery"], [0x21E81403, "Rune.RuneOfSuperiorSwordsmanship"], [0x240801FC, "Rune.FrostboundInsignia"], _
+    [0x240801FE, "Rune.PyreboundInsignia"], [0x240801FF, "Rune.StormboundInsignia"], [0x24080201, "Rune.ScoutsInsignia"], _
+    [0x240801FD, "Rune.EarthboundInsignia"], [0x24080200, "Rune.BeastmastersInsignia"], [0x21E81801, "Rune.RuneOfMinorWildernessSurvival"], _
+    [0x24080211, "Rune.RuneOfAttunement"], [0x24080213, "Rune.RuneOfRecovery"], [0x24080214, "Rune.RuneOfRestoration"], _
+    [0x24080215, "Rune.RuneOfClarity"], [0x24080216, "Rune.RuneOfPurity"], [0x240800FF, "Rune.RuneOfMinorVigor"], _
+    [0x24080101, "Rune.RuneOfSuperiorVigor"], [0x24080100, "Rune.RuneOfMajorVigor"], [0x24080212, "Rune.RuneOfVitae"] _
 ]
-		
+
 ; Function to find rune by modifier
 Func FindRuneByModifier($modifier)
     For $i = 0 To UBound($aRunes) - 1
@@ -226,7 +228,7 @@ Func FindRuneByModifier($modifier)
         EndIf
     Next
     Return "Unknown Modifier"
-EndFunc	
+EndFunc
 
 ; Example usage
 ; 	DllStructSetData($lItemExtraStruct, "modifier", 0x240801F9)  ; set an example modifier
@@ -393,6 +395,76 @@ Func CommandHero7($aX = 0x7F800000, $aY = 0x7F800000)
 	SendPacket(0x14, $HEADER_HERO_PLACE_FLAG, MEMORYREAD($lHeroStruct[1] + 0xDC), $aX, $aY, 0)
 EndFunc   ;==>CommandHero7
 
+Func GetHeroIdByName($heroName)
+    Switch $heroName
+        Case "Norgu"
+            Return $HERO_Norgu
+        Case "Goren"
+            Return $HERO_Goren
+        Case "Tahlkora"
+            Return $HERO_Tahlkora
+        Case "Master Of Whispers"
+            Return $HERO_MasterOfWhispers
+        Case "Acolyte Jin"
+            Return $HERO_AcolyteJin
+        Case "Koss"
+            Return $HERO_Koss
+        Case "Dunkoro"
+            Return $HERO_Dunkoro
+        Case "Acolyte Sousuke"
+            Return $HERO_AcolyteSousuke
+        Case "Melonni"
+            Return $HERO_Melonni
+        Case "Zhed Shadowhoof"
+            Return $HERO_ZhedShadowhoof
+        Case "General Morgahn"
+            Return $HERO_GeneralMorgahn
+        Case "Margrid The Sly"
+            Return $HERO_MargridTheSly
+        Case "Olias"
+            Return $HERO_Olias
+        Case "Razah"
+            Return $HERO_Razah
+        Case "MOX"
+            Return $HERO_MOX
+        Case "Jora"
+            Return $HERO_Jora
+        Case "Pyre Fierceshot"
+            Return $HERO_PyreFierceshot
+        Case "Livia"
+            Return $HERO_Livia
+        Case "Hayda"
+            Return $HERO_Hayda
+        Case "Kahmu"
+            Return $HERO_Kahmu
+        Case "Gwen"
+            Return $HERO_Gwen
+        Case "Xandra"
+            Return $HERO_Xandra
+        Case "Vekk"
+            Return $HERO_Vekk
+        Case "Ogden"
+            Return $HERO_Ogden
+        Case "Mercenary Hero 1"
+            Return $HERO_MercenaryHero1
+        Case "Mercenary Hero 2"
+            Return $HERO_MercenaryHero2
+        Case "Mercenary Hero 3"
+            Return $HERO_MercenaryHero3
+        Case "Mercenary Hero 4"
+            Return $HERO_MercenaryHero4
+        Case "Mercenary Hero 5"
+            Return $HERO_MercenaryHero5
+        Case "Mercenary Hero 6"
+            Return $HERO_MercenaryHero6
+        Case "Mercenary Hero 7"
+            Return $HERO_MercenaryHero7
+        Case "Mercenary Hero 8"
+            Return $HERO_MercenaryHero8
+        Case Else
+            Return -1 ; Hero name not found
+    EndSwitch
+EndFunc
 
 #Region chest
 
