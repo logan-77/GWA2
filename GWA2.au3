@@ -3315,7 +3315,7 @@ Func GetNearestEnemyToAgent($aAgent = -2)
 EndFunc   ;==>GetNearestEnemyToAgent
 
 ;~ Description: Returns the nearest agent to a set of coordinates.
-Func GetNearestAgentToCoords($aX, $aY)
+Func GoNearestAgentToCoords($aX, $aY)
 	Local $lNearestAgent, $lNearestDistance = 100000000
 	Local $lDistance
 	Local $lAgentArray = GetAgentArray()
