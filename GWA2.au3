@@ -353,7 +353,8 @@ Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSy
 	SetValue('BuyItemBase', '0x' & Hex(MemoryRead(GetScannedAddress('ScanBuyItemBase', 15)), 8))
 	SetValue('TransactionFunction', '0x' & Hex(GetScannedAddress('ScanTransactionFunction', -0x7E), 8))
 	SetValue('RequestQuoteFunction', '0x' & Hex(GetScannedAddress('ScanRequestQuoteFunction', -0x34), 8)) ;-2
-	SetValue('TraderFunction', '0x' & Hex(GetScannedAddress('ScanTraderFunction', -71), 8))
+	;SetValue('TraderFunction', '0x' & Hex(GetScannedAddress('ScanTraderFunction', -71), 8))
+	SetValue('TraderFunction', '0x' & Hex(GetScannedAddress('ScanTraderFunction', -0x1E), 8))
 	SetValue('ClickToMoveFix', '0x' & Hex(GetScannedAddress("ScanClickToMoveFix", 1), 8))
 	SetValue('ChangeStatusFunction', '0x' & Hex(GetScannedAddress("ScanChangeStatusFunction", 1), 8))
 
@@ -730,25 +731,28 @@ EndFunc   ;==>ScanForCharname
 
 #Region Item
 Func StartSalvage($aItem)
-	Local $lOffset[4] = [0, 0x18, 0x2C, 0x690]
-	Local $lSalvageSessionID = MemoryReadPtr($mBasePointer, $lOffset)
+    Local $lOffset[4] = [0, 0x18, 0x2C, 0x690]
+    Local $lSalvageSessionID = MemoryReadPtr($mBasePointer, $lOffset)
 
-	If IsDllStruct($aItem) = 0 Then
-		Local $lItemID = $aItem
-	Else
-		Local $lItemID = DllStructGetData($aItem, 'ID')
-	EndIf
+    ; Determine whether the item parameter is a DllStruct or an integer ID
+    If IsDllStruct($aItem) = 0 Then
+        Local $lItemID = $aItem
+    Else
+        Local $lItemID = DllStructGetData($aItem, 'ID')
+    EndIf
 
-	Local $lSalvageKit = FindSalvageKit()
-	If $lSalvageKit = 0 Then Return
+    ; Locate an expert salvage kit before proceeding
+    Local $lSalvageKit = FindExpertSalvageKit()
+    If $lSalvageKit = 0 Then Return ; Exit if no salvage kit is found
 
-	DllStructSetData($mSalvage, 2, $lItemID)
-	DllStructSetData($mSalvage, 3, FindSalvageKit())
-	DllStructSetData($mSalvage, 4, $lSalvageSessionID[1])
+    ; Set the necessary data for the salvage operation
+    DllStructSetData($mSalvage, 2, $lItemID) ; Set the item ID
+    DllStructSetData($mSalvage, 3, $lSalvageKit) ; Set the salvage kit
+    DllStructSetData($mSalvage, 4, $lSalvageSessionID[1]) ; Set the session ID
 
-	Enqueue($mSalvagePtr, 16)
+    Enqueue($mSalvagePtr, $HEADER_SALVAGE_SESSION) ; Use appropriate header based on operation
+
 EndFunc   ;==>StartSalvage
-
 
 Func ItemID($aItem)
 	If IsPtr($aItem) Then
@@ -799,11 +803,6 @@ Func IdentifyBag($aBag, $aWhites = False, $aGolds = True)
 	Local $LITEM
 	If Not IsDllStruct($aBag) Then $aBag = GetBag($aBag)
 	For $i = 1 To DllStructGetData($aBag, 'Slots')
-	;	$lItem = GetItemBySlot($aBag, $i)
-	;If DllStructGetData($lItem, 'ID') == 0 Then ContinueLoop
-	;If GetRarity($lItem) == 2621 And $aWhites == False Then ContinueLoop
-	;If GetRarity($lItem) == 2624 And $aGolds == False Then ContinueLoop
-	;IdentifyItem($lItem)
 		$LITEM = GetItemBySlot($aBag, $i)
 		If DllStructGetData($LITEM, 'ID') == 0 Then ContinueLoop
 		If GetRarity($LITEM) == 2621 And $aWhites == False Then ContinueLoop
@@ -2974,35 +2973,133 @@ Func GetGoldCharacter()
 	Return $lReturn[1]
 EndFunc   ;==>GetGoldCharacter
 
-Func FindSalvageKit($maxBags = 16)
-    Local $bestKitID = 0
-    Local $lowestUses = 101  ; High number ensures any found kit will have lower uses
+;Func FindSalvageKit($maxBags = 16)
+;    Local $bestKitID = 0
+;    Local $lowestUses = 101  ; High number ensures any found kit will have lower uses;
+
+    ; Define salvage kit types and their use divisors in an array for easy iteration;
+;    Local $kitTypes[3][2] = [[2991, 8], [2992, 2], [5900, 10]]  ; ModelID, Uses divisor
+;
+ ;   For $bagIndex = 1 To $maxBags
+  ;      Local $bagSlots = DllStructGetData(GetBag($bagIndex), 'Slots')
+  ;      For $slotIndex = 1 To $bagSlots
+ ;           Local $item = GetItemBySlot($bagIndex, $slotIndex)
+ ;           Local $modelID = DllStructGetData($item, 'ModelID')
+ ;           Local $itemUses = DllStructGetData($item, 'Value');
+
+;            For $kitIndex = 0 To UBound($kitTypes) - 1
+ ;               If $modelID == $kitTypes[$kitIndex][0] Then
+;                    Local $usesLeft = $itemUses / $kitTypes[$kitIndex][1]
+   ;                 If $usesLeft < $lowestUses Then
+  ;                      $bestKitID = DllStructGetData($item, 'ID')
+ ;                       $lowestUses = $usesLeft
+    ;                EndIf
+    ;                ExitLoop  ; Found a match, no need to check other types
+ ;               EndIf
+ ;           Next
+ ;       Next
+ ;   Next
+;
+;    Return $bestKitID
+;EndFunc   ;==>FindSalvageKit
+
+;Func FindSalvageKit2($maxBags = 16)
+ ;   Local $bestKitID = 0
+  ;  Local $lowestUses = 101  ; High number ensures any found kit will have lower uses
 
     ; Define salvage kit types and their use divisors in an array for easy iteration
-    Local $kitTypes[3][2] = [[2991, 8], [2992, 2], [5900, 10]]  ; ModelID, Uses divisor
+;    Local $kitTypes[3][2] = [[2991, 8], [2992, 2], [5900, 10]]  ; ModelID, Uses divisor
+;
+ ;   For $bagIndex = 1 To $maxBags
+  ;      Local $bagSlots = DllStructGetData(GetBag($bagIndex), 'Slots')
+;        For $slotIndex = 1 To $bagSlots
+ ;           Local $item = GetItemBySlot($bagIndex, $slotIndex)
+  ;          Local $modelID = DllStructGetData($item, 'ModelID')
+ ;           Local $itemUses = DllStructGetData($item, 'Value')
+;
+ ;           For $kitIndex = 0 To UBound($kitTypes) - 1
+  ;              If $modelID == $kitTypes[$kitIndex][0] Then
+   ;                 Local $usesLeft = $itemUses / $kitTypes[$kitIndex][1]
+  ;                  If $usesLeft < $lowestUses Then
+    ;                    $bestKitID = DllStructGetData($item, 'ID')
+     ;                   $lowestUses = $usesLeft
+      ;              EndIf
+  ;;                  ExitLoop  ; Found a match, no need to check other types
+  ;              EndIf
+  ;          Next
+  ;      Next
+  ;  Next
+;;
+ ;   Return $bestKitID
+;EndFunc   ;==>FindSalvageKit
 
-    For $bagIndex = 1 To $maxBags
-        Local $bagSlots = DllStructGetData(GetBag($bagIndex), 'Slots')
-        For $slotIndex = 1 To $bagSlots
-            Local $item = GetItemBySlot($bagIndex, $slotIndex)
-            Local $modelID = DllStructGetData($item, 'ModelID')
-            Local $itemUses = DllStructGetData($item, 'Value')
+;Func FindSalvageKit()
+;	Local $lItem
+;	Local $lKit = 0
+;	Local $lUses = 101
+;	For $i = 1 To 4
+;		For $j = 1 To DllStructGetData(GetBag($i), 'Slots')
+;			$lItem = GetItemBySlot($i, $j)
+;			Switch DllStructGetData($lItem, 'ModelID')
+;			    Case 5900
+;					If DllStructGetData($lItem, 'Value') / 2 < $lUses Then
+;						$lKit = DllStructGetData($lItem, 'ID')
+;						$lUses = DllStructGetData($lItem, 'Value') / 2
+;					EndIf
+;				Case Else
+;					ContinueLoop
+;			EndSwitch
+;		Next
+;	Next
+;	Return $lKit
+;EndFunc   ;==>FindSalvageKit
 
-            For $kitIndex = 0 To UBound($kitTypes) - 1
-                If $modelID == $kitTypes[$kitIndex][0] Then
-                    Local $usesLeft = $itemUses / $kitTypes[$kitIndex][1]
-                    If $usesLeft < $lowestUses Then
-                        $bestKitID = DllStructGetData($item, 'ID')
-                        $lowestUses = $usesLeft
-                    EndIf
-                    ExitLoop  ; Found a match, no need to check other types
-                EndIf
-            Next
-        Next
-    Next
-
-    Return $bestKitID
+Func FindSalvageKit()
+	Local $lItem
+	Local $lKit = 0
+	Local $lUses = 101
+	For $i = 1 To 16
+		For $j = 1 To DllStructGetData(GetBag($i), 'Slots')
+			$lItem = GetItemBySlot($i, $j)
+			Switch DllStructGetData($lItem, 'ModelID')
+				Case 5900
+					If DllStructGetData($lItem, 'Value') / 2 < $lUses Then
+						$lKit = DllStructGetData($lItem, 'ID')
+						$lUses = DllStructGetData($lItem, 'Value') / 2
+					EndIf
+						ContinueLoop
+			EndSwitch
+		Next
+	Next
+	Return $lKit
 EndFunc   ;==>FindSalvageKit
+
+Func FindExpertSalvageKit()
+	Local $lItem
+	Local $lKit = 0
+	Local $lUses = 101
+	For $i = 1 To 4
+		For $j = 1 To DllStructGetData(GetBag($i), 'Slots')
+			$lItem = GetItemBySlot($i, $j)
+			Switch DllStructGetData($lItem, 'ModelID')
+				Case 2991
+					If DllStructGetData($lItem, 'Value') / 8 < $lUses Then
+						$lKit = DllStructGetData($lItem, 'ID')
+						$lUses = DllStructGetData($lItem, 'Value') / 8
+					EndIf
+				Case 5900
+					If DllStructGetData($lItem, 'Value') / 10 < $lUses Then
+						$lKit = DllStructGetData($lItem, 'ID')
+						$lUses = DllStructGetData($lItem, 'Value') / 10
+					EndIf
+				Case Else
+					ContinueLoop
+			EndSwitch
+		Next
+	Next
+	Return $lKit
+EndFunc   ;==>FindExpertSalvageKit
+
 
 ;~ Description: Legacy function, use FindIdentificationKit instead.
 Func FindIDKit()
@@ -3272,9 +3369,7 @@ Func GetNearestEnemyToAgent($aAgent = -2)
 EndFunc   ;==>GetNearestEnemyToAgent
 
 
-;NOT WORKING??
 ;~ Description: Returns the nearest agent to a set of coordinates.
-;==> GoToNearestNPC
 Func GoToNearestNPC($aX, $aY)
     Local $lNearestAgent = GetNearestAgentToCoords($aX, $aY)
     If Not IsDllStruct($lNearestAgent) Then

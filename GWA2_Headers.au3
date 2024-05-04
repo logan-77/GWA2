@@ -70,11 +70,11 @@ Global Const $HEADER_TOME_UNLOCK_SKILL = 0x006B ; Unlocks a skill using a tome
 Global Const $HEADER_ITEM_MOVE = 0x0070 ; Moves an item within the inventory
 Global Const $HEADER_ITEM_ACCEPT_ALL = 0x0071 ; Accepts all items in a loot or reward screen
 Global Const $HEADER_ITEM_SPLIT_STACK = 0x0073 ; Splits a stack of items
-Global Const $HEADER_ITEM_SALVAGE_SESSION_OPEN = 0x0075 ; Opens a salvage session
-Global Const $HEADER_ITEM_SALVAGE_SESSION_CANCEL = 0x0076 ; Cancels a salvage session
-Global Const $HEADER_ITEM_SALVAGE_SESSION_DONE = 0x0077 ; Completes a salvage session
-Global Const $HEADER_ITEM_SALVAGE_MATERIALS = 0x0078 ; Salvages materials from an item
-Global Const $HEADER_ITEM_SALVAGE_UPGRADE = 0x0079 ; Salvages upgrades from an item
+;Global Const $HEADER_ITEM_SALVAGE_SESSION_OPEN = 0x0075 ; Opens a salvage session
+;Global Const $HEADER_ITEM_SALVAGE_SESSION_CANCEL = 0x0076 ; Cancels a salvage session
+;Global Const $HEADER_ITEM_SALVAGE_SESSION_DONE = 0x0077 ; Completes a salvage session
+;Global Const $HEADER_ITEM_SALVAGE_MATERIALS = 0x0078 ; Salvages materials from an item
+;Global Const $HEADER_ITEM_SALVAGE_UPGRADE = 0x0079 ; Salvages upgrades from an item
 Global Const $HEADER_ITEM_CHANGE_GOLD = 0x007A ; Moves gold between the player and storage
 
 ; GAME_CMSG_ - Instance Management

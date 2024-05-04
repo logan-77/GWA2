@@ -23,6 +23,26 @@ Global $Armor_of_Salvation_item_effect = 2520
 Global $Grail_of_Might_item_effect = 2521
 Global $Essence_of_Celerity_item_effect = 2522
 
+
+
+;~ Materials
+Global Const $model_id_lockpick = 22751
+Global Const $model_id_glacial_stone = 27047
+Global Const $model_id_bone = 921
+Global Const $model_id_iron_ingot = 948
+Global Const $model_id_wood_plank = 946
+Global Const $model_id_granite_slab = 955
+Global Const $model_id_dust = 929
+Global Const $model_id_scale = 953
+Global Const $model_id_tanned_hide_square = 940
+Global Const $model_id_bolt_of_cloth = 925
+Global Const $model_id_Saurian_bone = 27035
+Global Const $model_id_brood_claws = 27982
+Global Const $model_id_sin_tome = 21796
+Global $All_Materials_Array[36] = [921, 922, 923, 925, 926, 927, 928, 929, 930, 931, 932, 933, 934, 935, 936, 937, 938, 939, 940, 941, 942, 943, 944, 945, 946, 948, 949, 950, 951, 952, 953, 954, 955, 956, 6532, 6533]
+Global $Common_Materials_Array[11] = [921, 925, 929, 933, 934, 940, 946, 948, 953, 954, 955]
+Global $Rare_Materials_Array[25] = [922, 923, 926, 927, 928, 930, 931, 932, 935, 936, 937, 938, 939, 941, 942, 943, 944, 945, 949, 950, 951, 952, 956, 6532, 6533]
+
 Global $OpenedChestAgentIDs[1]
 Global $aChestID[9000]
      $aChestID[65] = "Krytan Chest"
@@ -57,11 +77,11 @@ Global Const $TYPE_KEY = 18
 ;Global Const $MODEL_ID_CHEAP_SALVAGE_KIT	= 2992
 ;Global Const $MODEL_ID_SALVAGE_KIT			= 5900
 ;Global Const $MODEL_ID_CHEAP_ID_KIT			= 2989
+Global Const $MODEL_ID_EXPERT_SALVAGE_KIT = 2991
 Global Const $MODEL_ID_ID_KIT				= 5899
-Global Const $EXPERT_SALVAGE_KIT_MODEL_ID = 2991
+;Global Const $EXPERT_SALVAGE_KIT_MODEL_ID = 2991
 Global Const $EXPERT_SALVAGE_KIT_USES_DIVISOR = 8
 Global Const $BASIC_SALVAGE_KIT_MODEL_ID = 2992
-Global Const $BASIC_SALVAGE_KIT_USES_DIVISOR = 2
 Global Const $SUPERIOR_SALVAGE_KIT_MODEL_ID = 5900
 Global Const $SUPERIOR_SALVAGE_KIT_USES_DIVISOR = 10
 
@@ -109,10 +129,6 @@ Global $Map_Piece_Array[4] = [24629, 24630, 24631, 24632]
 Global $Stackable_Trophies_Array[1] = [27047]
 Global Const $ITEM_ID_Glacial_Stones = 27047
 
-;~ Materials
-Global $All_Materials_Array[36] = [921, 922, 923, 925, 926, 927, 928, 929, 930, 931, 932, 933, 934, 935, 936, 937, 938, 939, 940, 941, 942, 943, 944, 945, 946, 948, 949, 950, 951, 952, 953, 954, 955, 956, 6532, 6533]
-Global $Common_Materials_Array[11] = [921, 925, 929, 933, 934, 940, 946, 948, 953, 954, 955]
-Global $Rare_Materials_Array[25] = [922, 923, 926, 927, 928, 930, 931, 932, 935, 936, 937, 938, 939, 941, 942, 943, 944, 945, 949, 950, 951, 952, 956, 6532, 6533]
 
 ;~ Tomes
 Global $All_Tomes_Array[20] = [21796, 21797, 21798, 21799, 21800, 21801, 21802, 21803, 21804, 21805, 21786, 21787, 21788, 21789, 21790, 21791, 21792, 21793, 21794, 21795]
@@ -133,12 +149,12 @@ Global $Legion = False, $Bool_IdAndSell = False, $Bool_HM = False, $Bool_Store =
 Global $PIC_MATS[26][2] = [["Fur Square", 941],["Bolt of Linen", 926],["Bolt of Damask", 927],["Bolt of Silk", 928],["Glob of Ectoplasm", 930],["Steel of Ignot", 949],["Deldrimor Steel Ingot", 950],["Monstrous Claws", 923],["Monstrous Eye", 931],["Monstrous Fangs", 932],["Rubies", 937],["Sapphires", 938],["Diamonds", 935],["Onyx Gemstones", 936],["Lumps of Charcoal", 922],["Obsidian Shard", 945],["Tempered Glass Vial", 939],["Leather Squares", 942],["Elonian Leather Square", 943],["Vial of Ink", 944],["Rolls of Parchment", 951],["Rolls of Vellum", 952],["Spiritwood Planks", 956],["Amber Chunk", 6532],["Jadeite Shard", 6533]]
 #EndRegion Global MatsPic´s And ModelID´Select
 
-Global $Array_Store_ModelIDs460[147] = [474, 476, 486, 522, 525, 811, 819, 822, 835, 610, 2994, 19185, 22751, 4629, 24630, 4631, 24632, 27033, 27035, 27044, 27046, 27047, 7052, 5123 _
-		, 1796, 21797, 21798, 21799, 21800, 21801, 21802, 21803, 21804, 1805, 910, 2513, 5585, 6049, 6366, 6367, 6375, 15477, 19171, 22190, 24593, 28435, 30855, 31145, 31146, 35124, 36682 _
-		, 6376 , 6368 , 6369 , 21809 , 21810, 21813, 29436, 29543, 36683, 4730, 15837, 21490, 22192, 30626, 30630, 30638, 30642, 30646, 30648, 31020, 31141, 31142, 31144, 1172, 15528 _
-		, 15479, 19170, 21492, 21812, 22269, 22644, 22752, 28431, 28432, 28436, 1150, 35125, 36681, 3256, 3746, 5594, 5595, 5611, 5853, 5975, 5976, 21233, 22279, 22280, 6370, 21488 _
-		, 21489, 22191, 35127, 26784, 28433, 18345, 21491, 28434, 35121, 921, 922, 923, 925, 926, 927, 928, 929, 930, 931, 932, 933, 934, 935, 936, 937, 938, 939, 940, 941, 942, 943 _
-		, 944, 945, 946, 948, 949, 950, 951, 952, 953, 954, 955, 956, 6532, 6533]
+;Global $Array_Store_ModelIDs460[147] = [474, 476, 486, 522, 525, 811, 819, 822, 835, 610, 2994, 19185, 22751, 4629, 24630, 4631, 24632, 27033, 27035, 27044, 27046, 27047, 7052, 5123 _
+;		, 1796, 21797, 21798, 21799, 21800, 21801, 21802, 21803, 21804, 1805, 910, 2513, 5585, 6049, 6366, 6367, 6375, 15477, 19171, 22190, 24593, 28435, 30855, 31145, 31146, 35124, 36682 _
+;		, 6376 , 6368 , 6369 , 21809 , 21810, 21813, 29436, 29543, 36683, 4730, 15837, 21490, 22192, 30626, 30630, 30638, 30642, 30646, 30648, 31020, 31141, 31142, 31144, 1172, 15528 _
+;		, 15479, 19170, 21492, 21812, 22269, 22644, 22752, 28431, 28432, 28436, 1150, 35125, 36681, 3256, 3746, 5594, 5595, 5611, 5853, 5975, 5976, 21233, 22279, 22280, 6370, 21488 _
+;		, 21489, 22191, 35127, 26784, 28433, 18345, 21491, 28434, 35121, 921, 922, 923, 925, 926, 927, 928, 929, 930, 931, 932, 933, 934, 935, 936, 937, 938, 939, 940, 941, 942, 943 _
+;		, 944, 945, 946, 948, 949, 950, 951, 952, 953, 954, 955, 956, 6532, 6533]
 
 #EndRegion Global Items
 
@@ -528,7 +544,7 @@ Func CheckForChest($chestrun = False)
 	Sleep(GetPing() + 500)
 	$AgentArray = GetAgentArraySorted(0x400)    ;0x400 = type: item
 	ChangeTarget($AgentArray[0][0])    ;in case you watch the bot running you can see what dropped immed
-;		PickupLootEx(3500)
+	PickUpLoot()
 EndFunc   ;==>CheckForChest
 
 #EndRegion Chest
