@@ -1139,28 +1139,57 @@ Func TraderBuy()
 	Return True
 EndFunc   ;==>TraderBuy
 
+;;; This is incorrect way to use this function 
 ;~ Description: Request a quote to sell an item to the trader.
+;Func TraderRequestSell($aItem)
+;	Local $lItemID
+;	Local $lFound = False
+;	Local $lQuoteID = MemoryRead($mTraderQuoteID)
+;
+;	If IsDllStruct($aItem) = 0 Then
+;		$lItemID = $aItem
+;	Else
+;		$lItemID = DllStructGetData($aItem, 'ID')
+;	EndIf
+;
+;	DllStructSetData($mRequestQuoteSell, 2, $lItemID)
+;	Enqueue($mRequestQuoteSellPtr, 8)
+;
+;	Local $lDeadlock = TimerInit()
+;	Do
+;		Sleep(20)
+;		$lFound = MemoryRead($mTraderQuoteID) <> $lQuoteID
+;	Until $lFound Or TimerDiff($lDeadlock) > GetPing() + 5000
+;	Return $lFound
+;EndFunc   ;==>TraderRequestSell
+
+;CorrectWay
+;~ Description: Request a quote to sell an item to the trader
 Func TraderRequestSell($aItem)
-	Local $lItemID
-	Local $lFound = False
-	Local $lQuoteID = MemoryRead($mTraderQuoteID)
+    Local $lItemID
+    Local $lFound = False
+    Local $lQuoteID = MemoryRead($mTraderQuoteID)
 
-	If IsDllStruct($aItem) = 0 Then
-		$lItemID = $aItem
-	Else
-		$lItemID = DllStructGetData($aItem, 'ID')
-	EndIf
+    If IsDllStruct($aItem) = 0 Then
+        $lItemID = $aItem
+    Else
+        $lItemID = DllStructGetData($aItem, 'ID')
+    EndIf
 
-	DllStructSetData($mRequestQuoteSell, 2, $lItemID)
-	Enqueue($mRequestQuoteSellPtr, 8)
+    DllStructSetData($mRequestQuoteSell, 1, $HEADER_REQUEST_QUOTE)
+    DllStructSetData($mRequestQuoteSell, 2, $lItemID)
+    Enqueue($mRequestQuoteSellPtr, 8)
+	
+    Local $lDeadlock = TimerInit()
+    Do
+        Sleep(20)
+        $lFound = MemoryRead($mTraderQuoteID) <> $lQuoteID
+    Until $lFound Or TimerDiff($lDeadlock) > GetPing() + 5000
 
-	Local $lDeadlock = TimerInit()
-	Do
-		Sleep(20)
-		$lFound = MemoryRead($mTraderQuoteID) <> $lQuoteID
-	Until $lFound Or TimerDiff($lDeadlock) > GetPing() + 5000
-	Return $lFound
+    Return $lFound
 EndFunc   ;==>TraderRequestSell
+
+
 
 ;~ Description: ID of the item item being sold.
 Func TraderSell()
@@ -6502,47 +6531,6 @@ Func GetBestTarget($aRange = 1320)
 	Next
 	Return $lBestTarget
 EndFunc   ;==>GetBestTarget
-;=======WORK IN PROGRESS TO IDENTIFY HEALER ENEMIES AS PRIO
-
-;Global $healerModelIDs = [1234, 5678, 9012]  ; Replace these with actual ModelIDs for healers
-
-;Func GetBestTarget($aRange = 1320)
-;    Local $lBestTarget, $lDistance, $lLowestSum = 100000000, $lBestHealer, $lLowestHealerSum = 100000000
-;    Local $lAgentArray = GetAgentArray(0xDB)
-;    For $i = 1 To $lAgentArray[0]
-;        Local $lSumDistances = 0, $lIsHealer = _IsHealer($lAgentArray[$i])
-;        If DllStructGetData($lAgentArray[$i], 'Allegiance') <> 3 Then ContinueLoop
-;        If DllStructGetData($lAgentArray[$i], 'HP') <= 0 Then ContinueLoop
-;        If DllStructGetData($lAgentArray[$i], 'ID') = GetMyID() Then ContinueLoop
-;        If GetDistance($lAgentArray[$i]) > $aRange Then ContinueLoop
-;        For $j = 1 To $lAgentArray[0]
-;            If DllStructGetData($lAgentArray[$j], 'Allegiance') <> 3 Then ContinueLoop
-;            If DllStructGetData($lAgentArray[$j], 'HP') <= 0 Then ContinueLoop
-;            If DllStructGetData($lAgentArray[$j], 'ID') = GetMyID() Then ContinueLoop
-;            If GetDistance($lAgentArray[$j]) > $aRange Then ContinueLoop
-;            $lDistance = GetDistance($lAgentArray[$i], $lAgentArray[$j])
-;            $lSumDistances += $lDistance
-;        Next
-;        If $lIsHealer And $lSumDistances < $lLowestHealerSum Then
-;            $lLowestHealerSum = $lSumDistances
-;            $lBestHealer = $lAgentArray[$i]
-;        ElseIf Not $lIsHealer And $lSumDistances < $lLowestSum Then
-;            $lLowestSum = $lSumDistances
-;            $lBestTarget = $lAgentArray[$i]
-;        EndIf
-;    Next
-;    Return $lBestHealer ? $lBestHealer : $lBestTarget  ; Prioritize healer, otherwise return best target
-;EndFunc   ;==>GetBestTarget
-
-;Func _IsHealer($agent)
-;    Local $modelID = DllStructGetData($agent, 'ModelID')
-;    For $i = 0 To UBound($healerModelIDs) - 1
-;        If $modelID == $healerModelIDs[$i] Then Return True
-;    Next
-;    Return False
-;EndFunc
-
-;=======WORK IN PROGRESS TO IDENTIFY HEALER ENEMIES AS PRIO END =======
 
 ;~ Description: Wait for map to load. Returns true if successful.
 Func WaitMapLoading($aMapID = 0, $aDeadlock = 2000)
