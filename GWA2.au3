@@ -730,6 +730,7 @@ EndFunc   ;==>ScanForCharname
 
 
 #Region Item
+;~ Description: Starts a salvage operation on an item.
 Func StartSalvage($aItem)
     Local $lOffset[4] = [0, 0x18, 0x2C, 0x690]
     Local $lSalvageSessionID = MemoryReadPtr($mBasePointer, $lOffset)
@@ -750,8 +751,8 @@ Func StartSalvage($aItem)
     DllStructSetData($mSalvage, 3, $lSalvageKit) ; Set the salvage kit
     DllStructSetData($mSalvage, 4, $lSalvageSessionID[1]) ; Set the session ID
 
-    Enqueue($mSalvagePtr, $HEADER_SALVAGE_SESSION) ; Use appropriate header based on operation
-
+	Enqueue($mSalvagePtr, $HEADER_SALVAGE_MATS) ; Changed to force Mats see if it fixes crashes btween bags?
+    ;Enqueue($mSalvagePtr, $HEADER_SALVAGE_SESSION) ; Use appropriate header based on operation
 EndFunc   ;==>StartSalvage
 
 Func ItemID($aItem)
@@ -3371,7 +3372,7 @@ EndFunc   ;==>GetNearestAgentToAgent
 
 ;~ Description: Returns the nearest enemy to an agent.
 Func GetNearestEnemyToAgent($aAgent = -2)
-	Local $lNearestAgent, $lNearestDistance = 100000000
+	Local $lNearestAgent, $lNearestDistance = 10000000 ;10000000
 	Local $lDistance
 	Local $lAgentArray = GetAgentArray(0xDB)
 
@@ -3570,19 +3571,30 @@ EndFunc   ;==>GetNearestItemToAgent
 ;~ Description: Returns array of party members
 ;~ Param: an array returned by GetAgentArray. This is totally optional, but can greatly improve script speed.
 Func GetParty($aAgentArray = 0)
-	Local $lReturnArray[1] = [0]
-	If $aAgentArray == 0 Then $aAgentArray = GetAgentArray(0xDB)
-	For $i = 1 To $aAgentArray[0]
-		If DllStructGetData($aAgentArray[$i], 'Allegiance') == 1 Then
-			If BitAND(DllStructGetData($aAgentArray[$i], 'TypeMap'), 131072) Then
-				$lReturnArray[0] += 1
-				ReDim $lReturnArray[$lReturnArray[0] + 1]
-				$lReturnArray[$lReturnArray[0]] = $aAgentArray[$i]
-			EndIf
-		EndIf
-	Next
-	Return $lReturnArray
+    Local $lReturnArray[1] = [0]
+    If $aAgentArray == 0 Then $aAgentArray = GetAgentArray(0xDB)
+    For $i = 1 To $aAgentArray[0]
+        If DllStructGetData($aAgentArray[$i], 'Allegiance') == 1 Then
+            If BitAND(DllStructGetData($aAgentArray[$i], 'TypeMap'), 131072) Then
+                $lReturnArray[0] += 1
+                ReDim $lReturnArray[$lReturnArray[0] + 1]
+                $lReturnArray[$lReturnArray[0]] = $aAgentArray[$i]
+            EndIf
+        EndIf
+    Next
+    Return $lReturnArray
 EndFunc   ;==>GetParty
+
+;This function uses GetParty to get the list of party members and then iterates through the list,checking each member's status using GetIsDead. It returns true if any party member is found to be dead.
+Func CheckIfAnyPartyMembersDead()
+    Local $partyArray = GetParty()
+    For $i = 1 To $partyArray[0]
+        If GetIsDead($partyArray[$i]) Then
+            Return True
+        EndIf
+    Next
+    Return False
+EndFunc
 
 ;~ Description: Quickly creates an array of agents of a given type
 Func GetAgentArray($aType = 0)
