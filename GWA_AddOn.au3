@@ -43,6 +43,22 @@ Global $All_Materials_Array[36] = [921, 922, 923, 925, 926, 927, 928, 929, 930, 
 Global $Common_Materials_Array[11] = [921, 925, 929, 933, 934, 940, 946, 948, 953, 954, 955]
 Global $Rare_Materials_Array[25] = [922, 923, 926, 927, 928, 930, 931, 932, 935, 936, 937, 938, 939, 941, 942, 943, 944, 945, 949, 950, 951, 952, 956, 6532, 6533]
 
+;~ General Items
+Global $General_Items_Array[6] = [2989, 2991, 2992, 5899, 5900, 22751]
+Global Const $item_type_axe = 2
+Global Const $item_type_bow = 5
+Global Const $item_type_offhand = 12
+Global Const $item_type_hammer = 15
+Global Const $item_type_wand = 22
+Global Const $item_type_shield = 24
+Global Const $item_type_staff = 26
+Global Const $item_type_sword = 27
+Global Const $item_type_dagger = 32
+Global Const $item_type_scythe = 35
+Global Const $item_type_spear = 36
+
+
+
 Global $OpenedChestAgentIDs[1]
 Global $aChestID[9000]
      $aChestID[65] = "Krytan Chest"
@@ -546,6 +562,91 @@ Func CheckForChest($chestrun = False)
 	ChangeTarget($AgentArray[0][0])    ;in case you watch the bot running you can see what dropped immed
 	PickUpLoot()
 EndFunc   ;==>CheckForChest
+
+Func GetPlayerCoords()
+    ; Assuming -2 is the player's unique identifier, get the agent data for the player
+    Return GetAgentByID(-2)
+EndFunc
+
+Func CheckForChest2($chestrun = False)
+    Local $AgentArray, $lAgent, $lType, $playerAgent
+    Local $ChestFound = False
+    Local $MaxDistance = 10000  ; Maximum distance to check for chests
+
+    If GetIsDead(-2) Then Return  ; Exit if the player is dead
+    $playerAgent = GetPlayerCoords()  ; Get the player agent
+    $AgentArray = GetAgentArraySorted(0x200)  ; Retrieve sorted array of static type entities
+    For $i = 0 To UBound($AgentArray) - 1
+        $lAgent = GetAgentByID($AgentArray[$i][0])
+        If Not IsDllStruct($lAgent) Then ContinueLoop  ; Validate each agent before proceeding
+
+        $lType = DllStructGetData($lAgent, 'Type')
+        If $lType <> 512 Then ContinueLoop  ; Skip non-chest agents
+
+        $lDistance = CalculateDistance($playerAgent, $lAgent)
+        If $lDistance > $MaxDistance Then ContinueLoop  ; Skip chests out of specified range
+
+        ; Check if chest has been opened before
+        If _ArraySearch($OpenedChestAgentIDs, $AgentArray[$i][0]) <> -1 Then
+            ContinueLoop  ; Skip this chest as it has already been opened
+        EndIf
+
+        ; Not found in the opened chest list, proceed
+        $ChestFound = True
+        ChangeTarget($lAgent)
+        GoSignpost($lAgent)
+        OpenChestByExtraType($aChestID)
+        Sleep(GetPing() + 500)
+
+        ; Add the chest ID to the blacklist after opening
+        _ArrayAdd($OpenedChestAgentIDs, $AgentArray[$i][0])
+
+        ; Retrieve items dropped from the chest
+        $AgentArray = GetAgentArraySorted(0x400)
+        ChangeTarget($AgentArray[0][0])
+        PickUpLoot()
+    Next
+
+    If Not $ChestFound Then Return False  ; Return False if no chests found
+    Return True  ; Indicate successful operation
+EndFunc   ;==>CheckForChest2
+
+
+Func CalculateDistance($agent1, $agent2)
+    Local $x1 = DllStructGetData($agent1, 'X')
+    Local $y1 = DllStructGetData($agent1, 'Y')
+    Local $x2 = DllStructGetData($agent2, 'X')
+    Local $y2 = DllStructGetData($agent2, 'Y')
+
+    Return Sqrt(($x2 - $x1) ^ 2 + ($y2 - $y1) ^ 2)
+EndFunc
+
+
+Func PickUpLoot2()
+    If CountSlots() < 1 Then Return ; Check if inventory is full and exit if no slots are available
+
+    If GetIsDead(-2) Then Return ; Exit the function if the player is dead
+
+    Local $lAgent, $lItem, $lDeadlock
+    For $i = 1 To GetMaxAgents() ; Loop through all agents in the area
+        $lAgent = GetAgentByID($i) ; Retrieve agent data by its ID
+
+        If DllStructGetData($lAgent, 'Type') <> 0x400 Then ContinueLoop ; Only proceed if agent type is item (0x400)
+        
+        $lItem = GetItemByAgentID($i) 
+        If CanPickUp($lItem) Then ; Check if the item is eligible to be picked up
+            PickUpItem($lItem) ; Execute the pick up item action
+            $lDeadlock = TimerInit() ; Start a timer to avoid a deadlock situation
+
+            While GetAgentExists($i) ; Loop while the item still exists
+                Sleep(100) ; Small delay to reduce CPU load and allow for server response time
+                If GetIsDead(-2) Then Return ; Exit if the player dies during the process
+
+                If TimerDiff($lDeadlock) > 15000 Then ExitLoop ; Break the loop after 15 seconds to avoid infinite loop
+            WEnd
+        EndIf
+    Next
+EndFunc   ;==>PickUpLoot2
 
 #EndRegion Chest
 
@@ -1083,5 +1184,27 @@ Func GoNearestNPCToCoords($aX, $aY)
 	Until GetDistance($NPC, -2) < 250
 	RndSleep(500)
 EndFunc
+
+Func IsBlackDye($aModelID, $aExtraID)
+	If $aModelID == $model_id_dye Then
+		Switch $aExtraID
+			Case $item_extraid_black_dye
+				Return True
+			Case Else
+				Return False
+		EndSwitch
+	EndIf
+EndFunc ;==>IsBlackDye
+
+Func IsWhiteDye($aModelID, $aExtraID)
+	If $aModelID == $model_id_dye Then
+		Switch $aExtraID
+			Case $ITEM_ExtraID_WhiteDye
+				Return True
+			Case Else
+				Return False
+		EndSwitch
+	EndIf
+EndFunc ;==>IsBlackDye
 
 #EndRegion Misc

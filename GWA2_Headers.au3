@@ -48,6 +48,8 @@ Global Const $HEADER_HERO_USE_SKILL = 0x001A ; Uses a skill as a hero
 Global Const $HEADER_HERO_ADD = 0x001C ; Adds a hero to the party
 Global Const $HEADER_HERO_KICK = 0x001D ; Removes a hero from the party
 
+
+
 ; GAME_CMSG_ - Targeting and Movement
 Global Const $HEADER_ATTACK_AGENT = 0x0024 ; Initiates an attack on a selected agent
 Global Const $HEADER_CANCEL_MOVEMENT = 0x0026 ; Cancels the current movement or action

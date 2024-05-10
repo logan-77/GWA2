@@ -730,29 +730,24 @@ EndFunc   ;==>ScanForCharname
 
 
 #Region Item
-;~ Description: Starts a salvage operation on an item.
+
 Func StartSalvage($aItem)
-    Local $lOffset[4] = [0, 0x18, 0x2C, 0x690]
-    Local $lSalvageSessionID = MemoryReadPtr($mBasePointer, $lOffset)
+	Local $lOffset[4] = [0, 0x18, 0x2C, 0x690]
+	Local $lSalvageSessionID = MemoryReadPtr($mBasePointer, $lOffset)
+	If IsDllStruct($aItem) = 0 Then
+		Local $lItemID = $aItem
+	Else
+		Local $lItemID = DllStructGetData($aItem, 'ID')
+	EndIf
 
-    ; Determine whether the item parameter is a DllStruct or an integer ID
-    If IsDllStruct($aItem) = 0 Then
-        Local $lItemID = $aItem
-    Else
-        Local $lItemID = DllStructGetData($aItem, 'ID')
-    EndIf
+	Local $lSalvageKit = FindSalvageKit2()
+	If $lSalvageKit = 0 Then Return
 
-    ; Locate an expert salvage kit before proceeding
-    Local $lSalvageKit = FindExpertSalvageKit()
-    If $lSalvageKit = 0 Then Return ; Exit if no salvage kit is found
+	DllStructSetData($mSalvage, 2, $lItemID)
+	DllStructSetData($mSalvage, 3, FindSalvageKit2())
+	DllStructSetData($mSalvage, 4, $lSalvageSessionID[1])
 
-    ; Set the necessary data for the salvage operation
-    DllStructSetData($mSalvage, 2, $lItemID) ; Set the item ID
-    DllStructSetData($mSalvage, 3, $lSalvageKit) ; Set the salvage kit
-    DllStructSetData($mSalvage, 4, $lSalvageSessionID[1]) ; Set the session ID
-
-	Enqueue($mSalvagePtr, $HEADER_SALVAGE_MATS) ; Changed to force Mats see if it fixes crashes btween bags?
-    ;Enqueue($mSalvagePtr, $HEADER_SALVAGE_SESSION) ; Use appropriate header based on operation
+	Enqueue($mSalvagePtr, 16)
 EndFunc   ;==>StartSalvage
 
 Func ItemID($aItem)
@@ -1263,10 +1258,27 @@ Func KickHero($aHeroId)
 	Return SendPacket(0x8, $HEADER_HERO_KICK, $aHeroId)
 EndFunc   ;==>KickHero
 
+;Following function has incorrect address so let's fix it another way.
 ;~ Description: Kicks all heroes from the party.
+;Func KickAllHeroes()
+;	Return SendPacket(0x8, $HEADER_HEROES_KICK, 0x26) 
+;EndFunc   ;==>KickAllHeroes
+
+; Function to kick all heroes
 Func KickAllHeroes()
-	Return SendPacket(0x8, $HEADER_HEROES_KICK, 0x26)
+    ; Array of all hero IDs
+    Local $aHeroIds[] = [$HERO_Norgu, $HERO_Goren, $HERO_Tahlkora, $HERO_MasterOfWhispers, $HERO_AcolyteJin, $HERO_Koss, $HERO_Dunkoro, $HERO_AcolyteSousuke, $HERO_Melonni, _
+                         $HERO_ZhedShadowhoof, $HERO_GeneralMorgahn, $HERO_MargridTheSly, $HERO_Olias, $HERO_Razah, $HERO_MOX, $HERO_Jora, $HERO_PyreFierceshot, _
+                         $HERO_Livia, $HERO_Hayda, $HERO_Kahmu, $HERO_Gwen, $HERO_Xandra, $HERO_Vekk, $HERO_Ogden, _
+                         $HERO_MercenaryHero1, $HERO_MercenaryHero2, $HERO_MercenaryHero3, $HERO_MercenaryHero4, $HERO_MercenaryHero5, $HERO_MercenaryHero6, $HERO_MercenaryHero7, $HERO_MercenaryHero8]
+
+    ; Loop through all hero IDs and call KickHero for each, with a delay
+    For $i = 0 To UBound($aHeroIds) - 1
+        KickHero($aHeroIds[$i])
+        Sleep(100) ; Add a delay of 100 milliseconds
+    Next
 EndFunc   ;==>KickAllHeroes
+
 
 ;~ Description: Add a henchman to the party.
 Func AddNpc($aNpcId)
@@ -3003,101 +3015,21 @@ Func GetGoldCharacter()
 	Return $lReturn[1]
 EndFunc   ;==>GetGoldCharacter
 
-;Func FindSalvageKit($maxBags = 16)
-;    Local $bestKitID = 0
-;    Local $lowestUses = 101  ; High number ensures any found kit will have lower uses;
-
-    ; Define salvage kit types and their use divisors in an array for easy iteration;
-;    Local $kitTypes[3][2] = [[2991, 8], [2992, 2], [5900, 10]]  ; ModelID, Uses divisor
-;
- ;   For $bagIndex = 1 To $maxBags
-  ;      Local $bagSlots = DllStructGetData(GetBag($bagIndex), 'Slots')
-  ;      For $slotIndex = 1 To $bagSlots
- ;           Local $item = GetItemBySlot($bagIndex, $slotIndex)
- ;           Local $modelID = DllStructGetData($item, 'ModelID')
- ;           Local $itemUses = DllStructGetData($item, 'Value');
-
-;            For $kitIndex = 0 To UBound($kitTypes) - 1
- ;               If $modelID == $kitTypes[$kitIndex][0] Then
-;                    Local $usesLeft = $itemUses / $kitTypes[$kitIndex][1]
-   ;                 If $usesLeft < $lowestUses Then
-  ;                      $bestKitID = DllStructGetData($item, 'ID')
- ;                       $lowestUses = $usesLeft
-    ;                EndIf
-    ;                ExitLoop  ; Found a match, no need to check other types
- ;               EndIf
- ;           Next
- ;       Next
- ;   Next
-;
-;    Return $bestKitID
-;EndFunc   ;==>FindSalvageKit
-
-;Func FindSalvageKit2($maxBags = 16)
- ;   Local $bestKitID = 0
-  ;  Local $lowestUses = 101  ; High number ensures any found kit will have lower uses
-
-    ; Define salvage kit types and their use divisors in an array for easy iteration
-;    Local $kitTypes[3][2] = [[2991, 8], [2992, 2], [5900, 10]]  ; ModelID, Uses divisor
-;
- ;   For $bagIndex = 1 To $maxBags
-  ;      Local $bagSlots = DllStructGetData(GetBag($bagIndex), 'Slots')
-;        For $slotIndex = 1 To $bagSlots
- ;           Local $item = GetItemBySlot($bagIndex, $slotIndex)
-  ;          Local $modelID = DllStructGetData($item, 'ModelID')
- ;           Local $itemUses = DllStructGetData($item, 'Value')
-;
- ;           For $kitIndex = 0 To UBound($kitTypes) - 1
-  ;              If $modelID == $kitTypes[$kitIndex][0] Then
-   ;                 Local $usesLeft = $itemUses / $kitTypes[$kitIndex][1]
-  ;                  If $usesLeft < $lowestUses Then
-    ;                    $bestKitID = DllStructGetData($item, 'ID')
-     ;                   $lowestUses = $usesLeft
-      ;              EndIf
-  ;;                  ExitLoop  ; Found a match, no need to check other types
-  ;              EndIf
-  ;          Next
-  ;      Next
-  ;  Next
-;;
- ;   Return $bestKitID
-;EndFunc   ;==>FindSalvageKit
-
-;Func FindSalvageKit()
-;	Local $lItem
-;	Local $lKit = 0
-;	Local $lUses = 101
-;	For $i = 1 To 4
-;		For $j = 1 To DllStructGetData(GetBag($i), 'Slots')
-;			$lItem = GetItemBySlot($i, $j)
-;			Switch DllStructGetData($lItem, 'ModelID')
-;			    Case 5900
-;					If DllStructGetData($lItem, 'Value') / 2 < $lUses Then
-;						$lKit = DllStructGetData($lItem, 'ID')
-;						$lUses = DllStructGetData($lItem, 'Value') / 2
-;					EndIf
-;				Case Else
-;					ContinueLoop
-;			EndSwitch
-;		Next
-;	Next
-;	Return $lKit
-;EndFunc   ;==>FindSalvageKit
-
 Func FindSalvageKit()
 	Local $lItem
 	Local $lKit = 0
 	Local $lUses = 101
-	For $i = 1 To 16
+	For $i = 1 To 4
 		For $j = 1 To DllStructGetData(GetBag($i), 'Slots')
 			$lItem = GetItemBySlot($i, $j)
 			Switch DllStructGetData($lItem, 'ModelID')
-				Case 5900
+			    Case 2992
 					If DllStructGetData($lItem, 'Value') / 2 < $lUses Then
 						$lKit = DllStructGetData($lItem, 'ID')
 						$lUses = DllStructGetData($lItem, 'Value') / 2
 					EndIf
-						ContinueLoop
+				Case Else
+					ContinueLoop
 			EndSwitch
 		Next
 	Next
@@ -6727,6 +6659,39 @@ Func GetClosestInRangeOfAgent($aAgent = -2, $aRange = $DistanceCasting, $aAllegi
 
     Return $lClosestAgent
 EndFunc
+
+;Used for smaller range distance of enemy Detection
+Func GetClosestInRangeOfAgent2($aAgent = -2, $aRange = $DistanceCasting, $aAllegiance = $UnitTypeEnemy, $aType = $TypeUnit)
+    Local $lAgent, $lDistance
+    Local $lClosestAgent = 0
+    Local $lMinDistance = 1000 ; Arbitrarily large number to ensure any real distance is smaller.
+
+    If Not IsDllStruct($aAgent) Then $aAgent = GetAgentByID($aAgent)
+
+    For $i = 1 To GetMaxAgents()
+        $lAgent = GetAgentByID($i)
+
+        If DllStructGetData($lAgent, 'Type') <> $aType Then ContinueLoop
+        If $aType == $TypeUnit Then
+            If DllStructGetData($lAgent, 'Allegiance') <> $aAllegiance Then ContinueLoop
+            If DllStructGetData($lAgent, 'HP') <= 0 Then ContinueLoop
+            If BitAND(DllStructGetData($lAgent, 'Effects'), 0x0010) > 0 Then ContinueLoop
+        ElseIf $aType == $TypeObject Then
+            ; Include additional conditions specific to TypeObject if necessary
+        ElseIf $aType == $TypeLooteable Then
+            ; Include additional conditions specific to TypeLooteable if necessary
+        EndIf
+
+        $lDistance = GetDistance($lAgent, $aAgent)
+        If $lDistance <= $aRange And $lDistance < $lMinDistance Then
+            $lMinDistance = $lDistance
+            $lClosestAgent = $lAgent
+        EndIf
+    Next
+
+    Return $lClosestAgent
+EndFunc
+
 
 
 ; Function to get the number of enemy units within a specified range.
