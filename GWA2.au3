@@ -2274,8 +2274,27 @@ EndFunc
 
 ;~ Description: Open a dialog.
 Func Dialog($aDialogID)
-	Return SendPacket(0x8, $HEADER_DIALOG, $aDialogID)
+    _LogDialogID($aDialogID, $aAgent)
+    Return SendPacket(0x8, $HEADER_DIALOG, $aDialogID)
 EndFunc   ;==>Dialog
+
+;~ Description: Logs the given dialog ID, current map ID, and agent ID to a text file.
+Func _LogDialogID($aDialogID, $aAgent)
+    Local $sFilePath = @ScriptDir & "\DialogLog.txt" 
+    Local $hFile = FileOpen($sFilePath, $FO_APPEND)  
+    Local $mapID = GetMapID()
+    Local $agentID = DllStructGetData($aAgent, 'ID')
+
+    If $hFile = -1 Then
+        MsgBox($MB_SYSTEMMODAL, "Error", "Failed to open log file.")
+        Return False
+    EndIf
+
+    FileWriteLine($hFile, "Dialog ID: " & $aDialogID & ", Map ID: " & $mapID & ", Agent ID: " & $agentID)
+    FileClose($hFile)
+
+    Return True
+EndFunc   ;==>_LogDialogID
 
 ;~ Description: Skip a cinematic.
 Func SkipCinematic()
