@@ -2274,6 +2274,11 @@ EndFunc
 
 ;~ Description: Open a dialog.
 Func Dialog($aDialogID)
+    Return SendPacket(0x8, $HEADER_DIALOG, $aDialogID)
+EndFunc   ;==>Dialog
+
+;~ Description: Open a dialog - Records your dialog entry
+Func _Dialog($aDialogID)
     _LogDialogID($aDialogID, $aAgent)
     Return SendPacket(0x8, $HEADER_DIALOG, $aDialogID)
 EndFunc   ;==>Dialog
