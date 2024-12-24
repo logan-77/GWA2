@@ -294,7 +294,7 @@ Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSy
 	$mCurrentStatus = MemoryRead(GetScannedAddress('ScanChangeStatusFunction', 35))
 	$mCharslots = MemoryRead(GetScannedAddress('ScanCharslots', 22))
 
-	$lTemp = GetScannedAddress('ScanEngine', -0x6E) ;-16
+	$lTemp = GetScannedAddress('ScanEngine', -0x6D + 2) ;-16
 	SetValue('MainStart', '0x' & Hex($lTemp, 8))
 	SetValue('MainReturn', '0x' & Hex($lTemp + 5, 8))
 	$lTemp = GetScannedAddress('ScanRenderFunc', -0x67)
@@ -378,7 +378,7 @@ Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSy
 	$mTraderQuoteID = GetValue('TraderQuoteID')
 	$mTraderCostID = GetValue('TraderCostID')
 	$mTraderCostValue = GetValue('TraderCostValue')
-	;$mDisableRendering = GetValue('DisableRendering')
+	$mDisableRendering = GetValue('DisableRendering')
 	$mAgentCopyCount = GetValue('AgentCopyCount')
 	$mAgentCopyBase = GetValue('AgentCopyBase')
 	$mLastDialogID = GetValue('LastDialogID')
@@ -392,20 +392,20 @@ Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSy
 	DllStructSetData($mMove, 1, GetValue('CommandMove'))
 	DllStructSetData($mChangeTarget, 1, GetValue('CommandChangeTarget'))
 	DllStructSetData($mPacket, 1, GetValue('CommandPacketSend'))
-	;DllStructSetData($mSellItem, 1, GetValue('CommandSellItem'))
+	DllStructSetData($mSellItem, 1, GetValue('CommandSellItem'))
 	DllStructSetData($mAction, 1, GetValue('CommandAction'))
 	DllStructSetData($mToggleLanguage, 1, GetValue('CommandToggleLanguage'))
 
 	DllStructSetData($mUseHeroSkill, 1, GetValue('CommandUseHeroSkill'))
 
 	DllStructSetData($mBuyItem, 1, GetValue('CommandBuyItem'))
-	;DllStructSetData($mSendChat, 1, GetValue('CommandSendChat'))
-	;DllStructSetData($mSendChat, 2, $HEADER_SEND_CHAT)
+	DllStructSetData($mSendChat, 1, GetValue('CommandSendChat'))
+	DllStructSetData($mSendChat, 2, $HEADER_SEND_CHAT)
 	DllStructSetData($mWriteChat, 1, GetValue('CommandWriteChat'))
 	DllStructSetData($mRequestQuote, 1, GetValue('CommandRequestQuote'))
 	DllStructSetData($mRequestQuoteSell, 1, GetValue('CommandRequestQuoteSell'))
 	DllStructSetData($mTraderBuy, 1, GetValue('CommandTraderBuy'))
-	;DllStructSetData($mTraderSell, 1, GetValue('CommandTraderSell'))
+	DllStructSetData($mTraderSell, 1, GetValue('CommandTraderSell'))
 	DllStructSetData($mSalvage, 1, GetValue('CommandSalvage'))
 	DllStructSetData($mIncreaseAttribute, 1, GetValue('CommandIncreaseAttribute'))
 	DllStructSetData($mDecreaseAttribute, 1, GetValue('CommandDecreaseAttribute'))
@@ -455,12 +455,12 @@ Func Scan()
 	AddPattern('56FFD083C4048BCEE897') ; UPDATED 23.12.24 NEEDS TO GET UPDATED EACH PATCH
 	_('ScanRenderFunc:')
 	AddPattern('F6C401741C68B1010000BA') ; STILL WORKING 23.12.24
-	;_('ScanLoadFinished:')
-	;AddPattern('8B561C8BCF52E8') ; COULD NOT UPDATE! 23.12.24
-	;_('ScanPostMessage:')
-	;AddPattern('6A00680080000051FF15') ; COULD NOT UPDATE! 23.12.24
-	;_('ScanTargetLog:')
-	;AddPattern('5356578BFA894DF4E8') ; COULD NOT UPDATE! 23.12.24
+	_('ScanLoadFinished:')
+	AddPattern('8B561C8BCF52E8') ; COULD NOT UPDATE! 23.12.24
+	_('ScanPostMessage:')
+	AddPattern('6A00680080000051FF15') ; COULD NOT UPDATE! 23.12.24
+	_('ScanTargetLog:')
+	AddPattern('5356578BFA894DF4E8') ; COULD NOT UPDATE! 23.12.24
 	_('ScanChangeTargetFunction:')
 	AddPattern('3BDF0F95') ; STILL WORKING 23.12.24, 33C03BDA0F95C033
 	_('ScanMoveFunction:')
@@ -469,16 +469,16 @@ Func Scan()
 	AddPattern('E874651600') ; UPDATED 23.12.24
 	_('ScanMapID:')
 	AddPattern('558BEC8B450885C074078B') ;STILL WORKING 23.12.24, B07F8D55
-	;_('ScanMapLoading:')
-	;AddPattern('549EB20000000000') ; COULD NOT UPDATE! 23.12.24 6A2C50E8
+	_('ScanMapLoading:')
+	AddPattern('549EB20000000000') ; COULD NOT UPDATE! 23.12.24 6A2C50E8
 	_('ScanLoggedIn:')
 	AddPattern('BEFFC705C0') ; UPDATED 24.12.24 OLD:BFFFC70580 85C07411B807
 	_('ScanRegion:')
-	AddPattern('8BF8B750C3B') ; STILL WORKING 23.12.24
+	AddPattern('8BF0EB038B750C3B') ; STILL WORKING 23.12.24
 	_('ScanMapInfo:')
 	AddPattern('8BF0EB038B750C3B') ; STILL WORKING 23.12.24, 83F9FD7406
-	;_('ScanLanguage:')
-	;AddPattern('C38B75FC8B04B5') ; COULD NOT UPDATE! 23.12.24
+	_('ScanLanguage:')
+	AddPattern('C38B75FC8B04B5') ; COULD NOT UPDATE! 23.12.24
 	_('ScanUseSkillFunction:')
 	AddPattern('85F6745B83FE1174') ; STILL WORKING 23.12.24, 558BEC83EC1053568BD9578BF2895DF0
 	_('ScanPacketSendFunction:')
@@ -487,22 +487,22 @@ Func Scan()
 	AddPattern('83C40433C08BE55DC3A1') ; STILL WORKING 23.12.24, 5633F63BCE740E5633D2
 	_('ScanWriteChatFunction:')
 	AddPattern('8D85E0FEFFFF50681C01') ;STILL WORKING 23.12.24, 558BEC5153894DFC8B4D0856578B
-	;_('ScanSkillLog:')
-	;AddPattern('408946105E5B5D') ; COULD NOT UPDATE! 23.12.24
-	;_('ScanSkillCompleteLog:')
-	;AddPattern('741D6A006A40') ; COULD NOT UPDATE! 23.12.24
-	;_('ScanSkillCancelLog:')
-	;AddPattern('741D6A006A48') ; COULD NOT UPDATE! 23.12.24
-	;_('ScanChatLog:')
-	;AddPattern('8B45F48B138B4DEC50') ; COULD NOT UPDATE! 23.12.24
-	;_('ScanSellItemFunction:')
-	;AddPattern('8B4D2085C90F858E') ; COULD NOT UPDATE! 23.12.24
-	;_('ScanStringLog:')
-	;AddPattern('893E8B7D10895E04397E08') ; COULD NOT UPDATE! 23.12.24
-	;_('ScanStringFilter1:')
-	;AddPattern('8B368B4F2C6A006A008B06') ; COULD NOT UPDATE! 23.12.24
-	;_('ScanStringFilter2:')
-	;AddPattern('515356578BF933D28B4F2C') ; COULD NOT UPDATE! 23.12.24
+	_('ScanSkillLog:')
+	AddPattern('408946105E5B5D') ; COULD NOT UPDATE! 23.12.24
+	_('ScanSkillCompleteLog:')
+	AddPattern('741D6A006A40') ; COULD NOT UPDATE! 23.12.24
+	_('ScanSkillCancelLog:')
+	AddPattern('741D6A006A48') ; COULD NOT UPDATE! 23.12.24
+	_('ScanChatLog:')
+	AddPattern('8B45F48B138B4DEC50') ; COULD NOT UPDATE! 23.12.24
+	_('ScanSellItemFunction:')
+	AddPattern('8B4D2085C90F858E') ; COULD NOT UPDATE! 23.12.24
+	_('ScanStringLog:')
+	AddPattern('893E8B7D10895E04397E08') ; COULD NOT UPDATE! 23.12.24
+	_('ScanStringFilter1:')
+	AddPattern('8B368B4F2C6A006A008B06') ; COULD NOT UPDATE! 23.12.24
+	_('ScanStringFilter2:')
+	AddPattern('515356578BF933D28B4F2C') ; COULD NOT UPDATE! 23.12.24
 	_('ScanActionFunction:')
 	AddPattern('8B7508578BF983FE09750C6876') ;STILL WORKING 23.12.24, ;8B7D0883FF098BF175116876010000
 	_('ScanActionBase:')
@@ -522,8 +522,8 @@ Func Scan()
 	_('ScanTraderFunction:')
 	;AddPattern('8B45188B551085') ;83FF10761468
 	AddPattern('83FF10761468D2210000') ;STILL WORKING 23.12.24
-	;_('ScanTraderHook:')
-	;AddPattern('8955FC6A008D55F8B9BB') ; COULD NOT UPDATE! 23.12.24 ;50516A466A06 ;007BA579
+	_('ScanTraderHook:')
+	AddPattern('8955FC6A008D55F8B9BB') ; COULD NOT UPDATE! 23.12.24 ;50516A466A06 ;007BA579
 	_('ScanSleep:')
 	AddPattern('6A0057FF15D8408A006860EA0000') ; UPDATED 24.12.24, OLD:5F5E5B741A6860EA0000
 	_('ScanSalvageFunction:')
@@ -540,18 +540,18 @@ Func Scan()
 	AddPattern('FFD68B4DF08BD88B4708') ;STILL WORKING 23.12.24, 85c974158bd62bd183fa64
 	_('ScanClickToMoveFix:')
 	AddPattern('3DD301000074') ;STILL WORKING 23.12.24,
-	;_('ScanZoomStill:')
-	;AddPattern('558BEC8B41085685C0') ; COULD NOT UPDATE! 23.12.24
-	;_('ScanZoomMoving:')
-	;AddPattern('EB358B4304') ; COULD NOT UPDATE! 23.12.24
-	;_('ScanBuildNumber:')
-	;AddPattern('558BEC83EC4053568BD9') ; COULD NOT UPDATE! 23.12.24
+	_('ScanZoomStill:')
+	AddPattern('558BEC8B41085685C0') ; COULD NOT UPDATE! 23.12.24
+	_('ScanZoomMoving:')
+	AddPattern('EB358B4304') ; COULD NOT UPDATE! 23.12.24
+	_('ScanBuildNumber:')
+	AddPattern('558BEC83EC4053568BD9') ; COULD NOT UPDATE! 23.12.24
 	_('ScanChangeStatusFunction:')
 	AddPattern('558BEC568B750883FE047C14') ;STILL WORKING 23.12.24, 568BF183FE047C14682F020000
-	;_('ScanCharslots:')
-	;AddPattern('8B551041897E38897E3C897E34897E48897E4C890D') ; COULD NOT UPDATE! 23.12.24
-	;_('ScanReadChatFunction:')
-	;AddPattern('A128B6EB00') ; COULD NOT UPDATE! 23.12.24
+	_('ScanCharslots:')
+	AddPattern('8B551041897E38897E3C897E34897E48897E4C890D') ; COULD NOT UPDATE! 23.12.24
+	_('ScanReadChatFunction:')
+	AddPattern('A128B6EB00') ; COULD NOT UPDATE! 23.12.24
 	_('ScanDialogLog:')
 	AddPattern('8B45088945FC8D45F8506A08C745F841') ;STILL WORKING 23.12.24, 558BEC83EC285356578BF28BD9
 	_("ScanTradeHack:")
@@ -4688,9 +4688,9 @@ Func ModifyMemory()
 			CompleteASMCode()
 	EndSwitch
 	WriteDetour('MainStart', 'MainProc')
-;~ 	WriteDetour('TargetLogStart', 'TargetLogProc')
+	WriteDetour('TargetLogStart', 'TargetLogProc')
 	WriteDetour('TraderHookStart', 'TraderHookProc')
-;~ 	WriteDetour('LoadFinishedStart', 'LoadFinishedProc')
+	WriteDetour('LoadFinishedStart', 'LoadFinishedProc')
 	WriteDetour('RenderingMod', 'RenderingModProc')
 ;~ 	WriteDetour('StringLogStart', 'StringLogProc')
 ;~ 	WriteDetour('StringFilter1Start', 'StringFilter1Proc')
@@ -4735,6 +4735,14 @@ Func CreateMain()
 	_('MainProc:')
 	_('nop x')
 	_('pushad')
+
+	;_('push ebp')
+	;_('mov ebp,esp')
+	;_('fld st(0),dword[ebp+8]')
+
+	;_('ljmp MainReturn')
+
+
 	_('mov eax,dword[EnsureEnglish]')
 	_('test eax,eax')
 	_('jz MainMain')
@@ -4752,21 +4760,21 @@ Func CreateMain()
 	_('mov eax,dword[ecx+40]')
 	_('test eax,eax')
 	_('jz MainMain')
-;~ 	_('mov ecx,dword[ActionBase]')
-;~ 	_('mov ecx,dword[ecx+4]')
-;~ 	_('mov ecx,dword[ecx+34]')
-;~ 	_('add ecx,6C')
-;~ 	_('push 0')
-;~ 	_('push 0')
-;~ 	_('push bb')
-;~ 	_('mov edx,esp')
-;~ 	_('push 0')
-;~ 	_('push edx')
-;~ 	_('push 18')
-;~ 	_('call ActionFunction')
-;~ 	_('pop eax')
-;~ 	_('pop ebx')
-;~ 	_('pop ecx')
+	_('mov ecx,dword[ActionBase]')
+	_('mov ecx,dword[ecx+4]')
+	_('mov ecx,dword[ecx+34]')
+	_('add ecx,6C')
+	_('push 0')
+	_('push 0')
+	_('push bb')
+	_('mov edx,esp')
+	_('push 0')
+	_('push edx')
+	_('push 18')
+	_('call ActionFunction')
+	_('pop eax')
+	_('pop ebx')
+	_('pop ecx')
 
 	_('MainMain:')
 	_('mov eax,dword[QueueCounter]')
@@ -4791,6 +4799,7 @@ Func CreateMain()
 	_('MainExit:')
 	_('popad')
 
+	_('push ebp')
 	_('mov ebp,esp')
 	_('fld st(0),dword[ebp+8]')
 
