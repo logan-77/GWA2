@@ -294,7 +294,8 @@ Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSy
 	$mCurrentStatus = MemoryRead(GetScannedAddress('ScanChangeStatusFunction', 35))
 	$mCharslots = MemoryRead(GetScannedAddress('ScanCharslots', 22))
 
-	$lTemp = GetScannedAddress('ScanEngine', -0x6D + 2) ;-16
+
+	$lTemp = GetScannedAddress('ScanEngine', -0x6D + 2) ;-16  ; Previous ('ScanEngine', -0x6E) ;-16   - Updated 24.12.24
 	SetValue('MainStart', '0x' & Hex($lTemp, 8))
 	SetValue('MainReturn', '0x' & Hex($lTemp + 5, 8))
 	$lTemp = GetScannedAddress('ScanRenderFunc', -0x67)
@@ -353,8 +354,7 @@ Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSy
 	SetValue('BuyItemBase', '0x' & Hex(MemoryRead(GetScannedAddress('ScanBuyItemBase', 15)), 8))
 	SetValue('TransactionFunction', '0x' & Hex(GetScannedAddress('ScanTransactionFunction', -0x7E), 8))
 	SetValue('RequestQuoteFunction', '0x' & Hex(GetScannedAddress('ScanRequestQuoteFunction', -0x34), 8)) ;-2
-	;SetValue('TraderFunction', '0x' & Hex(GetScannedAddress('ScanTraderFunction', -71), 8))
-	SetValue('TraderFunction', '0x' & Hex(GetScannedAddress('ScanTraderFunction', -0x1E), 8))
+	SetValue('TraderFunction', '0x' & Hex(GetScannedAddress('ScanTraderFunction', -0x1E), 8)) ;SetValue('TraderFunction', '0x' & Hex(GetScannedAddress('ScanTraderFunction', -71), 8))
 	SetValue('ClickToMoveFix', '0x' & Hex(GetScannedAddress("ScanClickToMoveFix", 1), 8))
 	SetValue('ChangeStatusFunction', '0x' & Hex(GetScannedAddress("ScanChangeStatusFunction", 1), 8))
 
