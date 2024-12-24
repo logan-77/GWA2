@@ -6,6 +6,11 @@
 
 ;GWCA: https://github.com/gwdevhub/GWCA
 
+#region Model IDs and Settings
+;Global Enum $Hero_Merc1 = 28, $Hero_Merc2, $Hero_Merc3, $Hero_Merc4
+;Global Enum $Hero_Merc5 = 32, $Hero_Merc6, $Hero_Merc7, $Hero_Merc8
+##EndRegion Model IDs and Settings
+
 #include-once
 ; GAME_CMSG_ - Trade related
 Global Const $HEADER_TRADE_ACKNOWLEDGE = 0x0000 ; Acknowledges a trade request or action
