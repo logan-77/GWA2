@@ -11,7 +11,7 @@
 
 #RequireAdmin
 #include-once
-#include "GWA2_Headers.au3"
+;#include "GWA2_Headers.au3"
 
 If @AutoItX64 Then
 	MsgBox(16, "Error!", "Please run all bots in 32-bit (x86) mode.")
@@ -400,7 +400,7 @@ Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSy
 
 	DllStructSetData($mBuyItem, 1, GetValue('CommandBuyItem'))
 	DllStructSetData($mSendChat, 1, GetValue('CommandSendChat'))
-	DllStructSetData($mSendChat, 2, $HEADER_SEND_CHAT)
+	DllStructSetData($mSendChat, 2, $HEADER_SEND_CHAT_MESSAGE)
 	DllStructSetData($mWriteChat, 1, GetValue('CommandWriteChat'))
 	DllStructSetData($mRequestQuote, 1, GetValue('CommandRequestQuote'))
 	DllStructSetData($mRequestQuoteSell, 1, GetValue('CommandRequestQuoteSell'))
@@ -762,12 +762,12 @@ EndFunc   ;==>ItemID
 
 ;~ Description: Salvage the materials out of an item.
 Func SalvageMaterials()
-	Return SendPacket(0x4, $HEADER_SALVAGE_MATS)
+	Return SendPacket(0x4, $HEADER_ITEM_SALVAGE_MATERIALS)
 EndFunc   ;==>SalvageMaterials
 
 ;~ Description: Salvages a mod out of an item.
 Func SalvageMod($aModIndex)
-	Return SendPacket(0x8, $HEADER_SALVAGE_MODS, $aModIndex)
+	Return SendPacket(0x8, $HEADER_ITEM_SALVAGE_UPGRADE, $aModIndex)
 EndFunc   ;==>SalvageMod
 
 ;~ Description: Identifies an item.
@@ -784,7 +784,7 @@ Func IdentifyItem($aItem)
 	Local $lIDKit = FindIdentificationKit()
 	If $lIDKit == 0 Then Return
 
-	SendPacket(0xC, $HEADER_ITEM_ID, $lIDKit, $lItemID)
+	SendPacket(0xC, $HEADER_ITEM_IDENTIFY, $lIDKit, $lItemID)
 
 	Local $lDeadlock = TimerInit()
 	Do
@@ -846,7 +846,7 @@ Func PickUpItem($aItem)
 		$lAgentID = DllStructGetData($aItem, 'ID')
 	EndIf
 
-	Return SendPacket(0xC, $HEADER_ITEM_PICKUP, $lAgentID, 0)
+	Return SendPacket(0xC, $HEADER_ITEM_PICKUP, $lAgentID, 0) ;-- Check for correct Header
 EndFunc   ;==>PickUpItem
 
 ;~ Description: Drops an item.
@@ -1714,17 +1714,17 @@ EndFunc   ;==>ZoneMap
 
 ;~ Description: Internal use for map travel.
 Func MoveMap($aMapID, $aRegion, $aDistrict, $aLanguage)
-	Return SendPacket(0x18, $HEADER_MAP_TRAVEL, $aMapID, $aRegion, $aDistrict, $aLanguage, False)
+	Return SendPacket(0x18, $HEADER_PARTY_TRAVEL, $aMapID, $aRegion, $aDistrict, $aLanguage, False)
 EndFunc   ;==>MoveMap
 
 ;~ Description: Returns to outpost after resigning/failure.
 Func ReturnToOutpost()
-	Return SendPacket(0x4, $HEADER_OUTPOST_RETURN)
+	Return SendPacket(0x4, $HEADER_PARTY_RETURN_TO_OUTPOST)
 EndFunc   ;==>ReturnToOutpost
 
 ;~ Description: Enter a challenge mission/pvp.
 Func EnterChallenge()
-	Return SendPacket(0x8, $HEADER_MISSION_ENTER, 1)
+	Return SendPacket(0x8, $HEADER_PARTY_ENTER_CHALLENGE, 1)
 EndFunc   ;==>EnterChallenge
 
 ;~ Description: Enter a foreign challenge mission/pvp.

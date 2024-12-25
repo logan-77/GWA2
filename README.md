@@ -66,9 +66,11 @@ The following patterns could not be updated as of December 23, 2024:
 3. **ScanTargetLog:**
    - Pattern: `5356578BFA894DF4E8`
 
-4. **ScanMapLoading:**
+4. **ScanMapLoading:** UPDATED 25.12.24, 6A2C50E8 
    - Pattern: `549EB20000000000`
    - Comment: `6A2C50E8`
+_('ScanMapLoading:')
+AddPattern('2480ED0000000000') ; UPDATED 25.12.24, 6A2C50E8
 
 5. **ScanLanguage:**
    - Pattern: `C38B75FC8B04B5`

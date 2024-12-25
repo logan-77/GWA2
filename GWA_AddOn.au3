@@ -5,6 +5,7 @@
 
 ;=================================================================================================
 ; Function:
+
 ; Description:		Globals from GWCA still working in GWA2
 ; Parameter(s):
 ;
