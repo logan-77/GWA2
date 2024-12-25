@@ -25,6 +25,7 @@ The following patterns were successfully updated as of December 23, 2024:
 4. **ScanEngine:**
    - Pattern: `56FFD083C4048BCEE897`
    - Updated: 23.12.24, needs to be updated each patch
+   - Changes to: $lTemp = GetScannedAddress('ScanEngine', -0x6D + 2) ;-16  ; Previous ('ScanEngine', -0x6E) ;-16   - Updated 24.12.24
 
 5. **ScanPing:**
    - Pattern: `E874651600`
