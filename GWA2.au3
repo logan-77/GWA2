@@ -11,7 +11,7 @@
 
 #RequireAdmin
 #include-once
-;#include "GWA2_Headers.au3"
+#include "GWA2_Headers.au3"
 
 If @AutoItX64 Then
 	MsgBox(16, "Error!", "Please run all bots in 32-bit (x86) mode.")
@@ -271,7 +271,7 @@ Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSy
 	Local $lTemp
 	$mBasePointer = MemoryRead(GetScannedAddress('ScanBasePointer', 8)) ;-3
 	SetValue('BasePointer', '0x' & Hex($mBasePointer, 8))
-	$mAgentBase = MemoryRead(GetScannedAddress('ScanAgentBasePointer', 8) + 0xD) - 8
+	$mAgentBase = MemoryRead(GetScannedAddress('ScanAgentBasePointer', 8) + 0xC - 7) - 8  ; Updated 26.12.24
 	SetValue('AgentBase', '0x' & Hex($mAgentBase, 8))
 	$mMaxAgents = $mAgentBase + 8
 	SetValue('MaxAgents', '0x' & Hex($mMaxAgents, 8))
@@ -280,9 +280,11 @@ Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSy
 	$mCurrentTarget = MemoryRead(GetScannedAddress('ScanCurrentTarget', -14)) ;$mAgentBase - 1280
 	SetValue('PacketLocation', '0x' & Hex(MemoryRead(GetScannedAddress('ScanBaseOffset', 11)), 8))
 	$mPing = MemoryRead(GetScannedAddress('ScanPing', -0x14)) ; Updated 16-06-2023
+
 	$mMapID = MemoryRead(GetScannedAddress('ScanMapID', 28))
+
 	$mMapLoading = MemoryRead(GetScannedAddress('ScanMapLoading', 0xB)) ; Updated 16-06-2023
-	$mLoggedIn = MemoryRead(GetScannedAddress('ScanLoggedIn', 0x7003)) ; Updated 28-08-2023
+	$mLoggedIn = MemoryRead(GetScannedAddress('ScanLoggedIn', 0x3)) ; Updated 28-08-2023
 	$mLanguage = MemoryRead(GetScannedAddress('ScanMapInfo', 11)) + 0xC
 	$mRegion = $mLanguage + 4
 	$mSkillBase = MemoryRead(GetScannedAddress('ScanSkillBase', 8))
@@ -294,8 +296,7 @@ Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSy
 	$mCurrentStatus = MemoryRead(GetScannedAddress('ScanChangeStatusFunction', 35))
 	$mCharslots = MemoryRead(GetScannedAddress('ScanCharslots', 22))
 
-
-	$lTemp = GetScannedAddress('ScanEngine', -0x6D + 2) ;-16  ; Previous ('ScanEngine', -0x6E) ;-16   - Updated 24.12.24
+	$lTemp = GetScannedAddress('ScanEngine', -0x6D + 2) ;-16
 	SetValue('MainStart', '0x' & Hex($lTemp, 8))
 	SetValue('MainReturn', '0x' & Hex($lTemp + 5, 8))
 	$lTemp = GetScannedAddress('ScanRenderFunc', -0x67)
@@ -347,14 +348,17 @@ Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSy
 	SetValue('ChangeTargetFunction', '0x' & Hex(GetScannedAddress('ScanChangeTargetFunction', -0x0089) + 1, 8))
 	SetValue('WriteChatFunction', '0x' & Hex(GetScannedAddress('ScanWriteChatFunction', -0x3D), 8))
 	SetValue('SellItemFunction', '0x' & Hex(GetScannedAddress('ScanSellItemFunction', -85), 8))
-	SetValue('PacketSendFunction', '0x' & Hex(GetScannedAddress('ScanPacketSendFunction', -0xC2), 8))
+	SetValue('PacketSendFunction', '0x' & Hex(GetScannedAddress('ScanPacketSendFunction', -0xBA), 8))
+	
 	SetValue('ActionBase', '0x' & Hex(MemoryRead(GetScannedAddress('ScanActionBase', -3)), 8))
+
 	SetValue('ActionFunction', '0x' & Hex(GetScannedAddress('ScanActionFunction', -3), 8))
 	SetValue('UseHeroSkillFunction', '0x' & Hex(GetScannedAddress('ScanUseHeroSkillFunction', -0x59), 8))
 	SetValue('BuyItemBase', '0x' & Hex(MemoryRead(GetScannedAddress('ScanBuyItemBase', 15)), 8))
 	SetValue('TransactionFunction', '0x' & Hex(GetScannedAddress('ScanTransactionFunction', -0x7E), 8))
 	SetValue('RequestQuoteFunction', '0x' & Hex(GetScannedAddress('ScanRequestQuoteFunction', -0x34), 8)) ;-2
-	SetValue('TraderFunction', '0x' & Hex(GetScannedAddress('ScanTraderFunction', -0x1E), 8)) ;SetValue('TraderFunction', '0x' & Hex(GetScannedAddress('ScanTraderFunction', -71), 8))
+	;SetValue('TraderFunction', '0x' & Hex(GetScannedAddress('ScanTraderFunction', -71), 8))
+	SetValue('TraderFunction', '0x' & Hex(GetScannedAddress('ScanTraderFunction', -0x1E), 8))
 	SetValue('ClickToMoveFix', '0x' & Hex(GetScannedAddress("ScanClickToMoveFix", 1), 8))
 	SetValue('ChangeStatusFunction', '0x' & Hex(GetScannedAddress("ScanChangeStatusFunction", 1), 8))
 
@@ -446,7 +450,7 @@ Func Scan()
 	;AddPattern('FF50104783C6043BFB75E1') ; Still in use? (16/06-2023)
 	AddPattern('FF501083C6043BF775E2') ; UPDATED 23.12.24
 	_('ScanAgentBasePointer:')
-	AddPattern('FF501083C6043BF775E2') ;UPDATED 23.12.24
+	AddPattern('FF501083C6043BF775E28B35') ;UPDATED 26.12.24
 	_('ScanCurrentTarget:')
 	AddPattern('83C4085F8BE55DC3CCCCCCCCCCCCCCCCCCCCCC55') ;UPDATED 23.12.24
 	_('ScanMyID:')
@@ -470,9 +474,9 @@ Func Scan()
 	_('ScanMapID:')
 	AddPattern('558BEC8B450885C074078B') ;STILL WORKING 23.12.24, B07F8D55
 	_('ScanMapLoading:')
-    AddPattern('2480ED0000000000') ; UPDATED 25.12.24, 6A2C50E8
+	AddPattern('2480ED0000000000') ; UPDATED 25.12.24, 6A2C50E8
 	_('ScanLoggedIn:')
-	AddPattern('BEFFC705C0') ; UPDATED 24.12.24 OLD:BFFFC70580 85C07411B807
+	AddPattern('C705ACDE740000000000C3CCCCCCCC') ; UPDATED 26.12.24, NEED TO GET UPDATED EACH PATCH OLD:BFFFC70580 85C07411B807
 	_('ScanRegion:')
 	AddPattern('8BF0EB038B750C3B') ; STILL WORKING 23.12.24
 	_('ScanMapInfo:')
@@ -528,6 +532,7 @@ Func Scan()
 	AddPattern('6A0057FF15D8408A006860EA0000') ; UPDATED 24.12.24, OLD:5F5E5B741A6860EA0000
 	_('ScanSalvageFunction:')
 	AddPattern('33C58945FC8B45088945F08B450C8945F48B45108945F88D45EC506A10C745EC76') ; UPDATED 24.12.24 OLD:33C58945FC8B45088945F08B450C8945F48B45108945F88D45EC506A10C745EC75
+	;AddPattern('8BFA8BD9897DF0895DF4')
 	_('ScanSalvageGlobal:')
 	AddPattern('8B4A04538945F48B4208') ; UPDATED 24.12.24, OLD: 8B5104538945F48B4108568945E88B410C578945EC8B4110528955E48945F0
 	;AddPattern('8B018B4904A3')
@@ -846,7 +851,7 @@ Func PickUpItem($aItem)
 		$lAgentID = DllStructGetData($aItem, 'ID')
 	EndIf
 
-	Return SendPacket(0xC, $HEADER_ITEM_PICKUP, $lAgentID, 0) ;-- Check for correct Header
+	Return SendPacket(0xC, $HEADER_ITEM_PICKUP, $lAgentID, 0)
 EndFunc   ;==>PickUpItem
 
 ;~ Description: Drops an item.
@@ -1243,7 +1248,7 @@ EndFunc   ;==>WithdrawGold
 
 ;~ Description: Internal use for moving gold.
 Func ChangeGold($aCharacter, $aStorage)
-	Return SendPacket(0xC, $HEADER_CHANGE_GOLD, $aCharacter, $aStorage) ;0x75
+	Return SendPacket(0xC, $HEADER_ITEM_CHANGE_GOLD, $aCharacter, $aStorage) ;0x75
 EndFunc   ;==>ChangeGold
 #EndRegion Item
 
@@ -1742,7 +1747,7 @@ EndFunc   ;==>TravelGH
 
 ;~ Description: Leave your guild hall.
 Func LeaveGH()
-	SendPacket(0x8, $HEADER_GUILDHALL_LEAVE, 1)
+	SendPacket(0x8, $HEADER_PARTY_LEAVE_GUILD_HALL, 1)
 	Return WaitMapLoading()
 EndFunc   ;==>LeaveGH
 #EndRegion Travel
@@ -2251,12 +2256,12 @@ EndFunc   ;==>InvitePlayer
 ;~ Description: Leave your party.
 Func LeaveGroup($aKickHeroes = True)
 	If $aKickHeroes Then KickAllHeroes()
-	Return SendPacket(0x4, $HEADER_PARTY_LEAVE)
+	Return SendPacket(0x4, $HEADER_PARTY_LEAVE_GROUP)
 EndFunc   ;==>LeaveGroup
 
 ;~ Description: Switches to/from Hard Mode.
 Func SwitchMode($aMode)
-	Return SendPacket(0x8, $HEADER_MODE_SWITCH, $aMode)
+	Return SendPacket(0x8, $HEADER_PARTY_SET_DIFFICULTY, $aMode)
 EndFunc   ;==>SwitchMode
 
 ;~ Description: Resign.
@@ -2267,15 +2272,15 @@ EndFunc   ;==>Resign
 ;~ Description: Donate Kurzick or Luxon faction.
 Func DonateFaction($aFaction)
 	If StringLeft($aFaction, 1) = 'k' Then
-		Return SendPacket(0x10, $HEADER_FACTION_DONATE, 0, 0, 5000)
+		Return SendPacket(0x10, $HEADER_FACTION_DEPOSIT, 0, 0, 5000)
 	Else
-		Return SendPacket(0x10, $HEADER_FACTION_DONATE, 0, 1, 5000)
+		Return SendPacket(0x10, $HEADER_FACTION_DEPOSIT, 0, 1, 5000)
 	EndIf
 EndFunc   ;==>DonateFaction
 
 ;~ Description: Open a dialog.
 Func Dialog($aDialogID)
-	Return SendPacket(0x8, $HEADER_DIALOG, $aDialogID)
+	Return SendPacket(0x8, $HEADER_DIALOG_SEND, $aDialogID)
 EndFunc   ;==>Dialog
 
 ;~ Description: Open a dialog - Records your dialog entry
@@ -2309,12 +2314,12 @@ EndFunc   ;==>SkipCinematic
 
 ;~ Description: Change a skill on the skillbar.
 Func SetSkillbarSkill($aSlot, $aSkillID, $aHeroNumber = 0)
-	Return SendPacket(0x14, $HEADER_SET_SKILLBAR_SKILL, GetHeroID($aHeroNumber), $aSlot - 1, $aSkillID, 0)
+	Return SendPacket(0x14, $HEADER_SKILLBAR_SKILL_SET, GetHeroID($aHeroNumber), $aSlot - 1, $aSkillID, 0)
 EndFunc   ;==>SetSkillbarSkill
 
 ;~ Description: Load all skills onto a skillbar simultaneously.
 Func LoadSkillBar($aSkill1 = 0, $aSkill2 = 0, $aSkill3 = 0, $aSkill4 = 0, $aSkill5 = 0, $aSkill6 = 0, $aSkill7 = 0, $aSkill8 = 0, $aHeroNumber = 0)
-	SendPacket(0x2C, $HEADER_LOAD_SKILLBAR, GetHeroID($aHeroNumber), 8, $aSkill1, $aSkill2, $aSkill3, $aSkill4, $aSkill5, $aSkill6, $aSkill7, $aSkill8)
+	SendPacket(0x2C, $HEADER_SKILLBAR_LOAD, GetHeroID($aHeroNumber), 8, $aSkill1, $aSkill2, $aSkill3, $aSkill4, $aSkill5, $aSkill6, $aSkill7, $aSkill8)
 EndFunc   ;==>LoadSkillBar
 
 ;~ Description: Loads skill template code.
