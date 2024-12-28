@@ -238,187 +238,233 @@ Func GetHwnd($aProc)
 		If (WinGetProcess($wins[$i][1]) == $aProc) And (BitAND(WinGetState($wins[$i][1]), 2)) Then Return $wins[$i][1]
 	Next
 EndFunc   ;==>GetHwnd
-
-;~ Description: Injects GWA² into the game client.
-Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSystem = True)
-	Local $lWinList, $lWinList2, $mGWProcessId
-	$mUseStringLog = $aUseStringLog
-	$mUseEventSystem = $aUseEventSystem
-
-	If IsString($aGW) Then
-		Local $lProcessList = ProcessList("gw.exe")
-		For $i = 1 To $lProcessList[0][0]
-			$mGWProcessId = $lProcessList[$i][1]
-			$mGWWindowHandle = GetHwnd($mGWProcessId)
-			MemoryOpen($mGWProcessId)
-			If $mGWProcHandle Then
-				If StringRegExp(ScanForCharname(), $aGW) = 1 Then ExitLoop
-			EndIf
-			MemoryClose()
-			$mGWProcHandle = 0
-		Next
-	Else
-		$mGWProcessId = $aGW
-		$mGWWindowHandle = GetHwnd($mGWProcessId)
-		MemoryOpen($aGW)
-		ScanForCharname()
-	EndIf
-
-	If $mGWProcHandle = 0 Then Return 0
-
-	Scan()
-
-	Local $lTemp
-	$mBasePointer = MemoryRead(GetScannedAddress('ScanBasePointer', 8)) ;-3
-	SetValue('BasePointer', '0x' & Hex($mBasePointer, 8))
-	$mAgentBase = MemoryRead(GetScannedAddress('ScanAgentBasePointer', 8) + 0xC - 7) - 8  ; Updated 26.12.24
-	SetValue('AgentBase', '0x' & Hex($mAgentBase, 8))
-	$mMaxAgents = $mAgentBase + 8
-	SetValue('MaxAgents', '0x' & Hex($mMaxAgents, 8))
-	$mMyID = MemoryRead(GetScannedAddress('ScanMyID', -3)) ;$mMyID = $mAgentBase - 84
-	SetValue('MyID', '0x' & Hex($mMyID, 8))
-	$mCurrentTarget = MemoryRead(GetScannedAddress('ScanCurrentTarget', -14)) ;$mAgentBase - 1280
-	SetValue('PacketLocation', '0x' & Hex(MemoryRead(GetScannedAddress('ScanBaseOffset', 11)), 8))
+;~ Description: Injects GWA² into the game client.  
+  
+Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSystem = True)  
+   ; Initialize variables  
+   Local $lWinList, $lWinList2, $mGWProcessId  
+   $mUseStringLog = $aUseStringLog  
+   $mUseEventSystem = $aUseEventSystem  
+  
+   ; Check if $aGW is a string or a process ID  
+   If IsString($aGW) Then  
+      ; Find the process ID of the game client  
+      Local $lProcessList = ProcessList("gw.exe")  
+      For $i = 1 To $lProcessList[0][0]  
+        $mGWProcessId = $lProcessList[$i][1]  
+        $mGWWindowHandle = GetHwnd($mGWProcessId)  
+        MemoryOpen($mGWProcessId)  
+        If $mGWProcHandle Then  
+           ; Check if the character name matches  
+           If StringRegExp(ScanForCharname(), $aGW) = 1 Then  
+              ExitLoop  
+           EndIf  
+        EndIf  
+        MemoryClose()  
+        $mGWProcHandle = 0  
+      Next  
+   Else  
+      ; Use the provided process ID  
+      $mGWProcessId = $aGW  
+      $mGWWindowHandle = GetHwnd($mGWProcessId)  
+      MemoryOpen($aGW)  
+      ScanForCharname()  
+   EndIf  
+  
+   ; Check if the process handle is valid  
+   If $mGWProcHandle = 0 Then  
+      Return 0  
+   EndIf  
+  
+   ; Scan for memory addresses  
+   Scan()  
+  
+	; **Read Memory Values for Game Data**  
+	  
+	; **Base Pointer (Game Client Base Address)**  
+	$mBasePointer = MemoryRead(GetScannedAddress('ScanBasePointer', 8)) ;-3  
+	SetValue('BasePointer', '0x' & Hex($mBasePointer, 8))  
+	  
+	; **Agent Base (Agent Data Structure Base Address)**  
+	$mAgentBase = MemoryRead(GetScannedAddress('ScanAgentBasePointer', 8) + 0xC - 7) - 8  ; Updated 26.12.24  
+	SetValue('AgentBase', '0x' & Hex($mAgentBase, 8))  
+	  
+	; **Max Agents (Maximum Number of Agents)**  
+	$mMaxAgents = $mAgentBase + 8   
+	SetValue('MaxAgents', '0x' & Hex($mMaxAgents, 8))  
+	  
+	; **My ID (Player's Agent ID)**  
+	$mMyID = MemoryRead(GetScannedAddress('ScanMyID', -3)) ;$mMyID = $mAgentBase - 84  
+	SetValue('MyID', '0x' & Hex($mMyID, 8))  
+	  
+	; **Current Target (Current Target's Agent ID)**  
+	$mCurrentTarget = MemoryRead(GetScannedAddress('ScanCurrentTarget', -14)) ;$mAgentBase - 1280  
+	SetValue('PacketLocation', '0x' & Hex(MemoryRead(GetScannedAddress('ScanBaseOffset', 11)), 8))  
+	  
+	; **Ping (Game Client's Ping Value)**  
 	$mPing = MemoryRead(GetScannedAddress('ScanPing', -0x14)) ; Updated 16-06-2023
 
-	$mMapID = MemoryRead(GetScannedAddress('ScanMapID', 28))
-
-	$mMapLoading = MemoryRead(GetScannedAddress('ScanMapLoading', 0xB)) ; Updated 16-06-2023
-	$mLoggedIn = MemoryRead(GetScannedAddress('ScanLoggedIn', 0x3)) ; Updated 28-08-2023
-	$mLanguage = MemoryRead(GetScannedAddress('ScanMapInfo', 11)) + 0xC
-	$mRegion = $mLanguage + 4
-	$mSkillBase = MemoryRead(GetScannedAddress('ScanSkillBase', 8))
-	$mSkillTimer = MemoryRead(GetScannedAddress('ScanSkillTimer', -3))
-	$lTemp = GetScannedAddress('ScanBuildNumber', 0x2C)
-	$mBuildNumber = MemoryRead($lTemp + MemoryRead($lTemp) + 5)
-	$mZoomStill = GetScannedAddress("ScanZoomStill", 0x33)
-	$mZoomMoving = GetScannedAddress("ScanZoomMoving", 0x21)
-	$mCurrentStatus = MemoryRead(GetScannedAddress('ScanChangeStatusFunction', 35))
+  
+	; **Read Memory Values for Game Data**  
+	$mMapID = MemoryRead(GetScannedAddress('ScanMapID', 28))  
+	  
+	; **Map Loading Status**  
+	$mMapLoading = MemoryRead(GetScannedAddress('ScanMapLoading', 0xB)) ; Updated 16-06-2023  
+	  
+	; **Login Status**  
+	$mLoggedIn = MemoryRead(GetScannedAddress('ScanLoggedIn', 0x3)) ; Updated 26.12.24  
+	  
+	; **Language and Region**  
+	$mLanguage = MemoryRead(GetScannedAddress('ScanMapInfo', 11)) + 0xC  
+	$mRegion = $mLanguage + 4  
+	  
+	; **Skill Base and Timer**  
+	$mSkillBase = MemoryRead(GetScannedAddress('ScanSkillBase', 8))  
+	$mSkillTimer = MemoryRead(GetScannedAddress('ScanSkillTimer', -3))  
+	  
+	; **Build Number**  
+	$lTemp = GetScannedAddress('ScanBuildNumber', 0x2C)  
+	$mBuildNumber = MemoryRead($lTemp + MemoryRead($lTemp) + 5)  
+	  
+	; **Zoom Settings**  
+	$mZoomStill = GetScannedAddress("ScanZoomStill", 0x33)  
+	$mZoomMoving = GetScannedAddress("ScanZoomMoving", 0x21)  
+	  
+	; **Current Status and Character Slots**  
+	$mCurrentStatus = MemoryRead(GetScannedAddress('ScanChangeStatusFunction', 35))  
 	$mCharslots = MemoryRead(GetScannedAddress('ScanCharslots', 22))
 
-	$lTemp = GetScannedAddress('ScanEngine', -0x6D + 2) ;-16
-	SetValue('MainStart', '0x' & Hex($lTemp, 8))
-	SetValue('MainReturn', '0x' & Hex($lTemp + 5, 8))
-	$lTemp = GetScannedAddress('ScanRenderFunc', -0x67)
-	SetValue('RenderingMod', '0x' & Hex($lTemp, 8))
-	SetValue('RenderingModReturn', '0x' & Hex($lTemp + 10, 8))
-	$lTemp = GetScannedAddress('ScanTargetLog', 1)
-	SetValue('TargetLogStart', '0x' & Hex($lTemp, 8))
-	SetValue('TargetLogReturn', '0x' & Hex($lTemp + 5, 8))
-	$lTemp = GetScannedAddress('ScanSkillLog', 1)
-	SetValue('SkillLogStart', '0x' & Hex($lTemp, 8))
-	SetValue('SkillLogReturn', '0x' & Hex($lTemp + 5, 8))
-	$lTemp = GetScannedAddress('ScanSkillCompleteLog', -4)
-	SetValue('SkillCompleteLogStart', '0x' & Hex($lTemp, 8))
-	SetValue('SkillCompleteLogReturn', '0x' & Hex($lTemp + 5, 8))
-	$lTemp = GetScannedAddress('ScanSkillCancelLog', 5)
-	SetValue('SkillCancelLogStart', '0x' & Hex($lTemp, 8))
-	SetValue('SkillCancelLogReturn', '0x' & Hex($lTemp + 6, 8))
-	$lTemp = GetScannedAddress('ScanChatLog', 18)
-	SetValue('ChatLogStart', '0x' & Hex($lTemp, 8))
-	SetValue('ChatLogReturn', '0x' & Hex($lTemp + 6, 8))
-	$lTemp = GetScannedAddress('ScanTraderHook', -0x2F) ; was -7
-	SetValue('TraderHookStart', '0x' & Hex($lTemp, 8))
-	SetValue('TraderHookReturn', '0x' & Hex($lTemp + 5, 8))
+  
+   $lTemp = GetScannedAddress('ScanEngine', -0x6D + 2) ;-16  
+   SetValue('MainStart', '0x' & Hex($lTemp, 8))  
+   SetValue('MainReturn', '0x' & Hex($lTemp + 5, 8))  
+   $lTemp = GetScannedAddress('ScanRenderFunc', -0x67)  
+   SetValue('RenderingMod', '0x' & Hex($lTemp, 8))  
+   SetValue('RenderingModReturn', '0x' & Hex($lTemp + 10, 8))  
+   $lTemp = GetScannedAddress('ScanTargetLog', 1)  
+   SetValue('TargetLogStart', '0x' & Hex($lTemp, 8))  
+   SetValue('TargetLogReturn', '0x' & Hex($lTemp + 5, 8))  
+   $lTemp = GetScannedAddress('ScanSkillLog', 1)  
+   SetValue('SkillLogStart', '0x' & Hex($lTemp, 8))  
+   SetValue('SkillLogReturn', '0x' & Hex($lTemp + 5, 8))  
+   $lTemp = GetScannedAddress('ScanSkillCompleteLog', -4)  
+   SetValue('SkillCompleteLogStart', '0x' & Hex($lTemp, 8))  
+   SetValue('SkillCompleteLogReturn', '0x' & Hex($lTemp + 5, 8))  
+   $lTemp = GetScannedAddress('ScanSkillCancelLog', 5)  
+   SetValue('SkillCancelLogStart', '0x' & Hex($lTemp, 8))  
+   SetValue('SkillCancelLogReturn', '0x' & Hex($lTemp + 6, 8))  
+   $lTemp = GetScannedAddress('ScanChatLog', 18)  
+   SetValue('ChatLogStart', '0x' & Hex($lTemp, 8))  
+   SetValue('ChatLogReturn', '0x' & Hex($lTemp + 6, 8))  
+   $lTemp = GetScannedAddress('ScanTraderHook', -0x2F) ; was -7  
+   SetValue('TraderHookStart', '0x' & Hex($lTemp, 8))  
+   SetValue('TraderHookReturn', '0x' & Hex($lTemp + 5, 8))  
+  
+   $lTemp = GetScannedAddress('ScanDialogLog', -4)  
+   SetValue('DialogLogStart', '0x' & Hex($lTemp, 8))  
+   SetValue('DialogLogReturn', '0x' & Hex($lTemp + 5, 8))  
+   $lTemp = GetScannedAddress('ScanStringFilter1', -5) ; was -0x23  
+   SetValue('StringFilter1Start', '0x' & Hex($lTemp, 8))  
+   SetValue('StringFilter1Return', '0x' & Hex($lTemp + 5, 8))  
+   $lTemp = GetScannedAddress('ScanStringFilter2', 0x16) ; was 0x61  
+   SetValue('StringFilter2Start', '0x' & Hex($lTemp, 8))  
+   SetValue('StringFilter2Return', '0x' & Hex($lTemp + 5, 8))  
+   SetValue('StringLogStart', '0x' & Hex(GetScannedAddress('ScanStringLog', 0x16), 8))  
+  
+   SetValue('LoadFinishedStart', '0x' & Hex(GetScannedAddress('ScanLoadFinished', 1), 8))  
+   SetValue('LoadFinishedReturn', '0x' & Hex(GetScannedAddress('ScanLoadFinished', 6), 8))  
+  
+   SetValue('PostMessage', '0x' & Hex(MemoryRead(GetScannedAddress('ScanPostMessage', 11)), 8))  
+   SetValue('Sleep', MemoryRead(MemoryRead(GetValue('ScanSleep') + 8) + 3))  
+   ;SetValue('SalvageFunction', MemoryRead(GetValue('ScanSalvageFunction') + 8) - 18)  
+   SetValue('SalvageFunction', '0x' & Hex(GetScannedAddress('ScanSalvageFunction', -10), 8))  
+   SetValue('SalvageGlobal', '0x' & Hex(MemoryRead(GetScannedAddress('ScanSalvageGlobal', 1) - 0x4), 8))  
+   ;SetValue('SalvageGlobal', MemoryRead(MemoryRead(GetValue('ScanSalvageGlobal') + 8) + 1))  
+   SetValue('IncreaseAttributeFunction', '0x' & Hex(GetScannedAddress('ScanIncreaseAttributeFunction', -0x5A), 8))  
+   SetValue("DecreaseAttributeFunction", "0x" & Hex(GetScannedAddress("ScanDecreaseAttributeFunction", 25), 8))  
+   SetValue('MoveFunction', '0x' & Hex(GetScannedAddress('ScanMoveFunction', 1), 8))  
+   SetValue('UseSkillFunction', '0x' & Hex(GetScannedAddress('ScanUseSkillFunction', -0x125), 8))  
+   SetValue('ChangeTargetFunction', '0x' & Hex(GetScannedAddress('ScanChangeTargetFunction', -0x0089) + 1, 8))  
+   SetValue('WriteChatFunction', '0x' & Hex(GetScannedAddress('ScanWriteChatFunction', -0x3D), 8))  
+   SetValue('SellItemFunction', '0x' & Hex(GetScannedAddress('ScanSellItemFunction', -85), 8))  
+   SetValue('PacketSendFunction', '0x' & Hex(GetScannedAddress('ScanPacketSendFunction', -0xBA), 8))  
+    
+   SetValue('ActionBase', '0x' & Hex(MemoryRead(GetScannedAddress('ScanActionBase', -3)), 8))  
+  
+   SetValue('ActionFunction', '0x' & Hex(GetScannedAddress('ScanActionFunction', -3), 8))  
+   SetValue('UseHeroSkillFunction', '0x' & Hex(GetScannedAddress('ScanUseHeroSkillFunction', -0x59), 8))  
+   SetValue('BuyItemBase', '0x' & Hex(MemoryRead(GetScannedAddress('ScanBuyItemBase', 15)), 8))  
+   SetValue('TransactionFunction', '0x' & Hex(GetScannedAddress('ScanTransactionFunction', -0x7E), 8))  
+   SetValue('RequestQuoteFunction', '0x' & Hex(GetScannedAddress('ScanRequestQuoteFunction', -0x34), 8)) ;-2  
+   ;SetValue('TraderFunction', '0x' & Hex(GetScannedAddress('ScanTraderFunction', -71), 8))  
+   SetValue('TraderFunction', '0x' & Hex(GetScannedAddress('ScanTraderFunction', -0x1E), 8))  
+   SetValue('ClickToMoveFix', '0x' & Hex(GetScannedAddress("ScanClickToMoveFix", 1), 8))  
+   SetValue('ChangeStatusFunction', '0x' & Hex(GetScannedAddress("ScanChangeStatusFunction", 1), 8))  
+  
+   SetValue('QueueSize', '0x00000010')  
+   SetValue('SkillLogSize', '0x00000010')  
+   SetValue('ChatLogSize', '0x00000010')  
+   SetValue('TargetLogSize', '0x00000200')  
+   SetValue('StringLogSize', '0x00000200')  
+   SetValue('CallbackEvent', '0x00000501')  
+   $MTradeHackAddress = GetScannedAddress("ScanTradeHack", 0)  
+  
+   ModifyMemory()  
+  
+   $mQueueCounter = MemoryRead(GetValue('QueueCounter'))  
+   $mQueueSize = GetValue('QueueSize') - 1  
+   $mQueueBase = GetValue('QueueBase')  
+   $mTargetLogBase = GetValue('TargetLogBase')  
+   $mStringLogBase = GetValue('StringLogBase')  
+   $mMapIsLoaded = GetValue('MapIsLoaded')  
+   $mEnsureEnglish = GetValue('EnsureEnglish')  
+   $mTraderQuoteID = GetValue('TraderQuoteID')  
+   $mTraderCostID = GetValue('TraderCostID')  
+   $mTraderCostValue = GetValue('TraderCostValue')  
+   $mDisableRendering = GetValue('DisableRendering')  
+   $mAgentCopyCount = GetValue('AgentCopyCount')  
+   $mAgentCopyBase = GetValue('AgentCopyBase')  
+   $mLastDialogID = GetValue('LastDialogID')  
+  
+   ; Event System  
+   If $mUseEventSystem Then  
+      MemoryWrite(GetValue('CallbackHandle'), $mGUI)  
+   EndIf  
+  
+   ; Packet Structures  
+   DllStructSetData($mInviteGuild, 1, GetValue('CommandPacketSend'))  
+   DllStructSetData($mInviteGuild, 2, 0x4C)  
+   DllStructSetData($mUseSkill, 1, GetValue('CommandUseSkill'))  
+   DllStructSetData($mMove, 1, GetValue('CommandMove'))  
+   DllStructSetData($mChangeTarget, 1, GetValue('CommandChangeTarget'))  
+   DllStructSetData($mPacket, 1, GetValue('CommandPacketSend'))  
+   DllStructSetData($mSellItem, 1, GetValue('CommandSellItem'))  
+   DllStructSetData($mAction, 1, GetValue('CommandAction'))  
+   DllStructSetData($mToggleLanguage, 1, GetValue('CommandToggleLanguage'))  
+   DllStructSetData($mUseHeroSkill, 1, GetValue('CommandUseHeroSkill'))  
+   DllStructSetData($mBuyItem, 1, GetValue('CommandBuyItem'))  
+   DllStructSetData($mSendChat, 1, GetValue('CommandSendChat'))  
+   DllStructSetData($mSendChat, 2, $HEADER_SEND_CHAT_MESSAGE)  
+   DllStructSetData($mWriteChat, 1, GetValue('CommandWriteChat'))  
+   DllStructSetData($mRequestQuote, 1, GetValue('CommandRequestQuote'))  
+   DllStructSetData($mRequestQuoteSell, 1, GetValue('CommandRequestQuoteSell'))  
+   DllStructSetData($mTraderBuy, 1, GetValue('CommandTraderBuy'))  
+   DllStructSetData($mTraderSell, 1, GetValue('CommandTraderSell'))  
+   DllStructSetData($mSalvage, 1, GetValue('CommandSalvage'))  
+   DllStructSetData($mIncreaseAttribute, 1, GetValue('CommandIncreaseAttribute'))  
+   DllStructSetData($mDecreaseAttribute, 1, GetValue('CommandDecreaseAttribute'))  
+   DllStructSetData($mMakeAgentArray, 1, GetValue('CommandMakeAgentArray'))  
+   DllStructSetData($mChangeStatus, 1, GetValue('CommandChangeStatus'))  
+  
+   ; Change window title  
+   If $bChangeTitle Then  
+      WinSetTitle($mGWWindowHandle, '', 'Guild Wars - ' & GetCharname())  
+   EndIf  
+  
+   ; Return the window handle  
+   Return $mGWWindowHandle  
+EndFunc  ;==>Initialize
 
-	$lTemp = GetScannedAddress('ScanDialogLog', -4)
-	SetValue('DialogLogStart', '0x' & Hex($lTemp, 8))
-	SetValue('DialogLogReturn', '0x' & Hex($lTemp + 5, 8))
-	$lTemp = GetScannedAddress('ScanStringFilter1', -5) ; was -0x23
-	SetValue('StringFilter1Start', '0x' & Hex($lTemp, 8))
-	SetValue('StringFilter1Return', '0x' & Hex($lTemp + 5, 8))
-	$lTemp = GetScannedAddress('ScanStringFilter2', 0x16) ; was 0x61
-	SetValue('StringFilter2Start', '0x' & Hex($lTemp, 8))
-	SetValue('StringFilter2Return', '0x' & Hex($lTemp + 5, 8))
-	SetValue('StringLogStart', '0x' & Hex(GetScannedAddress('ScanStringLog', 0x16), 8))
-
-	SetValue('LoadFinishedStart', '0x' & Hex(GetScannedAddress('ScanLoadFinished', 1), 8))
-	SetValue('LoadFinishedReturn', '0x' & Hex(GetScannedAddress('ScanLoadFinished', 6), 8))
-
-	SetValue('PostMessage', '0x' & Hex(MemoryRead(GetScannedAddress('ScanPostMessage', 11)), 8))
-	SetValue('Sleep', MemoryRead(MemoryRead(GetValue('ScanSleep') + 8) + 3))
-	;SetValue('SalvageFunction', MemoryRead(GetValue('ScanSalvageFunction') + 8) - 18)
-	SetValue('SalvageFunction', '0x' & Hex(GetScannedAddress('ScanSalvageFunction', -10), 8))
-	SetValue('SalvageGlobal', '0x' & Hex(MemoryRead(GetScannedAddress('ScanSalvageGlobal', 1) - 0x4), 8))
-	;SetValue('SalvageGlobal', MemoryRead(MemoryRead(GetValue('ScanSalvageGlobal') + 8) + 1))
-	SetValue('IncreaseAttributeFunction', '0x' & Hex(GetScannedAddress('ScanIncreaseAttributeFunction', -0x5A), 8))
-	SetValue("DecreaseAttributeFunction", "0x" & Hex(GetScannedAddress("ScanDecreaseAttributeFunction", 25), 8))
-	SetValue('MoveFunction', '0x' & Hex(GetScannedAddress('ScanMoveFunction', 1), 8))
-	SetValue('UseSkillFunction', '0x' & Hex(GetScannedAddress('ScanUseSkillFunction', -0x125), 8))
-	SetValue('ChangeTargetFunction', '0x' & Hex(GetScannedAddress('ScanChangeTargetFunction', -0x0089) + 1, 8))
-	SetValue('WriteChatFunction', '0x' & Hex(GetScannedAddress('ScanWriteChatFunction', -0x3D), 8))
-	SetValue('SellItemFunction', '0x' & Hex(GetScannedAddress('ScanSellItemFunction', -85), 8))
-	SetValue('PacketSendFunction', '0x' & Hex(GetScannedAddress('ScanPacketSendFunction', -0xBA), 8))
-	
-	SetValue('ActionBase', '0x' & Hex(MemoryRead(GetScannedAddress('ScanActionBase', -3)), 8))
-
-	SetValue('ActionFunction', '0x' & Hex(GetScannedAddress('ScanActionFunction', -3), 8))
-	SetValue('UseHeroSkillFunction', '0x' & Hex(GetScannedAddress('ScanUseHeroSkillFunction', -0x59), 8))
-	SetValue('BuyItemBase', '0x' & Hex(MemoryRead(GetScannedAddress('ScanBuyItemBase', 15)), 8))
-	SetValue('TransactionFunction', '0x' & Hex(GetScannedAddress('ScanTransactionFunction', -0x7E), 8))
-	SetValue('RequestQuoteFunction', '0x' & Hex(GetScannedAddress('ScanRequestQuoteFunction', -0x34), 8)) ;-2
-	;SetValue('TraderFunction', '0x' & Hex(GetScannedAddress('ScanTraderFunction', -71), 8))
-	SetValue('TraderFunction', '0x' & Hex(GetScannedAddress('ScanTraderFunction', -0x1E), 8))
-	SetValue('ClickToMoveFix', '0x' & Hex(GetScannedAddress("ScanClickToMoveFix", 1), 8))
-	SetValue('ChangeStatusFunction', '0x' & Hex(GetScannedAddress("ScanChangeStatusFunction", 1), 8))
-
-	SetValue('QueueSize', '0x00000010')
-	SetValue('SkillLogSize', '0x00000010')
-	SetValue('ChatLogSize', '0x00000010')
-	SetValue('TargetLogSize', '0x00000200')
-	SetValue('StringLogSize', '0x00000200')
-	SetValue('CallbackEvent', '0x00000501')
-	$MTradeHackAddress = GetScannedAddress("ScanTradeHack", 0)
-
-	ModifyMemory()
-
-	$mQueueCounter = MemoryRead(GetValue('QueueCounter'))
-	$mQueueSize = GetValue('QueueSize') - 1
-	$mQueueBase = GetValue('QueueBase')
-	$mTargetLogBase = GetValue('TargetLogBase')
-	$mStringLogBase = GetValue('StringLogBase')
-	$mMapIsLoaded = GetValue('MapIsLoaded')
-	$mEnsureEnglish = GetValue('EnsureEnglish')
-	$mTraderQuoteID = GetValue('TraderQuoteID')
-	$mTraderCostID = GetValue('TraderCostID')
-	$mTraderCostValue = GetValue('TraderCostValue')
-	$mDisableRendering = GetValue('DisableRendering')
-	$mAgentCopyCount = GetValue('AgentCopyCount')
-	$mAgentCopyBase = GetValue('AgentCopyBase')
-	$mLastDialogID = GetValue('LastDialogID')
-
-	;EventSystem
-	If $mUseEventSystem Then MemoryWrite(GetValue('CallbackHandle'), $mGUI)
-
-	DllStructSetData($mInviteGuild, 1, GetValue('CommandPacketSend'))
-	DllStructSetData($mInviteGuild, 2, 0x4C)
-	DllStructSetData($mUseSkill, 1, GetValue('CommandUseSkill'))
-	DllStructSetData($mMove, 1, GetValue('CommandMove'))
-	DllStructSetData($mChangeTarget, 1, GetValue('CommandChangeTarget'))
-	DllStructSetData($mPacket, 1, GetValue('CommandPacketSend'))
-	DllStructSetData($mSellItem, 1, GetValue('CommandSellItem'))
-	DllStructSetData($mAction, 1, GetValue('CommandAction'))
-	DllStructSetData($mToggleLanguage, 1, GetValue('CommandToggleLanguage'))
-
-	DllStructSetData($mUseHeroSkill, 1, GetValue('CommandUseHeroSkill'))
-
-	DllStructSetData($mBuyItem, 1, GetValue('CommandBuyItem'))
-	DllStructSetData($mSendChat, 1, GetValue('CommandSendChat'))
-	DllStructSetData($mSendChat, 2, $HEADER_SEND_CHAT_MESSAGE)
-	DllStructSetData($mWriteChat, 1, GetValue('CommandWriteChat'))
-	DllStructSetData($mRequestQuote, 1, GetValue('CommandRequestQuote'))
-	DllStructSetData($mRequestQuoteSell, 1, GetValue('CommandRequestQuoteSell'))
-	DllStructSetData($mTraderBuy, 1, GetValue('CommandTraderBuy'))
-	DllStructSetData($mTraderSell, 1, GetValue('CommandTraderSell'))
-	DllStructSetData($mSalvage, 1, GetValue('CommandSalvage'))
-	DllStructSetData($mIncreaseAttribute, 1, GetValue('CommandIncreaseAttribute'))
-	DllStructSetData($mDecreaseAttribute, 1, GetValue('CommandDecreaseAttribute'))
-	DllStructSetData($mMakeAgentArray, 1, GetValue('CommandMakeAgentArray'))
-	DllStructSetData($mChangeStatus, 1, GetValue('CommandChangeStatus'))
-
-	If $bChangeTitle Then WinSetTitle($mGWWindowHandle, '', 'Guild Wars - ' & GetCharname())
-	Return $mGWWindowHandle
-EndFunc   ;==>Initialize
 
 ;~ Description: Internal use only.
 Func GetValue($aKey)
@@ -437,6 +483,7 @@ Func SetValue($aKey, $aValue)
 EndFunc   ;==>SetValue
 
 ;~ Description: Internal use only.
+;~ Description: Scan patterns for Guild Wars game client. 
 Func Scan()
 	Local $lGwBase = ScanForProcess()
 	$mASMSize = 0
@@ -444,215 +491,303 @@ Func Scan()
 	$mASMString = ''
 
 	_('MainModPtr/4')
-	_('ScanBasePointer:')
-	AddPattern('506A0F6A00FF35') ;85C0750F8BCE CHECKED ; STILL UPDATED 23.12.24
-	_('ScanAgentBase:') ; Still in use? (16/06-2023)
-	;AddPattern('FF50104783C6043BFB75E1') ; Still in use? (16/06-2023)
-	AddPattern('FF501083C6043BF775E2') ; UPDATED 23.12.24
-	_('ScanAgentBasePointer:')
-	AddPattern('FF501083C6043BF775E28B35') ;UPDATED 26.12.24
-	_('ScanCurrentTarget:')
-	AddPattern('83C4085F8BE55DC3CCCCCCCCCCCCCCCCCCCCCC55') ;UPDATED 23.12.24
-	_('ScanMyID:')
-	AddPattern('83EC08568BF13B15') ; STILL WORKING 23.12.24
-	_('ScanEngine:')
-	AddPattern('56FFD083C4048BCEE897') ; UPDATED 23.12.24 NEEDS TO GET UPDATED EACH PATCH
-	_('ScanRenderFunc:')
-	AddPattern('F6C401741C68B1010000BA') ; STILL WORKING 23.12.24
-	_('ScanLoadFinished:')
-	AddPattern('8B561C8BCF52E8') ; COULD NOT UPDATE! 23.12.24
-	_('ScanPostMessage:')
-	AddPattern('6A00680080000051FF15') ; COULD NOT UPDATE! 23.12.24
-	_('ScanTargetLog:')
-	AddPattern('5356578BFA894DF4E8') ; COULD NOT UPDATE! 23.12.24
-	_('ScanChangeTargetFunction:')
-	AddPattern('3BDF0F95') ; STILL WORKING 23.12.24, 33C03BDA0F95C033
-	_('ScanMoveFunction:')
-	AddPattern('558BEC83EC208D45F0') ; STILL WORKING 23.12.24, 558BEC83EC2056578BF98D4DF0
-	_('ScanPing:')
-	AddPattern('E874651600') ; UPDATED 23.12.24
-	_('ScanMapID:')
-	AddPattern('558BEC8B450885C074078B') ;STILL WORKING 23.12.24, B07F8D55
-	_('ScanMapLoading:')
-	AddPattern('2480ED0000000000') ; UPDATED 25.12.24, 6A2C50E8
-	_('ScanLoggedIn:')
-	AddPattern('C705ACDE740000000000C3CCCCCCCC') ; UPDATED 26.12.24, NEED TO GET UPDATED EACH PATCH OLD:BFFFC70580 85C07411B807
-	_('ScanRegion:')
-	AddPattern('8BF0EB038B750C3B') ; STILL WORKING 23.12.24
-	_('ScanMapInfo:')
-	AddPattern('8BF0EB038B750C3B') ; STILL WORKING 23.12.24, 83F9FD7406
-	_('ScanLanguage:')
-	AddPattern('C38B75FC8B04B5') ; COULD NOT UPDATE! 23.12.24
-	_('ScanUseSkillFunction:')
-	AddPattern('85F6745B83FE1174') ; STILL WORKING 23.12.24, 558BEC83EC1053568BD9578BF2895DF0
-	_('ScanPacketSendFunction:')
-	AddPattern('F7D81BC02500800000') ;UPDATED 24.12.24 old: F7D9C74754010000001BC981, 558BEC83EC2C5356578BF985
-	_('ScanBaseOffset:')
-	AddPattern('83C40433C08BE55DC3A1') ; STILL WORKING 23.12.24, 5633F63BCE740E5633D2
-	_('ScanWriteChatFunction:')
-	AddPattern('8D85E0FEFFFF50681C01') ;STILL WORKING 23.12.24, 558BEC5153894DFC8B4D0856578B
-	_('ScanSkillLog:')
-	AddPattern('408946105E5B5D') ; COULD NOT UPDATE! 23.12.24
-	_('ScanSkillCompleteLog:')
-	AddPattern('741D6A006A40') ; COULD NOT UPDATE! 23.12.24
-	_('ScanSkillCancelLog:')
-	AddPattern('741D6A006A48') ; COULD NOT UPDATE! 23.12.24
-	_('ScanChatLog:')
-	AddPattern('8B45F48B138B4DEC50') ; COULD NOT UPDATE! 23.12.24
-	_('ScanSellItemFunction:')
-	AddPattern('8B4D2085C90F858E') ; COULD NOT UPDATE! 23.12.24
-	_('ScanStringLog:')
-	AddPattern('893E8B7D10895E04397E08') ; COULD NOT UPDATE! 23.12.24
-	_('ScanStringFilter1:')
-	AddPattern('8B368B4F2C6A006A008B06') ; COULD NOT UPDATE! 23.12.24
-	_('ScanStringFilter2:')
-	AddPattern('515356578BF933D28B4F2C') ; COULD NOT UPDATE! 23.12.24
-	_('ScanActionFunction:')
-	AddPattern('8B7508578BF983FE09750C6876') ;STILL WORKING 23.12.24, ;8B7D0883FF098BF175116876010000
-	_('ScanActionBase:')
-	AddPattern('8D1C87899DF4') ; UPDATED 24.12.24, OLD: 8D1C87899DF4FEFFFF8BC32BC7C1F802, 8B4208A80175418B4A08
-	_('ScanSkillBase:')
-	AddPattern('8D04B6C1E00505') ;STILL WORKING 23.12.24
-	_('ScanUseHeroSkillFunction:')
-	AddPattern('BA02000000B954080000') ;STILL WORKING 23.12.24
-	_('ScanTransactionFunction:')
-	AddPattern('85FF741D8B4D14EB08') ;STILL WORKING 23.12.24 ;558BEC81ECC000000053568B75085783FE108BFA8BD97614
-	_('ScanBuyItemFunction:') ; Still in use? (16/06-2023)
-	AddPattern('D9EED9580CC74004') ;STILL WORKING 23.12.24 ; Still in use? (16/06-2023)
-	_('ScanBuyItemBase:')
-	AddPattern('D9EED9580CC74004') ;STILL WORKING 23.12.24
-	_('ScanRequestQuoteFunction:')
-	AddPattern('8B752083FE107614')  ;STILL WORKING 23.12.24;8B750C5783FE107614 ;53568B750C5783FE10
-	_('ScanTraderFunction:')
-	;AddPattern('8B45188B551085') ;83FF10761468
-	AddPattern('83FF10761468D2210000') ;STILL WORKING 23.12.24
-	_('ScanTraderHook:')
-	AddPattern('8955FC6A008D55F8B9BB') ; COULD NOT UPDATE! 23.12.24 ;50516A466A06 ;007BA579
-	_('ScanSleep:')
-	AddPattern('6A0057FF15D8408A006860EA0000') ; UPDATED 24.12.24, OLD:5F5E5B741A6860EA0000
-	_('ScanSalvageFunction:')
-	AddPattern('33C58945FC8B45088945F08B450C8945F48B45108945F88D45EC506A10C745EC76') ; UPDATED 24.12.24 OLD:33C58945FC8B45088945F08B450C8945F48B45108945F88D45EC506A10C745EC75
-	;AddPattern('8BFA8BD9897DF0895DF4')
-	_('ScanSalvageGlobal:')
-	AddPattern('8B4A04538945F48B4208') ; UPDATED 24.12.24, OLD: 8B5104538945F48B4108568945E88B410C578945EC8B4110528955E48945F0
-	;AddPattern('8B018B4904A3')
-	_('ScanIncreaseAttributeFunction:')
-	AddPattern('8B7D088B702C8B1F3B9E00050000') ;STILL WORKING 23.12.24, 8B702C8B3B8B86
-	_("ScanDecreaseAttributeFunction:")
-	AddPattern("8B8AA800000089480C5DC3CC") ;STILL WORKING 23.12.24, 8B402C8BCE059C0000008B1089118B50
-	_('ScanSkillTimer:')
-	AddPattern('FFD68B4DF08BD88B4708') ;STILL WORKING 23.12.24, 85c974158bd62bd183fa64
-	_('ScanClickToMoveFix:')
-	AddPattern('3DD301000074') ;STILL WORKING 23.12.24,
-	_('ScanZoomStill:')
-	AddPattern('558BEC8B41085685C0') ; COULD NOT UPDATE! 23.12.24
-	_('ScanZoomMoving:')
-	AddPattern('EB358B4304') ; COULD NOT UPDATE! 23.12.24
-	_('ScanBuildNumber:')
-	AddPattern('558BEC83EC4053568BD9') ; COULD NOT UPDATE! 23.12.24
-	_('ScanChangeStatusFunction:')
-	AddPattern('558BEC568B750883FE047C14') ;STILL WORKING 23.12.24, 568BF183FE047C14682F020000
-	_('ScanCharslots:')
-	AddPattern('8B551041897E38897E3C897E34897E48897E4C890D') ; COULD NOT UPDATE! 23.12.24
-	_('ScanReadChatFunction:')
-	AddPattern('A128B6EB00') ; COULD NOT UPDATE! 23.12.24
-	_('ScanDialogLog:')
-	AddPattern('8B45088945FC8D45F8506A08C745F841') ;STILL WORKING 23.12.24, 558BEC83EC285356578BF28BD9
-	_("ScanTradeHack:")
-	AddPattern("8BEC8B450883F846") ;STILL WORKING 23.12.24
-	_("ScanClickCoords:")
+  
+	; Scan patterns  
+	_('ScanBasePointer:')  
+	AddPattern('506A0F6A00FF35') ;85C0750F8BCE CHECKED ; STILL UPDATED 23.12.24  
+  
+	_('ScanAgentBase:') ; Still in use? (16/06-2023)  
+	;AddPattern('FF50104783C6043BFB75E1') ; Still in use? (16/06-2023)  
+	AddPattern('FF501083C6043BF775E2') ; UPDATED 23.12.24  
+  
+	_('ScanAgentBasePointer:')  
+	AddPattern('FF501083C6043BF775E28B35') ;UPDATED 26.12.24  
+  
+	_('ScanCurrentTarget:')  
+	AddPattern('83C4085F8BE55DC3CCCCCCCCCCCCCCCCCCCCCC55') ;UPDATED 23.12.24  
+  
+	_('ScanMyID:')  
+	AddPattern('83EC08568BF13B15') ; STILL WORKING 23.12.24  
+  
+	_('ScanEngine:')  
+	AddPattern('56FFD083C4048BCEE897') ; UPDATED 23.12.24 NEEDS TO GET UPDATED EACH PATCH  
+  
+	_('ScanRenderFunc:')  
+	AddPattern('F6C401741C68B1010000BA') ; STILL WORKING 23.12.24  
+  
+	_('ScanLoadFinished:')  
+	AddPattern('8B561C8BCF52E8') ; COULD NOT UPDATE! 23.12.24  
+  
+	_('ScanPostMessage:')  
+	AddPattern('6A00680080000051FF15') ; COULD NOT UPDATE! 23.12.24  
+  
+	_('ScanTargetLog:')  
+	AddPattern('5356578BFA894DF4E8') ; COULD NOT UPDATE! 23.12.24  
+  
+	_('ScanChangeTargetFunction:')  
+	AddPattern('3BDF0F95') ; STILL WORKING 23.12.24, 33C03BDA0F95C033  
+  
+	_('ScanMoveFunction:')  
+	AddPattern('558BEC83EC208D45F0') ; STILL WORKING 23.12.24, 558BEC83EC2056578BF98D4DF0  
+  
+	_('ScanPing:')  
+	AddPattern('E874651600') ; UPDATED 23.12.24  
+  
+	_('ScanMapID:')  
+	AddPattern('558BEC8B450885C074078B') ;STILL WORKING 23.12.24, B07F8D55  
+  
+	_('ScanMapLoading:')  
+	AddPattern('2480ED0000000000') ; UPDATED 25.12.24, 6A2C50E8  
+  
+	_('ScanLoggedIn:')  
+	AddPattern('C705ACDE740000000000C3CCCCCCCC') ; UPDATED 26.12.24, NEED TO GET UPDATED EACH PATCH OLD:BFFFC70580 85C07411B807  
+  
+	_('ScanRegion:')  
+	AddPattern('8BF0EB038B750C3B') ; STILL WORKING 23.12.24  
+  
+	_('ScanMapInfo:')  
+	AddPattern('8BF0EB038B750C3B') ; STILL WORKING 23.12.24, 83F9FD7406  
+  
+	_('ScanLanguage:')  
+	AddPattern('C38B75FC8B04B5') ; COULD NOT UPDATE! 23.12.24  
+  
+	_('ScanUseSkillFunction:')  
+	AddPattern('85F6745B83FE1174') ; STILL WORKING 23.12.24, 558BEC83EC1053568BD9578BF2895DF0  
+  
+	_('ScanPacketSendFunction:')  
+	AddPattern('F7D81BC02500800000') ;UPDATED 24.12.24 old: F7D9C74754010000001BC981, 558BEC83EC2C5356578BF985  
+  
+	_('ScanBaseOffset:')  
+	AddPattern('83C40433C08BE55DC3A1') ; STILL WORKING 23.12.24, 5633F63BCE740E5633D2  
+  
+	_('ScanWriteChatFunction:')  
+	AddPattern('8D85E0FEFFFF50681C01') ;STILL WORKING 23.12.24, 558BEC5153894DFC8B4D0856578B  
+  
+	_('ScanSkillLog:')  
+	AddPattern('408946105E5B5D') ; COULD NOT UPDATE! 23.12.24  
+  
+	_('ScanSkillCompleteLog:')  
+	AddPattern('741D6A006A40') ; COULD NOT UPDATE! 23.12.24  
+  
+	_('ScanSkillCancelLog:')  
+	AddPattern('741D6A006A48') ; COULD NOT UPDATE! 23.12.24  
+  
+	_('ScanChatLog:')  
+	AddPattern('8B45F48B138B4DEC50') ; COULD NOT UPDATE! 23.12.24  
+  
+	_('ScanSellItemFunction:')  
+	AddPattern('8B4D2085C90F858E') ; COULD NOT UPDATE! 23.12.24  
+  
+	_('ScanStringLog:')  
+	AddPattern('893E8B7D10895E04397E08') ; COULD NOT UPDATE! 23.12.24  
+  
+	_('ScanStringFilter1:')  
+	AddPattern('8B368B4F2C6A006A008B06') ; COULD NOT UPDATE! 23.12.24  
+  
+	_('ScanStringFilter2:')  
+	AddPattern('515356578BF933D28B4F2C') ; COULD NOT UPDATE! 23.12.24  
+  
+	_('ScanActionFunction:')  
+	AddPattern('8B7508578BF983FE09750C6876') ;STILL WORKING 23.12.24, ;8B7D0883FF098BF175116876010000  
+  
+	_('ScanActionBase:')  
+	AddPattern('8D1C87899DF4') ; UPDATED 24.12.24, OLD: 8D1C87899DF4FEFFFF8BC32BC7C1F802, 8B4208A80175418B4A08  
+  
+	_('ScanSkillBase:')  
+	AddPattern('8D04B6C1E00505') ;STILL WORKING 23.12.24  
+  
+	_('ScanUseHeroSkillFunction:')  
+	AddPattern('BA02000000B954080000') ;STILL WORKING 23.12.24  
+  
+	_('ScanTransactionFunction:')  
+	AddPattern('85FF741D8B4D14EB08') ;STILL WORKING 23.12.24 ;558BEC81ECC000000053568B75085783FE108BFA8BD97614  
+  
+	_('ScanBuyItemFunction:') ; Still in use? (16/06-2023)  
+	AddPattern('D9EED9580CC74004') ;STILL WORKING 23.12.24 ; Still in use? (16/06-2023)  
+  
+	_('ScanBuyItemBase:')  
+	AddPattern('D9EED9580CC74004') ;STILL WORKING 23.12.24  
+  
+	_('ScanRequestQuoteFunction:')  
+	AddPattern('8B752083FE107614')  ;STILL WORKING 23.12.24;8B750C5783FE107614 ;53568B750C5783FE10  
+  
+	_('ScanTraderFunction:')  
+	;AddPattern('8B45188B551085') ;83FF10761468  
+	AddPattern('83FF10761468D2210000') ;STILL WORKING 23.12.24  
+  
+	_('ScanTraderHook:')  
+	AddPattern('8955FC6A008D55F8B9BB') ; COULD NOT UPDATE! 23.12.24 ;50516A466A06 ;007BA579  
+  
+	_('ScanSleep:')  
+	AddPattern('6A0057FF15D8408A006860EA0000') ; UPDATED 24.12.24, OLD:5F5E5B741A6860EA0000  
+  
+	_('ScanSalvageFunction:')  
+	AddPattern('33C58945FC8B45088945F08B450C8945F48B45108945F88D45EC506A10C745EC76') ; UPDATED 24.12.24 OLD:33C58945FC8B45088945F08B450C8945F48B45108945F88D45EC506A10C745EC75  
+	;AddPattern('8BFA8BD9897DF0895DF4')  
+  
+	_('ScanSalvageGlobal:')  
+	AddPattern('8B4A04538945F48B4208') ; UPDATED 24.12.24, OLD: 8B5104538945F48B4108568945E88B410C578945EC8B4110528955E48945F0  
+	;AddPattern('8B018B4904A3')  
+  
+	_('ScanIncreaseAttributeFunction:')  
+	AddPattern('8B7D088B702C8B1F3B9E00050000') ;STILL WORKING 23.12.24, 8B702C8B3B8B86  
+  
+	_("ScanDecreaseAttributeFunction:")  
+	AddPattern("8B8AA800000089480C5DC3CC") ;STILL WORKING 23.12.24, 8B402C8BCE059C0000008B1089118B50  
+  
+	_('ScanSkillTimer:')  
+	AddPattern('FFD68B4DF08BD88B4708') ;STILL WORKING 23.12.24, 85c974158bd62bd183fa64  
+  
+	_('ScanClickToMoveFix:')  
+	AddPattern('3DD301000074') ;STILL WORKING 23.12.24,  
+  
+	_('ScanZoomStill:')  
+	AddPattern('558BEC8B41085685C0') ; COULD NOT UPDATE! 23.12.24  
+  
+	_('ScanZoomMoving:')  
+	AddPattern('EB358B4304') ; COULD NOT UPDATE! 23.12.24  
+  
+	_('ScanBuildNumber:')  
+	AddPattern('558BEC83EC4053568BD9') ; COULD NOT UPDATE! 23.12.24  
+  
+	_('ScanChangeStatusFunction:')  
+	AddPattern('558BEC568B750883FE047C14') ;STILL WORKING 23.12.24, 568BF183FE047C14682F020000  
+  
+	_('ScanCharslots:')  
+	AddPattern('8B551041897E38897E3C897E34897E48897E4C890D') ; COULD NOT UPDATE! 23.12.24  
+  
+	_('ScanReadChatFunction:')  
+	AddPattern('A128B6EB00') ; COULD NOT UPDATE! 23.12.24  
+  
+	_('ScanDialogLog:')  
+	AddPattern('8B45088945FC8D45F8506A08C745F841') ;STILL WORKING 23.12.24, 558BEC83EC285356578BF28BD9  
+  
+	_("ScanTradeHack:")  
+	AddPattern("8BEC8B450883F846") ;STILL WORKING 23.12.24  
+  
+	_("ScanClickCoords:")  
 	AddPattern("8B451C85C0741CD945F8") ;STILL WORKING 23.12.24
-	_('ScanProc:')
-	_('pushad')
-	_('mov ecx,' & Hex($lGwBase, 8)) ;401000
-	_('mov esi,ScanProc')
-	_('ScanLoop:')
-	_('inc ecx')
-	_('mov al,byte[ecx]')
-	_('mov edx,ScanBasePointer')
 
-	_('ScanInnerLoop:')
-	_('mov ebx,dword[edx]')
-	_('cmp ebx,-1')
-	_('jnz ScanContinue')
-	_('add edx,50')
-	_('cmp edx,esi')
-	_('jnz ScanInnerLoop')
-	_('cmp ecx,' & SwapEndian(Hex($lGwBase + 5238784, 8))) ;+4FF000
-	_('jnz ScanLoop')
-	_('jmp ScanExit')
+	_('ScanProc:')	; Label for the scan procedure  
+	_('pushad')	; Push all general-purpose registers onto the stack to save their values  
+	_('mov ecx,' & Hex($lGwBase, 8))	; Move the base address of the Guild Wars process into the ECX register  
+	_('mov esi,ScanProc')	; Move the address of the ScanProc label into the ESI register  
+	_('ScanLoop:')	; Label for the scan loop  
+	_('inc ecx')	; Increment the value in the ECX register by 1  
+	_('mov al,byte[ecx]')	; Move the byte value at the address stored in ECX into the AL register  
+	_('mov edx,ScanBasePointer')	; Move the address of the ScanBasePointer into the EDX register
 
-	_('ScanContinue:')
-	_('lea edi,dword[edx+ebx]')
-	_('add edi,C')
-	_('mov ah,byte[edi]')
-	_('cmp al,ah')
-	_('jz ScanMatched')
-	_('mov dword[edx],0')
-	_('add edx,50')
-	_('cmp edx,esi')
-	_('jnz ScanInnerLoop')
-	_('cmp ecx,' & SwapEndian(Hex($lGwBase + 5238784, 8)))
-	_('jnz ScanLoop')
-	_('jmp ScanExit')
 
-	_('ScanMatched:')
-	_('inc ebx')
-	_('mov edi,dword[edx+4]')
-	_('cmp ebx,edi')
-	_('jz ScanFound')
-	_('mov dword[edx],ebx')
-	_('add edx,50')
-	_('cmp edx,esi')
-	_('jnz ScanInnerLoop')
-	_('cmp ecx,' & SwapEndian(Hex($lGwBase + 5238784, 8)))
-	_('jnz ScanLoop')
-	_('jmp ScanExit')
+	_('ScanInnerLoop:')	; Label for the inner scan loop  
+	_('mov ebx,dword[edx]')	; Move the 4-byte value at the address stored in EDX into the EBX register  
+	_('cmp ebx,-1')	; Compare the value in EBX to -1  
+	_('jnz ScanContinue')	; Jump to the ScanContinue label if the comparison is not zero  
+	_('add edx,50')	; Add 50 to the value in the EDX register  
+	_('cmp edx,esi')	; Compare the value in EDX to the value in ESI  
+	_('jnz ScanInnerLoop')	; Jump to the ScanInnerLoop label if the comparison is not zero  
+	_('cmp ecx,' & SwapEndian(Hex($lGwBase + 5238784, 8)))	; Compare the value in ECX to a specific address (+4FF000)  
+	_('jnz ScanLoop')	; Jump to the ScanLoop label if the comparison is not zero  
+	_('jmp ScanExit')	; Jump to the ScanExit label
 
-	_('ScanFound:')
-	_('lea edi,dword[edx+8]')
-	_('mov dword[edi],ecx')
-	_('mov dword[edx],-1')
-	_('add edx,50')
-	_('cmp edx,esi')
-	_('jnz ScanInnerLoop')
-	_('cmp ecx,' & SwapEndian(Hex($lGwBase + 5238784, 8)))
-	_('jnz ScanLoop')
 
-	_('ScanExit:')
-	_('popad')
-	_('retn')
+	_('ScanContinue:')	; Label for the scan continue section  
+	_('lea edi,dword[edx+ebx]')	; Load the effective address of the value at EDX + EBX into the EDI register  
+	_('add edi,C')	; Add the value of C to the address in EDI  
+	_('mov ah,byte[edi]')	; Move the byte value at the address stored in EDI into the AH register  
+	_('cmp al,ah')	; Compare the value in AL to the value in AH  
+	_('jz ScanMatched')	; Jump to the ScanMatched label if the comparison is zero (i.e., the values match)  
+	_('mov dword[edx],0')	; Move the value 0 into the 4-byte location at the address stored in EDX  
+	_('add edx,50')	; Add 50 to the value in the EDX register  
+	_('cmp edx,esi')	; Compare the value in EDX to the value in ESI  
+	_('jnz ScanInnerLoop')	; Jump to the ScanInnerLoop label if the comparison is not zero  
+	_('cmp ecx,' & SwapEndian(Hex($lGwBase + 5238784, 8)))	; Compare the value in ECX to a specific address (+4FF000)  
+	_('jnz ScanLoop')	; Jump to the ScanLoop label if the comparison is not zero  
+	_('jmp ScanExit')	; Jump to the ScanExit label
 
-	$mBase = $lGwBase + 0x9DF000
-	Local $lScanMemory = MemoryRead($mBase, 'ptr')
-	If $lScanMemory = 0 Then
-		$mMemory = DllCall($mKernelHandle, 'ptr', 'VirtualAllocEx', 'handle', $mGWProcHandle, 'ptr', 0, 'ulong_ptr', $mASMSize, 'dword', 0x1000, 'dword', 0x40)
-		$mMemory = $mMemory[0]
-		MemoryWrite($mBase, $mMemory)
-;~ 		out("First Inject: " & $mMemory)
-	Else
-		$mMemory = $lScanMemory
+
+	_('ScanMatched:')	; Label for the scan matched section  
+	_('inc ebx')	; Increment the value in the EBX register by 1  
+	_('mov edi,dword[edx+4]')	; Move the 4-byte value at the address EDX + 4 into the EDI register  
+	_('cmp ebx,edi')	; Compare the value in EBX to the value in EDI  
+	_('jz ScanFound')	; Jump to the ScanFound label if the comparison is zero (i.e., the values match)  
+	_('mov dword[edx],ebx')	; Move the value in EBX into the 4-byte location at the address stored in EDX  
+	_('add edx,50')	; Add 50 to the value in the EDX register  
+	_('cmp edx,esi')	; Compare the value in EDX to the value in ESI  
+	_('jnz ScanInnerLoop')	; Jump to the ScanInnerLoop label if the comparison is not zero  
+	_('cmp ecx,' & SwapEndian(Hex($lGwBase + 5238784, 8)))	; Compare the value in ECX to a specific address (+4FF000)  
+	_('jnz ScanLoop')	; Jump to the ScanLoop label if the comparison is not zero  
+	_('jmp ScanExit')	; Jump to the ScanExit label
+
+
+	_('ScanFound:')	; Label for the scan found section  
+	_('lea edi,dword[edx+8]')	; Load the effective address of the value at EDX + 8 into the EDI register  
+	_('mov dword[edi],ecx')	; Move the value in ECX into the 4-byte location at the address stored in EDI  
+	_('mov dword[edx],-1')	; Move the value -1 into the 4-byte location at the address stored in EDX (mark as found)  
+	_('add edx,50')	; Add 50 to the value in the EDX register  
+	_('cmp edx,esi')	; Compare the value in EDX to the value in ESI  
+	_('jnz ScanInnerLoop')	; Jump to the ScanInnerLoop label if the comparison is not zero  
+	_('cmp ecx,' & SwapEndian(Hex($lGwBase + 5238784, 8)))	; Compare the value in ECX to a specific address (+4FF000)  
+	_('jnz ScanLoop')	; Jump to the ScanLoop label if the comparison is not zero  
+  
+	_('ScanExit:')	; Label for the scan exit section  
+	_('popad')	; Pop all general-purpose registers from the stack to restore their original values  
+	_('retn')	; Return from the current function (exit the scan routine)
+
+  
+	$mBase = $lGwBase + 0x9DF000   
+	Local $lScanMemory = MemoryRead($mBase, 'ptr')  
+  
+	; Check if the scan memory address is empty (no previous injection)  
+	If $lScanMemory = 0 Then  
+		; Allocate a new block of memory for the scan routine  
+		$mMemory = DllCall($mKernelHandle, 'ptr', 'VirtualAllocEx', 'handle', $mGWProcHandle, 'ptr', 0, 'ulong_ptr', $mASMSize, 'dword', 0x1000, 'dword', 0x40)  
+		$mMemory = $mMemory[0] ; Get the allocated memory address  
+  
+		; Write the allocated memory address to the scan memory location  
+		MemoryWrite($mBase, $mMemory)  
+  
+		;~ out("First Inject: " & $mMemory) 
+	Else  
+		; If the scan memory address is not empty, use the existing memory address  
+		$mMemory = $lScanMemory  
 	EndIf
 
-	CompleteASMCode()
 
-	If $lScanMemory = 0 Then
-		WriteBinary($mASMString, $mMemory + $mASMCodeOffset)
-		Local $lThread = DllCall($mKernelHandle, 'int', 'CreateRemoteThread', 'int', $mGWProcHandle, 'ptr', 0, 'int', 0, 'int', GetLabelInfo('ScanProc'), 'ptr', 0, 'int', 0, 'int', 0)
-		$lThread = $lThread[0]
-		Local $lResult
-		Do
-			$lResult = DllCall($mKernelHandle, 'int', 'WaitForSingleObject', 'int', $lThread, 'int', 50)
-		Until $lResult[0] <> 258
-		DllCall($mKernelHandle, 'int', 'CloseHandle', 'int', $lThread)
-	EndIf
-EndFunc   ;==>Scan
+	; Complete the assembly code for the scan routine  
+	CompleteASMCode()  
+  
+	; Check if this is the first injection (no previous scan memory address)  
+	If $lScanMemory = 0 Then  
+		; Write the assembly code to the allocated memory address  
+		WriteBinary($mASMString, $mMemory + $mASMCodeOffset)  
+  
+		; Create a new thread in the target process to execute the scan routine  
+		Local $lThread = DllCall($mKernelHandle, 'int', 'CreateRemoteThread', 'int', $mGWProcHandle, 'ptr', 0, 'int', 0, 'int', GetLabelInfo('ScanProc'), 'ptr', 0, 'int', 0, 'int', 0)  
+		$lThread = $lThread[0] ; Get the thread ID  
+  
+		; Wait for the thread to finish executing  
+		Local $lResult  
+		Do  
+			; Wait for up to 50ms for the thread to finish  
+			$lResult = DllCall($mKernelHandle, 'int', 'WaitForSingleObject', 'int', $lThread, 'int', 50)  
+		Until $lResult[0] <> 258 ; Wait until the thread is no longer waiting (258 is the WAIT_TIMEOUT constant)  
+  
+		; Close the thread handle to free up system resources  
+		DllCall($mKernelHandle, 'int', 'CloseHandle', 'int', $lThread)  
+	EndIf  
+EndFunc  ;==>Scan
 
-Func GetGWBase()
-	Local $lGwBase = ScanForProcess() - 4096
-	$lGwBase = "0x" & Hex($lGwBase)
-	Return $lGwBase
-EndFunc   ;==>GetGWBase
+; **Function to Retrieve Guild Wars Process Base Address**  
+Func GetGWBase()  
+	; **Scan for Guild Wars Process and Get Base Address**  
+	Local $lGwBase = ScanForProcess() - 4096 ; Subtract 4096 from the process address to get the base address  
+  
+	; **Convert Base Address to Hexadecimal String**  
+	$lGwBase = "0x" & Hex($lGwBase) ; Prefix the hexadecimal value with "0x"  
+  
+	; **Return Base Address as Hexadecimal String**  
+	Return $lGwBase  
+EndFunc  ;==>GetGWBase
 
 Func ScanForProcess()
 	Local $lCharNameCode = BinaryToString('0x558BEC83EC105356578B7D0833F63BFE')
@@ -733,9 +868,7 @@ Func ScanForCharname()
 EndFunc   ;==>ScanForCharname
 #EndRegion Initialisation
 
-
 #Region Item
-
 Func StartSalvage($aItem)
 	Local $lOffset[4] = [0, 0x18, 0x2C, 0x690]
 	Local $lSalvageSessionID = MemoryReadPtr($mBasePointer, $lOffset)
@@ -1326,7 +1459,7 @@ EndFunc   ;==>LockHeroTarget
 ;~ Description: Change a hero's aggression level.
 Func SetHeroAggression($aHeroNumber, $aAggression) ;0=Fight, 1=Guard, 2=Avoid
 	Local $lHeroID = GetHeroID($aHeroNumber)
-	Return SendPacket(0xC, $HEADER_HERO_AGGRESSION, $lHeroID, $aAggression)
+	Return SendPacket(0xC, $HEADER_HERO_BEHAVIOR, $lHeroID, $aAggression)
 EndFunc   ;==>SetHeroAggression
 
 ;~ Description: Disable a skill on a hero's skill bar.
@@ -2177,7 +2310,7 @@ EndFunc   ;==>IsRecharged
 
 ;~ Description: Cancel current action.
 Func CancelAction()
-	Return SendPacket(0x4, $HEADER_CANCEL_ACTION)
+	Return SendPacket(0x4, $HEADER_ACTION_CANCEL)
 EndFunc   ;==>CancelAction
 
 ;~ Description: Same as hitting spacebar.
@@ -2235,7 +2368,7 @@ Func DropBuff($aSkillID, $aAgentID, $aHeroNumber = 0)
 				DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lBuffStructAddress[0], 'ptr', DllStructGetPtr($lBuffStruct), 'int', DllStructGetSize($lBuffStruct), 'int', '')
 				If (DllStructGetData($lBuffStruct, 'SkillID') == $aSkillID) And (DllStructGetData($lBuffStruct, 'TargetId') == ConvertID($aAgentID)) Then
 ;~ 					out(DllStructGetData($lBuffStruct, 'BuffId'))
-					Return SendPacket(0x8, $HEADER_STOP_MAINTAIN_ENCH, DllStructGetData($lBuffStruct, 'BuffId'))
+					Return SendPacket(0x8, $HEADER_BUFF_DROP, DllStructGetData($lBuffStruct, 'BuffId'))
 					ExitLoop 2
 				EndIf
 			Next
@@ -2286,7 +2419,7 @@ EndFunc   ;==>Dialog
 ;~ Description: Open a dialog - Records your dialog entry
 Func _Dialog($aDialogID)
 	;_LogDialogID($aDialogID, $aAgent)
-	Return SendPacket(0x8, $HEADER_DIALOG, $aDialogID)
+	Return SendPacket(0x8, $HEADER_DIALOG_SEND, $aDialogID)
 EndFunc   ;==>_Dialog
 
 ;~ Description: Logs the given dialog ID, current map ID, and agent ID to a text file.
@@ -2519,7 +2652,7 @@ EndFunc   ;==>ClearAttributes
 
 ;~ Description: Change your secondary profession.
 Func ChangeSecondProfession($aProfession, $aHeroNumber = 0)
-	Return SendPacket(0xC, $HEADER_CHANGE_SECONDARY, GetHeroID($aHeroNumber), $aProfession)
+	Return SendPacket(0xC, $HEADER_PROFESSION_CHANGE, GetHeroID($aHeroNumber), $aProfession)
 EndFunc   ;==>ChangeSecondProfession
 
 ;~ Description: Sets value of GetMapIsLoaded() to 0.
@@ -6562,7 +6695,7 @@ Func TradePlayer($aAgent)
 	Else
 		$lAgentID = DllStructGetData($aAgent, 'ID')
 	EndIf
-	SendPacket(0x08, $HEADER_TRADE_PLAYER, $lAgentID)
+	SendPacket(0x08, $HEADER_TRADE_INITIATE, $lAgentID)
 EndFunc   ;==>TradePlayer
 
 Func AcceptTrade()
@@ -6588,7 +6721,7 @@ EndFunc   ;==>ChangeOffer
 Func OfferItem($lItemID, $aQuantity = 1)
 ;~ 	Local $lItemID
 ;~ 	$lItemID = GetBagItemIDByModelID($aModelID)
-	Return SendPacket(0xC, $HEADER_TRADE_OFFER_ITEM, $lItemID, $aQuantity)
+	Return SendPacket(0xC, $HEADER_TRADE_ADD_ITEM, $lItemID, $aQuantity)
 EndFunc   ;==>OfferItem
 
 ; Return 1 Trade windows exist; Return 3 Offer; Return 7 Accepted Trade
