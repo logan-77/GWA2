@@ -1,6 +1,7 @@
 ## GWA2 Version Updated
 
-UPDATE WORK IN PROGRESS - DATED 12/24/2024
+Fully working GWA2 as off 28.12.24
+Please report any errors you find.
 
 ### Quick-explanation of the comments:
 - **UPDATED**: The pattern has been successfully updated. The pattern was found in the old client and found in the new client using similar instructions from the new compiler.
