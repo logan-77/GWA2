@@ -63,6 +63,14 @@ Global Const $item_type_dagger = 32
 Global Const $item_type_scythe = 35
 Global Const $item_type_spear = 36
 
+; Define global constants  
+Global Const $STATIC_AGENT_TYPE = 0x200  
+Global Const $ITEM_AGENT_TYPE = 0x400  
+Global Const $CHEST_TYPE = 512  
+  
+; Initialize chest tracking array  
+Global $OpenedChestAgentIDs = [] 
+
 
 
 Global $OpenedChestAgentIDs[1]
@@ -225,10 +233,6 @@ Global $iItems_Picked = 0
 
 Global $DeadOnTheRun = 0
 
-;===========================================================================
-;======TEST TEST TEST
-;======================
-
 ; Define a custom structure via a DLL call for item properties
 Global $lItemExtraStruct = DllStructCreate("byte rarity;" & _
                                            "byte unknown1[3];" & _
@@ -389,43 +393,43 @@ EndFunc   ;==>MoveHero
 Func CommandHero1($aX = 0x7F800000, $aY = 0x7F800000)
 	Local $lOffset[4] = [0, 0x18, 0x2C, 0x520]
 	Local $lHeroStruct = MemoryReadPtr($mBasePointer, $lOffset)
-	SendPacket(0x14, $HEADER_HERO_PLACE_FLAG, MEMORYREAD($lHeroStruct[1] + 0x4), $aX, $aY, 0)
+	SendPacket(0x14, $HEADER_HERO_FLAG_SINGLE, MEMORYREAD($lHeroStruct[1] + 0x4), $aX, $aY, 0)
 EndFunc   ;==>CommandHero1
 
 Func CommandHero2($aX = 0x7F800000, $aY = 0x7F800000)
 	Local $lOffset[4] = [0, 0x18, 0x2C, 0x520]
 	Local $lHeroStruct = MemoryReadPtr($mBasePointer, $lOffset)
-	SendPacket(0x14, $HEADER_HERO_PLACE_FLAG, MEMORYREAD($lHeroStruct[1] + 0x28), $aX, $aY, 0)
+	SendPacket(0x14, $HEADER_HERO_FLAG_SINGLE, MEMORYREAD($lHeroStruct[1] + 0x28), $aX, $aY, 0)
 EndFunc   ;==>CommandHero2
 
 Func CommandHero3($aX = 0x7F800000, $aY = 0x7F800000)
 	Local $lOffset[4] = [0, 0x18, 0x2C, 0x520]
 	Local $lHeroStruct = MemoryReadPtr($mBasePointer, $lOffset)
-	SendPacket(0x14, $HEADER_HERO_PLACE_FLAG, MEMORYREAD($lHeroStruct[1] + 0x4C), $aX, $aY, 0)
+	SendPacket(0x14, $HEADER_HERO_FLAG_SINGLE, MEMORYREAD($lHeroStruct[1] + 0x4C), $aX, $aY, 0)
 EndFunc   ;==>CommandHero3
 
 Func CommandHero4($aX = 0x7F800000, $aY = 0x7F800000)
 	Local $lOffset[4] = [0, 0x18, 0x2C, 0x520]
 	Local $lHeroStruct = MemoryReadPtr($mBasePointer, $lOffset)
-	SendPacket(0x14, $HEADER_HERO_PLACE_FLAG, MEMORYREAD($lHeroStruct[1] + 0x70), $aX, $aY, 0)
+	SendPacket(0x14, $HEADER_HERO_FLAG_SINGLE, MEMORYREAD($lHeroStruct[1] + 0x70), $aX, $aY, 0)
 EndFunc   ;==>CommandHero4
 
 Func CommandHero5($aX = 0x7F800000, $aY = 0x7F800000)
 	Local $lOffset[4] = [0, 0x18, 0x2C, 0x520]
 	Local $lHeroStruct = MemoryReadPtr($mBasePointer, $lOffset)
-	SendPacket(0x14, $HEADER_HERO_PLACE_FLAG, MEMORYREAD($lHeroStruct[1] + 0x94), $aX, $aY, 0)
+	SendPacket(0x14, $HEADER_HERO_FLAG_SINGLE, MEMORYREAD($lHeroStruct[1] + 0x94), $aX, $aY, 0)
 EndFunc   ;==>CommandHero5
 
 Func CommandHero6($aX = 0x7F800000, $aY = 0x7F800000)
 	Local $lOffset[4] = [0, 0x18, 0x2C, 0x520]
 	Local $lHeroStruct = MemoryReadPtr($mBasePointer, $lOffset)
-	SendPacket(0x14, $HEADER_HERO_PLACE_FLAG, MEMORYREAD($lHeroStruct[1] + 0xB8), $aX, $aY, 0)
+	SendPacket(0x14, $HEADER_HERO_FLAG_SINGLE, MEMORYREAD($lHeroStruct[1] + 0xB8), $aX, $aY, 0)
 EndFunc   ;==>CommandHero6
 
 Func CommandHero7($aX = 0x7F800000, $aY = 0x7F800000)
 	Local $lOffset[4] = [0, 0x18, 0x2C, 0x520]
 	Local $lHeroStruct = MemoryReadPtr($mBasePointer, $lOffset)
-	SendPacket(0x14, $HEADER_HERO_PLACE_FLAG, MEMORYREAD($lHeroStruct[1] + 0xDC), $aX, $aY, 0)
+	SendPacket(0x14, $HEADER_HERO_FLAG_SINGLE, MEMORYREAD($lHeroStruct[1] + 0xDC), $aX, $aY, 0)
 EndFunc   ;==>CommandHero7
 
 Func GetHeroIdByName($heroName)
@@ -507,12 +511,12 @@ EndFunc   ;==>OpenChestByExtraType
 
 ;~ Description: Open a chest with key.
 Func OpenChestNoLockpick()
-	Return SendPacket(0x8, $HEADER_OPEN_CHEST, 1)
+	Return SendPacket(0x8, $HEADER_CHEST_OPEN, 1)
 EndFunc   ;==>OpenChestNoLockpick
 
 ;~ Description: Open a chest with lockpick.
 Func OpenChest()
-	Return SendPacket(0x8, $HEADER_OPEN_CHEST, 2)
+	Return SendPacket(0x8, $HEADER_CHEST_OPEN, 2)
 EndFunc   ;==>OpenChest
 
 Func GetAgentArraySorted($lAgentType)     ;returns a 2-dimensional array([agentID, [distance]) sorted by distance
@@ -532,41 +536,68 @@ Func GetAgentArraySorted($lAgentType)     ;returns a 2-dimensional array([agentI
 	Return $lReturnArray
  EndFunc   ;==>GetAgentArraySorted
 
-Func CheckForChest($chestrun = False)
-	Local $AgentArray, $lAgent, $lExtraType
-	Local $ChestFound = False
-	If GetIsDead(-2) Then Return
-	$AgentArray = GetAgentArraySorted(0x200)   ;0x200 = type: static
-	For $i = 0 To UBound($AgentArray) - 1    ;there might be multiple chests in range
-		$lAgent = GetAgentByID($AgentArray[$i][0])
-		$lType = DllStructGetData($lAgent, 'Type')
-		$lExtraType = DllStructGetData($lAgent, 'ExtraType')
-		If $lType <> 512 Then ContinueLoop
-		If $aChestID = "" Then ContinueLoop
-		If _ArraySearch($OpenedChestAgentIDs, $AgentArray[$i][0]) == -1 Then
-			If @error <> 6 Then ContinueLoop
-			If $OpenedChestAgentIDs[0] = "" Then    ;dirty fix: blacklist chests that were opened before
-				$OpenedChestAgentIDs[0] = $AgentArray[$i][0]
-			Else
-				_ArrayAdd($OpenedChestAgentIDs, $AgentArray[$i][0])
-			EndIf
-			$ChestFound = True
-			ExitLoop
-		EndIf
-	Next
-	If Not $ChestFound Then Return
-	ChangeTarget($lAgent)
-	GoSignpost($lAgent)
-	OpenChestByExtraType($aChestID)
-	Sleep(GetPing() + 500)
-	$AgentArray = GetAgentArraySorted(0x400)    ;0x400 = type: item
-	ChangeTarget($AgentArray[0][0])    ;in case you watch the bot running you can see what dropped immed
-	PickUpLoot()
-EndFunc   ;==>CheckForChest
+  ; Function to check for chests and interact with them  
+Func CheckForChest($chestRun = False)  
+   ; Check if the character is dead  
+   If GetIsDead(-2) Then Return  
+    
+   ; Get all static objects  
+   Local $AgentArray = GetAgentArraySorted($STATIC_AGENT_TYPE)  
+   Local $lAgent = 0  
+   Local $ChestFound = False  
+    
+   ; Look for valid chests  
+   For $i = 0 To UBound($AgentArray) - 1  
+      $lAgent = GetAgentByID($AgentArray[$i][0])  
+       
+      ; Skip if not a chest or invalid chest ID  
+      If DllStructGetData($lAgent, 'Type') <> $CHEST_TYPE Or $aChestID = "" Then  
+        ContinueLoop  
+      EndIf  
+       
+      ; Check if chest was already opened  
+      If Not IsChestOpened($AgentArray[$i][0]) Then  
+        ; Add chest to opened list  
+        AddOpenedChest($AgentArray[$i][0])  
+        $ChestFound = True  
+        ExitLoop  
+      EndIf  
+   Next  
+    
+   If Not $ChestFound Then Return  
+    
+   ; Interact with chest  
+   ChangeTarget($lAgent)  
+   GoSignpost($lAgent)  
+   OpenChestByExtraType($aChestID)  
+   Sleep(GetPing() + 500)  
+    
+   ; Handle loot  
+   Local $ItemArray = GetAgentArraySorted($ITEM_AGENT_TYPE)  
+   If UBound($ItemArray) > 0 Then  
+      ChangeTarget($ItemArray[0][0])  
+      PickUpLoot()  
+   EndIf  
+EndFunc  
+  
+; Function to check if a chest has been opened  
+Func IsChestOpened($chestID)  
+   If UBound($OpenedChestAgentIDs) = 0 Then Return False  
+   Return _ArraySearch($OpenedChestAgentIDs, $chestID) <> -1  
+EndFunc  
+  
+; Function to add a chest to the opened list  
+Func AddOpenedChest($chestID)  
+   If UBound($OpenedChestAgentIDs) = 0 Then  
+      ReDim $OpenedChestAgentIDs[1]  
+      $OpenedChestAgentIDs[0] = $chestID  
+   Else  
+      _ArrayAdd($OpenedChestAgentIDs, $chestID)  
+   EndIf  
+EndFunc
 
 Func GetPlayerCoords()
-    ; Assuming -2 is the player's unique identifier, get the agent data for the player
-    Return GetAgentByID(-2)
+    Return GetAgentByID(-2) ;~ Assuming -2 is the player's unique identifier, get the agent data for the player
 EndFunc
 
 Func CheckForChest2($chestrun = False)
@@ -796,20 +827,7 @@ EndFunc   ;==>GetNearestAgentToCoords
 ; Author(s):		GWCA team, recoded by ddarek, thnx to The ArkanaProject
 ;=================================================================================================
 
-;~ Func Ident($bagIndex, $numOfSlots)
-;~ 	If FindIDKit() = False Then
-;~ 	;	UpdateStatus("Buying ID Kit..........")
-;~ 		BuyIDKit();Buy IDKit
-;~ 		Sleep(Random(240, 260))
-;~ 	EndIf
-;~ 	For $i = 0 To $numOfSlots - 1
-;~ 		;UpdateStatus("Identifying item: " & $bagIndex & ", " & $i)
-;~ 		$aItem = GetItemBySlot($bagIndex, $i)
-;~ 		If DllStructGetData($aItem, 'ID') = 0 Then ContinueLoop
-;~ 		IdentifyItem($aItem)
-;~ 		Sleep(Random(500, 750))
-;~ 	Next
-;~ EndFunc   ;==>Ident
+
 ;=================================================================================================
 ; Function:			CanSell($aItem); only part of it can do
 ; Description:		general precaution not to sell things we want to save; ModelId page = http://wiki.gamerevision.com/index.php/Model_IDs
@@ -820,22 +838,6 @@ EndFunc   ;==>GetNearestAgentToCoords
 ; Author(s):		GWCA team, recoded by ddarek, thnx to The ArkanaProject
 ;=================================================================================================
 
-;~ Func CanSell($aItem)
-;~ 	$m = DllStructGetData($aItem, 'ModelID')
-;~ 	$q = DllStructGetData($aItem, 'Quantity')
-;~ 	$r = DllStructGetData(GetEtraItemInfoByItemId($aItem), 'Rarity')
-;~ 	If $m = 19185 Then ;kabob
-;~ 		Return False
-;~ 	ElseIf $m = 0 Or $q > 1 OR $r = $Rarity_Gold OR $r = $Rarity_Green Then
-;~ 		Return False
-;~ 	ElseIf $m = 146 Or $m = 22751 Then ; 146 = dyes, 22751 = lockpick not for sale
-;~ 		Return False
-;~ 	ElseIf ($m = 1175 OR $m = 1176 OR $m = 1152 OR $m = 1153 OR $m = 920 OR $m = 0) AND $r <> $Rarity_White Then
-;~ 		Return False
-;~ 	Else
-;~ 		Return True
-;~ 	EndIf
-;~ EndFunc   ;==>CanSell
 
 ;=================================================================================================
 ; Function:			Sell($bagIndex, $numOfSlots)
@@ -848,16 +850,6 @@ EndFunc   ;==>GetNearestAgentToCoords
 ;=================================================================================================
 
 
-;~ Func Sell($bagIndex, $numOfSlots)
-;~ 	Sleep(Random(150, 250))
-;~ 	For $i = 0 To $numOfSlots - 1
-;~ 		$aItem = GetItemBySlot($bagIndex, $i)
-;~ 		If CanSell($aItem) Then
-;~ 			SellItem($aItem)
-;~ 			Sleep(Random(500, 550))
-;~ 		EndIf
-;~ 	Next
-;~ EndFunc   ;==>Sell
 
 Func GetExtraItemInfoBySlot($aBag, $aSlot)
 	$item = GetItembySlot($aBag, $aSlot)
@@ -1047,8 +1039,6 @@ Func FormatName($aAgent); Thnx to The Arkana Project. Only works in PvP!
 	EndIf
 	Return $lString
 EndFunc
-
-
 
 ; #FUNCTION: Death ==============================================================================================================
 ; Description ...: Checks the dead

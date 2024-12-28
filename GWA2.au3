@@ -238,564 +238,574 @@ Func GetHwnd($aProc)
 		If (WinGetProcess($wins[$i][1]) == $aProc) And (BitAND(WinGetState($wins[$i][1]), 2)) Then Return $wins[$i][1]
 	Next
 EndFunc   ;==>GetHwnd
-;~ Description: Injects GWA² into the game client.  
-  
-Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSystem = True)  
-   ; Initialize variables  
-   Local $lWinList, $lWinList2, $mGWProcessId  
-   $mUseStringLog = $aUseStringLog  
-   $mUseEventSystem = $aUseEventSystem  
-  
-   CurrentAction("Initializing...")  
-  
-   ; Check if $aGW is a string or a process ID  
-   If IsString($aGW) Then  
-      ; Find the process ID of the game client  
-      Local $lProcessList = ProcessList("gw.exe")  
-      For $i = 1 To $lProcessList[0][0]  
-        $mGWProcessId = $lProcessList[$i][1]  
-        $mGWWindowHandle = GetHwnd($mGWProcessId)  
-        MemoryOpen($mGWProcessId)  
-        If $mGWProcHandle Then  
-           ; Check if the character name matches  
-           If StringRegExp(ScanForCharname(), $aGW) = 1 Then  
-              ExitLoop  
-           EndIf  
-        EndIf  
-        MemoryClose()  
-        $mGWProcHandle = 0  
-      Next  
-      CurrentAction("Found process ID: " & $mGWProcessId)  
-   Else  
-      ; Use the provided process ID  
-      $mGWProcessId = $aGW  
-      $mGWWindowHandle = GetHwnd($mGWProcessId)  
-      MemoryOpen($aGW)  
-      ScanForCharname()  
-      CurrentAction("Using provided process ID: " & $mGWProcessId)  
-   EndIf  
-  
-   ; Check if the process handle is valid  
-   If $mGWProcHandle = 0 Then  
-      CurrentAction("Invalid process handle")  
-      Return 0  
-   EndIf  
-  
-   ; Scan for memory addresses  
-   Scan()  
-   CurrentAction("Scanned for memory addresses")  
-  
-   ; Read Memory Values for Game Data  
-   ; **Base Pointer (Game Client Base Address)**  
-   $mBasePointer = MemoryRead(GetScannedAddress('ScanBasePointer', 8)) ;-3  
-   If @error Then  
-      CurrentAction("Failed to read base pointer")  
-      Return 0  
-   EndIf  
-   SetValue('BasePointer', '0x' & Hex($mBasePointer, 8))  
-   CurrentAction("Read base pointer: 0x" & Hex($mBasePointer, 8))  
-  
-   ; **Agent Base (Agent Data Structure Base Address)**  
-   $mAgentBase = MemoryRead(GetScannedAddress('ScanAgentBasePointer', 8) + 0xC - 7) - 8  ; Updated 26.12.24  
-   If @error Then  
-      CurrentAction("Failed to read agent base")  
-      Return 0  
-   EndIf  
-   SetValue('AgentBase', '0x' & Hex($mAgentBase, 8))  
-   CurrentAction("Read agent base: 0x" & Hex($mAgentBase, 8))  
-  
-   ; **Max Agents (Maximum Number of Agents)**  
-   $mMaxAgents = $mAgentBase + 8    
-   If @error Then  
-      CurrentAction("Failed to read max agents")  
-      Return 0  
-   EndIf  
-   SetValue('MaxAgents', '0x' & Hex($mMaxAgents, 8))  
-   CurrentAction("Read max agents: 0x" & Hex($mMaxAgents, 8))  
-  
-   ; **My ID (Player's Agent ID)**  
-   $mMyID = MemoryRead(GetScannedAddress('ScanMyID', -3)) ;$mMyID = $mAgentBase - 84  
-   If @error Then  
-      CurrentAction("Failed to read my ID")  
-      Return 0  
-   EndIf  
-   SetValue('MyID', '0x' & Hex($mMyID, 8))  
-   CurrentAction("Read my ID: 0x" & Hex($mMyID, 8))  
-  
-   ; **Current Target (Current Target's Agent ID)**  
-   $mCurrentTarget = MemoryRead(GetScannedAddress('ScanCurrentTarget', -14)) ;$mAgentBase - 1280  
-   If @error Then  
-      CurrentAction("Failed to read current target")  
-      Return 0  
-   EndIf  
-   SetValue('PacketLocation', '0x' & Hex(MemoryRead(GetScannedAddress('ScanBaseOffset', 11)), 8))  
-   CurrentAction("Read current target: 0x" & Hex($mCurrentTarget, 8))  
-  
-   ; **Ping (Game Client's Ping Value)**  
-   $mPing = MemoryRead(GetScannedAddress('ScanPing', -0x14)) ; Updated 16-06-2023  
-   If @error Then  
-      CurrentAction("Failed to read ping")  
-      Return 0  
-   EndIf  
-   CurrentAction("Read ping: 0x" & Hex($mPing, 8))  
-  
-   ; **Read Memory Values for Game Data**  
-   $mMapID = MemoryRead(GetScannedAddress('ScanMapID', 28))  
-   If @error Then  
-      CurrentAction("Failed to read map ID")  
-      Return 0  
-   EndIf  
-   CurrentAction("Read map ID: 0x" & Hex($mMapID, 8))  
-  
-   ; **Map Loading Status**  
-   $mMapLoading = MemoryRead(GetScannedAddress('ScanMapLoading', 0xB)) ; Updated 16-06-2023  
-   If @error Then  
-      CurrentAction("Failed to read map loading status")  
-      Return 0  
-   EndIf  
-   CurrentAction("Read map loading status: 0x" & Hex($mMapLoading, 8))  
-  
-   ; **Login Status**  
-   $mLoggedIn = MemoryRead(GetScannedAddress('ScanLoggedIn', 0x3)) ; Updated 26.12.24  
-   If @error Then  
-      CurrentAction("Failed to read login status")  
-      Return 0  
-   EndIf  
-   CurrentAction("Read login status: 0x" & Hex($mLoggedIn, 8))  
-  
-   ; **Language and Region**  
-   $mLanguage = MemoryRead(GetScannedAddress('ScanMapInfo', 11)) + 0xC  
-   If @error Then  
-      CurrentAction("Failed to read language")  
-      Return 0  
-   EndIf  
-   $mRegion = $mLanguage + 4  
-   If @error Then  
-      CurrentAction("Failed to read region")  
-      Return 0  
-   EndIf  
-   CurrentAction("Read language and region: 0x" & Hex($mLanguage, 8) & ", 0x" & Hex($mRegion, 8))  
-  
-   ; **Skill Base and Timer**  
-   $mSkillBase = MemoryRead(GetScannedAddress('ScanSkillBase', 8))  
-   If @error Then  
-      CurrentAction("Failed to read skill base")  
-      Return 0  
-   EndIf  
-   $mSkillTimer = MemoryRead(GetScannedAddress('ScanSkillTimer', -3))  
-   If @error Then  
-      CurrentAction("Failed to read skill timer")  
-      Return 0  
-   EndIf  
-   CurrentAction("Read skill base and timer: 0x" & Hex($mSkillBase, 8) & ", 0x" & Hex($mSkillTimer, 8))  
-  
-   ; **Build Number**  
-   $lTemp = GetScannedAddress('ScanBuildNumber', 0x2C)  
-   If @error Then  
-      CurrentAction("Failed to read build number address")  
-      Return 0  
-   EndIf  
-   $mBuildNumber = MemoryRead($lTemp + MemoryRead($lTemp) + 5)  
-   If @error Then  
-      CurrentAction("Failed to read build number")  
-      Return 0  
-   EndIf  
-   CurrentAction("Read build number: 0x" & Hex($mBuildNumber, 8))  
-  
-   ; **Zoom Settings**  
-   $mZoomStill = GetScannedAddress("ScanZoomStill", 0x33)  
-   If @error Then  
-      CurrentAction("Failed to read zoom still address")  
-      Return 0  
-   EndIf  
-   $mZoomMoving = GetScannedAddress("ScanZoomMoving", 0x21)  
-   If @error Then  
-      CurrentAction("Failed to read zoom moving address")  
-      Return 0  
-   EndIf  
-   CurrentAction("Read zoom settings: 0x" & Hex($mZoomStill, 8) & ", 0x" & Hex($mZoomMoving, 8))  
-  
-   ; **Current Status and Character Slots**  
-   $mCurrentStatus = MemoryRead(GetScannedAddress('ScanChangeStatusFunction', 35))  
-   If @error Then  
-      CurrentAction("Failed to read current status")  
-      Return 0  
-   EndIf  
-   $mCharslots = MemoryRead(GetScannedAddress('ScanCharslots', 22))  
-   If @error Then  
-      CurrentAction("Failed to read character slots")  
-      Return 0  
-   EndIf  
-   CurrentAction("Read current status and character slots: 0x" & Hex($mCurrentStatus, 8) & ", 0x" & Hex($mCharslots, 8))  
-  
-   $lTemp = GetScannedAddress('ScanEngine', -0x6D + 2) ;-16  
-   If @error Then  
-      CurrentAction("Failed to read engine address")  
-      Return 0  
-   EndIf  
-   SetValue('MainStart', '0x' & Hex($lTemp, 8))  
-   SetValue('MainReturn', '0x' & Hex($lTemp + 5, 8))  
-   $lTemp = GetScannedAddress('ScanRenderFunc', -0x67)  
-   If @error Then  
-      CurrentAction("Failed to read render function address")  
-      Return 0  
-   EndIf  
-   SetValue('RenderingMod', '0x' & Hex($lTemp, 8))  
-   SetValue('RenderingModReturn', '0x' & Hex($lTemp + 10, 8))  
-   $lTemp = GetScannedAddress('ScanTargetLog', 1)  
-   If @error Then  
-      CurrentAction("Failed to read target log address")  
-      Return 0  
-   EndIf  
-   SetValue('TargetLogStart', '0x' & Hex($lTemp, 8))  
-   SetValue('TargetLogReturn', '0x' & Hex($lTemp + 5, 8))  
-   $lTemp = GetScannedAddress('ScanSkillLog', 1)  
-   If @error Then  
-      CurrentAction("Failed to read skill log address")  
-      Return 0  
-   EndIf  
-   SetValue('SkillLogStart', '0x' & Hex($lTemp, 8))  
-   SetValue('SkillLogReturn', '0x' & Hex($lTemp + 5, 8))  
-   $lTemp = GetScannedAddress('ScanSkillCompleteLog', -4)  
-   If @error Then  
-      CurrentAction("Failed to read skill complete log address")  
-      Return 0  
-   EndIf  
-   SetValue('SkillCompleteLogStart', '0x' & Hex($lTemp, 8))  
-   SetValue('SkillCompleteLogReturn', '0x' & Hex($lTemp + 5, 8))  
-   $lTemp = GetScannedAddress('ScanSkillCancelLog', 5)  
-   If @error Then  
-      CurrentAction("Failed to read skill cancel log address")  
-      Return 0  
-   EndIf  
-   SetValue('SkillCancelLogStart', '0x' & Hex($lTemp, 8))  
-   SetValue('SkillCancelLogReturn', '0x' & Hex($lTemp + 6, 8))  
-   $lTemp = GetScannedAddress('ScanChatLog', 18)  
-   If @error Then  
-      CurrentAction("Failed to read chat log address")  
-      Return 0  
-   EndIf  
-   SetValue('ChatLogStart', '0x' & Hex($lTemp, 8))  
-   SetValue('ChatLogReturn', '0x' & Hex($lTemp + 6, 8))  
-   $lTemp = GetScannedAddress('ScanTraderHook', -0x2F) ; was -7  
-   If @error Then  
-      CurrentAction("Failed to read trader hook address")  
-      Return 0  
-   EndIf  
-   SetValue('TraderHookStart', '0x' & Hex($lTemp, 8))  
-   SetValue('TraderHookReturn', '0x' & Hex($lTemp + 5, 8))  
-  
-   $lTemp = GetScannedAddress('ScanDialogLog', -4)  
-   If @error Then  
-      CurrentAction("Failed to read dialog log address")  
-      Return 0  
-   EndIf  
-   SetValue('DialogLogStart', '0x' & Hex($lTemp, 8))  
-   SetValue('DialogLogReturn', '0x' & Hex($lTemp + 5, 8))  
-   $lTemp = GetScannedAddress('ScanStringFilter1', -5) ; was -0x23  
-   If @error Then  
-      CurrentAction("Failed to read string filter 1 address")  
-      Return 0  
-   EndIf  
-   SetValue('StringFilter1Start', '0x' & Hex($lTemp, 8))  
-   SetValue('StringFilter1Return', '0x' & Hex($lTemp + 5, 8))  
-   $lTemp = GetScannedAddress('ScanStringFilter2', 0x16) ; was 0x61  
-   If @error Then  
-      CurrentAction("Failed to read string filter 2 address")  
-      Return 0  
-   EndIf  
-   SetValue('StringFilter2Start', '0x' & Hex($lTemp, 8))  
-   SetValue('StringFilter2Return', '0x' & Hex($lTemp + 5, 8))  
-   SetValue('StringLogStart', '0x' & Hex(GetScannedAddress('ScanStringLog', 0x16), 8))  
-  
-   SetValue('LoadFinishedStart', '0x' & Hex(GetScannedAddress('ScanLoadFinished', 1), 8))  
-   SetValue('LoadFinishedReturn', '0x' & Hex(GetScannedAddress('ScanLoadFinished', 6), 8))  
-  
-   SetValue('PostMessage', '0x' & Hex(MemoryRead(GetScannedAddress('ScanPostMessage', 11)), 8))  
-   If @error Then  
-      CurrentAction("Failed to read post message")  
-      Return 0  
-   EndIf  
-   SetValue('Sleep', MemoryRead(MemoryRead(GetValue('ScanSleep') + 8) + 3))  
-   If @error Then  
-      CurrentAction("Failed to read sleep")  
-      Return 0  
-   EndIf  
-   ;SetValue('SalvageFunction', MemoryRead(GetValue('ScanSalvageFunction') + 8) - 18)  
-   SetValue('SalvageFunction', '0x' & Hex(GetScannedAddress('ScanSalvageFunction', -10), 8))  
-   If @error Then  
-      CurrentAction("Failed to read salvage function")  
-      Return 0  
-   EndIf  
-   SetValue('SalvageGlobal', '0x' & Hex(MemoryRead(GetScannedAddress('ScanSalvageGlobal', 1) - 0x4), 8))  
-   If @error Then  
-      CurrentAction("Failed to read salvage global")  
-      Return 0  
-   EndIf  
-   ;SetValue('SalvageGlobal', MemoryRead(MemoryRead(GetValue('ScanSalvageGlobal') + 8) + 1))  
-   SetValue('IncreaseAttributeFunction', '0x' & Hex(GetScannedAddress('ScanIncreaseAttributeFunction', -0x5A), 8))  
-   If @error Then  
-      CurrentAction("Failed to read increase attribute function")  
-      Return 0  
-   EndIf  
-   SetValue("DecreaseAttributeFunction", "0x" & Hex(GetScannedAddress("ScanDecreaseAttributeFunction", 25), 8))  
-   If @error Then  
-      CurrentAction("Failed to read decrease attribute function")  
-      Return 0  
-   EndIf  
-   SetValue('MoveFunction', '0x' & Hex(GetScannedAddress('ScanMoveFunction', 1), 8))  
-   If @error Then  
-      CurrentAction("Failed to read move function")  
-      Return 0  
-   EndIf  
-   SetValue('UseSkillFunction', '0x' & Hex(GetScannedAddress('ScanUseSkillFunction', -0x125), 8))  
-   If @error Then  
-      CurrentAction("Failed to read use skill function")  
-      Return 0  
-   EndIf  
-   SetValue('ChangeTargetFunction', '0x' & Hex(GetScannedAddress('ScanChangeTargetFunction', -0x0089) + 1, 8))  
-   If @error Then  
-      CurrentAction("Failed to read change target function")  
-      Return 0  
-   EndIf  
-   SetValue('WriteChatFunction', '0x' & Hex(GetScannedAddress('ScanWriteChatFunction', -0x3D), 8))  
-   If @error Then  
-      CurrentAction("Failed to read write chat function")  
-      Return 0  
-   EndIf  
-   SetValue('SellItemFunction', '0x' & Hex(GetScannedAddress('ScanSellItemFunction', -85), 8))  
-   If @error Then  
-      CurrentAction("Failed to read sell item function")  
-      Return 0  
-   EndIf  
-   SetValue('PacketSendFunction', '0x' & Hex(GetScannedAddress('ScanPacketSendFunction', -0xBA), 8))  
-   If @error Then  
-      CurrentAction("Failed to read packet send function")  
-      Return 0  
-   EndIf  
-  
-   SetValue('ActionBase', '0x' & Hex(MemoryRead(GetScannedAddress('ScanActionBase', -3)), 8))  
-   If @error Then  
-      CurrentAction("Failed to read action base")  
-      Return 0  
-   EndIf  
-  
-   SetValue('ActionFunction', '0x' & Hex(GetScannedAddress('ScanActionFunction', -3), 8))  
-   If @error Then  
-      CurrentAction("Failed to read action function")  
-      Return 0  
-   EndIf  
-   SetValue('UseHeroSkillFunction', '0x' & Hex(GetScannedAddress('ScanUseHeroSkillFunction', -0x59), 8))  
-   If @error Then  
-      CurrentAction("Failed to read use hero skill function")  
-      Return 0  
-   EndIf  
-   SetValue('BuyItemBase', '0x' & Hex(MemoryRead(GetScannedAddress('ScanBuyItemBase', 15)), 8))  
-   If @error Then  
-      CurrentAction("Failed to read buy item base")  
-      Return 0  
-   EndIf  
-   SetValue('TransactionFunction', '0x' & Hex(GetScannedAddress('ScanTransactionFunction', -0x7E), 8))  
-   If @error Then  
-      CurrentAction("Failed to read transaction function")  
-      Return 0  
-   EndIf  
-   SetValue('RequestQuoteFunction', '0x' & Hex(GetScannedAddress('ScanRequestQuoteFunction', -0x34), 8))  
-   If @error Then  
-      CurrentAction("Failed to read request quote function")  
-      Return 0  
-   EndIf  
-   ;SetValue('TraderFunction', '0x' & Hex(GetScannedAddress('ScanTraderFunction', -71), 8))  
-   SetValue('TraderFunction', '0x' & Hex(GetScannedAddress('ScanTraderFunction', -0x1E), 8))  
-   If @error Then  
-      CurrentAction("Failed to read trader function")  
-      Return 0  
-   EndIf  
-   SetValue('ClickToMoveFix', '0x' & Hex(GetScannedAddress("ScanClickToMoveFix", 1), 8))  
-   If @error Then  
-      CurrentAction("Failed to read click to move fix")  
-      Return 0  
-   EndIf  
-   SetValue('ChangeStatusFunction', '0x' & Hex(GetScannedAddress("ScanChangeStatusFunction", 1), 8))  
-   If @error Then  
-      CurrentAction("Failed to read change status function")  
-      Return 0  
-   EndIf  
-  
-   SetValue('QueueSize', '0x00000010')  
-   SetValue('SkillLogSize', '0x00000010')  
-   SetValue('ChatLogSize', '0x00000010')  
-   SetValue('TargetLogSize', '0x00000200')  
-   SetValue('StringLogSize', '0x00000200')  
-   SetValue('CallbackEvent', '0x00000501')  
-   $MTradeHackAddress = GetScannedAddress("ScanTradeHack", 0)  
-   If @error Then  
-      CurrentAction("Failed to read trade hack address")  
-      Return 0  
-   EndIf  
-  
-   ModifyMemory()  
-  
-   $mQueueCounter = MemoryRead(GetValue('QueueCounter'))  
-   If @error Then  
-      CurrentAction("Failed to read queue counter")  
-      Return 0  
-   EndIf  
-   $mQueueSize = GetValue('QueueSize') - 1  
-   $mQueueBase = GetValue('QueueBase')  
-   $mTargetLogBase = GetValue('TargetLogBase')  
-   $mStringLogBase = GetValue('StringLogBase')  
-   $mMapIsLoaded = GetValue('MapIsLoaded')  
-   $mEnsureEnglish = GetValue('EnsureEnglish')  
-   $mTraderQuoteID = GetValue('TraderQuoteID')  
-   $mTraderCostID = GetValue('TraderCostID')  
-   $mTraderCostValue = GetValue('TraderCostValue')  
-   $mDisableRendering = GetValue('DisableRendering')  
-   $mAgentCopyCount = GetValue('AgentCopyCount')  
-   $mAgentCopyBase = GetValue('AgentCopyBase')  
-   $mLastDialogID = GetValue('LastDialogID')  
-  
-   ; Event System  
-   If $mUseEventSystem Then  
-      MemoryWrite(GetValue('CallbackHandle'), $mGUI)  
-      If @error Then  
-        CurrentAction("Failed to write callback handle")  
-        Return 0  
-      EndIf  
-      CurrentAction("Event system initialized")  
-   EndIf  
-  
-   ; Packet Structures  
-   DllStructSetData($mInviteGuild, 1, GetValue('CommandPacketSend'))  
-   If @error Then  
-      CurrentAction("Failed to set invite guild command")  
-      Return 0  
-   EndIf  
-   DllStructSetData($mInviteGuild, 2, 0x4C)  
-   If @error Then  
-      CurrentAction("Failed to set invite guild subcommand")  
-      Return 0  
-   EndIf  
-   DllStructSetData($mUseSkill, 1, GetValue('CommandUseSkill'))  
-   If @error Then  
-      CurrentAction("Failed to set use skill command")  
-      Return 0  
-   EndIf  
-   DllStructSetData($mMove, 1, GetValue('CommandMove'))  
-   If @error Then  
-      CurrentAction("Failed to set move command")  
-      Return 0  
-   EndIf  
-   DllStructSetData($mChangeTarget, 1, GetValue('CommandChangeTarget'))  
-   If @error Then  
-      CurrentAction("Failed to set change target command")  
-      Return 0  
-   EndIf  
-   DllStructSetData($mPacket, 1, GetValue('CommandPacketSend'))  
-   If @error Then  
-      CurrentAction("Failed to set packet send command")  
-      Return 0  
-   EndIf  
-   DllStructSetData($mSellItem, 1, GetValue('CommandSellItem'))  
-   If @error Then  
-      CurrentAction("Failed to set sell item command")  
-      Return 0  
-   EndIf  
-   DllStructSetData($mAction, 1, GetValue('CommandAction'))  
-   If @error Then  
-      CurrentAction("Failed to set action command")  
-      Return 0  
-   EndIf  
-   DllStructSetData($mToggleLanguage, 1, GetValue('CommandToggleLanguage'))  
-   If @error Then  
-      CurrentAction("Failed to set toggle language command")  
-      Return 0  
-   EndIf  
-   DllStructSetData($mUseHeroSkill, 1, GetValue('CommandUseHeroSkill'))  
-   If @error Then  
-      CurrentAction("Failed to set use hero skill command")  
-      Return 0  
-   EndIf  
-   DllStructSetData($mBuyItem, 1, GetValue('CommandBuyItem'))  
-   If @error Then  
-      CurrentAction("Failed to set buy item command")  
-      Return 0  
-   EndIf  
-   DllStructSetData($mSendChat, 1, GetValue('CommandSendChat'))  
-   If @error Then  
-      CurrentAction("Failed to set send chat command")  
-      Return 0  
-   EndIf  
-   DllStructSetData($mSendChat, 2, $HEADER_SEND_CHAT_MESSAGE)  
-   If @error Then  
-      CurrentAction("Failed to set send chat subcommand")  
-      Return 0  
-   EndIf  
-   DllStructSetData($mWriteChat, 1, GetValue('CommandWriteChat'))  
-   If @error Then  
-      CurrentAction("Failed to set write chat command")  
-      Return 0  
-   EndIf  
-   DllStructSetData($mRequestQuote, 1, GetValue('CommandRequestQuote'))  
-   If @error Then  
-      CurrentAction("Failed to set request quote command")  
-      Return 0  
-   EndIf  
-   DllStructSetData($mRequestQuoteSell, 1, GetValue('CommandRequestQuoteSell'))  
-   If @error Then  
-      CurrentAction("Failed to set request quote sell command")  
-      Return 0  
-   EndIf  
-   DllStructSetData($mTraderBuy, 1, GetValue('CommandTraderBuy'))  
-   If @error Then  
-      CurrentAction("Failed to set trader buy command")  
-      Return 0  
-   EndIf  
-   DllStructSetData($mTraderSell, 1, GetValue('CommandTraderSell'))  
-   If @error Then  
-      CurrentAction("Failed to set trader sell command")  
-      Return 0  
-   EndIf  
-   DllStructSetData($mSalvage, 1, GetValue('CommandSalvage'))  
-   If @error Then  
-      CurrentAction("Failed to set salvage command")  
-      Return 0  
-   EndIf  
-   DllStructSetData($mIncreaseAttribute, 1, GetValue('CommandIncreaseAttribute'))  
-   If @error Then  
-      CurrentAction("Failed to set increase attribute command")  
-      Return 0  
-   EndIf  
-   DllStructSetData($mDecreaseAttribute, 1, GetValue('CommandDecreaseAttribute'))  
-   If @error Then  
-      CurrentAction("Failed to set decrease attribute command")  
-      Return 0  
-   EndIf  
-   DllStructSetData($mMakeAgentArray, 1, GetValue('CommandMakeAgentArray'))  
-   If @error Then  
-      CurrentAction("Failed to set make agent array command")  
-      Return 0  
-   EndIf  
-   DllStructSetData($mChangeStatus, 1, GetValue('CommandChangeStatus'))  
-   If @error Then  
-      CurrentAction("Failed to set change status command")  
-      Return 0  
-   EndIf  
-  
-   ; Change window title  
-   If $bChangeTitle Then  
-      WinSetTitle($mGWWindowHandle, '', 'Guild Wars - ' & GetCharname())  
-      If @error Then  
-        CurrentAction("Failed to change window title")  
-        Return 0  
-      EndIf  
-      CurrentAction("Window title changed")  
-   EndIf  
-  
-   ; Return the window handle  
-   CurrentAction("Initialization complete")  
-   Return $mGWWindowHandle  
-EndFunc  ;==>Initialize
+
+;~ Description: Injects GWA² into the game client.
+Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSystem = True)
+	; Initialize variables
+	Local $lWinList, $lWinList2, $mGWProcessId
+	$mUseStringLog = $aUseStringLog
+	$mUseEventSystem = $aUseEventSystem
+
+	CurrentAction("Initializing...")
+
+	; Check if $aGW is a string or a process ID
+	If IsString($aGW) Then
+		; Find the process ID of the game client
+		Local $lProcessList = ProcessList("gw.exe")
+		For $i = 1 To $lProcessList[0][0]
+			$mGWProcessId = $lProcessList[$i][1]
+			$mGWWindowHandle = GetHwnd($mGWProcessId)
+			MemoryOpen($mGWProcessId)
+			If $mGWProcHandle Then
+				; Check if the character name matches
+				If StringRegExp(ScanForCharname(), $aGW) = 1 Then
+					ExitLoop
+				EndIf
+			EndIf
+			MemoryClose()
+			$mGWProcHandle = 0
+		Next
+		CurrentAction("Found process ID: " & $mGWProcessId)
+	Else
+		; Use the provided process ID
+		$mGWProcessId = $aGW
+		$mGWWindowHandle = GetHwnd($mGWProcessId)
+		MemoryOpen($aGW)
+		ScanForCharname()
+		CurrentAction("Using provided process ID: " & $mGWProcessId)
+	EndIf
+
+	; Check if the process handle is valid
+	If $mGWProcHandle = 0 Then
+		CurrentAction("Invalid process handle")
+		Return 0
+	EndIf
+
+	; Scan for memory addresses
+	Scan()
+	CurrentAction("Scanned for memory addresses")
+
+	; Read Memory Values for Game Data
+	; **Base Pointer (Game Client Base Address)**
+	$mBasePointer = MemoryRead(GetScannedAddress('ScanBasePointer', 8))    ;-3
+	If @error Then
+		CurrentAction("Failed to read base pointer")
+		Return 0
+	EndIf
+	SetValue('BasePointer', '0x' & Hex($mBasePointer, 8))
+	CurrentAction("Read base pointer: 0x" & Hex($mBasePointer, 8))
+
+	; **Agent Base (Agent Data Structure Base Address)**
+	$mAgentBase = MemoryRead(GetScannedAddress('ScanAgentBasePointer', 8) + 0xC - 7)      ; Updated 26.12.24
+	If @error Then
+		CurrentAction("Failed to read agent base")
+		Return 0
+	EndIf
+	SetValue('AgentBase', '0x' & Hex($mAgentBase, 8))
+	CurrentAction("Read agent base: 0x" & Hex($mAgentBase, 8))
+
+	; **Max Agents (Maximum Number of Agents)**
+	$mMaxAgents = $mAgentBase + 8
+	If @error Then
+		CurrentAction("Failed to read max agents")
+		Return 0
+	EndIf
+	SetValue('MaxAgents', '0x' & Hex($mMaxAgents, 8))
+	CurrentAction("Read max agents: 0x" & Hex($mMaxAgents, 8))
+
+	; **My ID (Player's Agent ID)**
+	$mMyID = MemoryRead(GetScannedAddress('ScanMyID', -3))    ;$mMyID = $mAgentBase - 84
+	If @error Then
+		CurrentAction("Failed to read my ID")
+		Return 0
+	EndIf
+	SetValue('MyID', '0x' & Hex($mMyID, 8))
+	CurrentAction("Read my ID: 0x" & Hex($mMyID, 8))
+
+	; **Current Target (Current Target's Agent ID)**
+	$mCurrentTarget = MemoryRead(GetScannedAddress('ScanCurrentTarget', -14))    ;$mAgentBase - 1280
+	If @error Then
+		CurrentAction("Failed to read current target")
+		Return 0
+	EndIf
+	
+	$packetlocation = Hex(MemoryRead(GetScannedAddress('ScanBaseOffset', 11)), 8)
+	SetValue('PacketLocation', '0x' & $packetlocation)
+	CurrentAction("Read packet location: 0x" & $packetlocation)
+	CurrentAction("Read current target: 0x" & Hex($mCurrentTarget, 8))
+
+	; **Ping (Game Client's Ping Value)**
+	$mPing = MemoryRead(GetScannedAddress('ScanPing', -0x14))    ; Updated 16-06-2023
+	If @error Then
+		CurrentAction("Failed to read ping")
+		Return 0
+	EndIf
+	CurrentAction("Read ping: 0x" & Hex($mPing, 8))
+
+	; **Read Memory Values for Game Data**
+	$mMapID = MemoryRead(GetScannedAddress('ScanMapID', 28))
+	If @error Then
+		CurrentAction("Failed to read map ID")
+		Return 0
+	EndIf
+	CurrentAction("Read map ID: 0x" & Hex($mMapID, 8))
+
+	; **Map Loading Status**
+	$mMapLoading = MemoryRead(GetScannedAddress('ScanMapLoading', 0xB))    ; Updated 16-06-2023
+	If @error Then
+		CurrentAction("Failed to read map loading status")
+		Return 0
+	EndIf
+	CurrentAction("Read map loading status: 0x" & Hex($mMapLoading, 8))
+
+	; **Login Status**
+	$mLoggedIn = MemoryRead(GetScannedAddress('ScanLoggedIn', 0x3))    ; Updated 26.12.24
+	If @error Then
+		CurrentAction("Failed to read login status")
+		Return 0
+	EndIf
+	CurrentAction("Read login status: 0x" & Hex($mLoggedIn, 8))
+
+	; **Language and Region**
+	$mLanguage = MemoryRead(GetScannedAddress('ScanMapInfo', 11)) + 0xC
+	If @error Then
+		CurrentAction("Failed to read language")
+		Return 0
+	EndIf
+	$mRegion = $mLanguage + 4
+	If @error Then
+		CurrentAction("Failed to read region")
+		Return 0
+	EndIf
+	CurrentAction("Read language and region: 0x" & Hex($mLanguage, 8) & ", 0x" & Hex($mRegion, 8))
+
+	; **Skill Base and Timer**
+	$mSkillBase = MemoryRead(GetScannedAddress('ScanSkillBase', 8))
+	If @error Then
+		CurrentAction("Failed to read skill base")
+		Return 0
+	EndIf
+	$mSkillTimer = MemoryRead(GetScannedAddress('ScanSkillTimer', -3))
+	If @error Then
+		CurrentAction("Failed to read skill timer")
+		Return 0
+	EndIf
+	CurrentAction("Read skill base and timer: 0x" & Hex($mSkillBase, 8) & ", 0x" & Hex($mSkillTimer, 8))
+
+	; **Build Number**
+	$lTemp = GetScannedAddress('ScanBuildNumber', 0x2C)
+	If @error Then
+		CurrentAction("Failed to read build number address")
+		Return 0
+	EndIf
+	$mBuildNumber = MemoryRead($lTemp + MemoryRead($lTemp) + 5)
+	If @error Then
+		CurrentAction("Failed to read build number")
+		Return 0
+	EndIf
+	CurrentAction("Read build number: 0x" & Hex($mBuildNumber, 8))
+
+	; **Zoom Settings**
+	$mZoomStill = GetScannedAddress("ScanZoomStill", 0x33)
+	If @error Then
+		CurrentAction("Failed to read zoom still address")
+		Return 0
+	EndIf
+	$mZoomMoving = GetScannedAddress("ScanZoomMoving", 0x21)
+	If @error Then
+		CurrentAction("Failed to read zoom moving address")
+		Return 0
+	EndIf
+	CurrentAction("Read zoom settings: 0x" & Hex($mZoomStill, 8) & ", 0x" & Hex($mZoomMoving, 8))
+
+	; **Current Status and Character Slots**
+	$mCurrentStatus = MemoryRead(GetScannedAddress('ScanChangeStatusFunction', 35))
+	If @error Then
+		CurrentAction("Failed to read current status")
+		Return 0
+	EndIf
+	$mCharslots = MemoryRead(GetScannedAddress('ScanCharslots', 22))
+	If @error Then
+		CurrentAction("Failed to read character slots")
+		Return 0
+	EndIf
+	CurrentAction("Read current status and character slots: 0x" & Hex($mCurrentStatus, 8) & ", 0x" & Hex($mCharslots, 8))
+
+	$lTemp = GetScannedAddress('ScanEngine', -0x6D + 2)    ;-16
+	If @error Then
+		CurrentAction("Failed to read engine address")
+		Return 0
+	EndIf
+	SetValue('MainStart', '0x' & Hex($lTemp, 8))
+	SetValue('MainReturn', '0x' & Hex($lTemp + 5, 8))
+	$lTemp = GetScannedAddress('ScanRenderFunc', -0x67)
+	If @error Then
+		CurrentAction("Failed to read render function address")
+		Return 0
+	EndIf
+	SetValue('RenderingMod', '0x' & Hex($lTemp, 8))
+	SetValue('RenderingModReturn', '0x' & Hex($lTemp + 10, 8))
+	$lTemp = GetScannedAddress('ScanTargetLog', 1)
+	If @error Then
+		CurrentAction("Failed to read target log address")
+		Return 0
+	EndIf
+	SetValue('TargetLogStart', '0x' & Hex($lTemp, 8))
+	SetValue('TargetLogReturn', '0x' & Hex($lTemp + 5, 8))
+	$lTemp = GetScannedAddress('ScanSkillLog', 1)
+	If @error Then
+		CurrentAction("Failed to read skill log address")
+		Return 0
+	EndIf
+	SetValue('SkillLogStart', '0x' & Hex($lTemp, 8))
+	SetValue('SkillLogReturn', '0x' & Hex($lTemp + 5, 8))
+	$lTemp = GetScannedAddress('ScanSkillCompleteLog', -4)
+	If @error Then
+		CurrentAction("Failed to read skill complete log address")
+		Return 0
+	EndIf
+	SetValue('SkillCompleteLogStart', '0x' & Hex($lTemp, 8))
+	SetValue('SkillCompleteLogReturn', '0x' & Hex($lTemp + 5, 8))
+	$lTemp = GetScannedAddress('ScanSkillCancelLog', 5)
+	If @error Then
+		CurrentAction("Failed to read skill cancel log address")
+		Return 0
+	EndIf
+	SetValue('SkillCancelLogStart', '0x' & Hex($lTemp, 8))
+	SetValue('SkillCancelLogReturn', '0x' & Hex($lTemp + 6, 8))
+	$lTemp = GetScannedAddress('ScanChatLog', 18)
+	If @error Then
+		CurrentAction("Failed to read chat log address")
+		Return 0
+	EndIf
+	SetValue('ChatLogStart', '0x' & Hex($lTemp, 8))
+	SetValue('ChatLogReturn', '0x' & Hex($lTemp + 6, 8))
+	$lTemp = GetScannedAddress('ScanTraderHook', -0x2F)    ; was -7
+	If @error Then
+		CurrentAction("Failed to read trader hook address")
+		Return 0
+	EndIf
+	SetValue('TraderHookStart', '0x' & Hex($lTemp, 8))
+	SetValue('TraderHookReturn', '0x' & Hex($lTemp + 5, 8))
+
+	$lTemp = GetScannedAddress('ScanDialogLog', -4)
+	If @error Then
+		CurrentAction("Failed to read dialog log address")
+		Return 0
+	EndIf
+	SetValue('DialogLogStart', '0x' & Hex($lTemp, 8))
+	SetValue('DialogLogReturn', '0x' & Hex($lTemp + 5, 8))
+	$lTemp = GetScannedAddress('ScanStringFilter1', -5)    ; was -0x23
+	If @error Then
+		CurrentAction("Failed to read string filter 1 address")
+		Return 0
+	EndIf
+	SetValue('StringFilter1Start', '0x' & Hex($lTemp, 8))
+	SetValue('StringFilter1Return', '0x' & Hex($lTemp + 5, 8))
+	$lTemp = GetScannedAddress('ScanStringFilter2', 0x16)    ; was 0x61
+	If @error Then
+		CurrentAction("Failed to read string filter 2 address")
+		Return 0
+	EndIf
+	SetValue('StringFilter2Start', '0x' & Hex($lTemp, 8))
+	SetValue('StringFilter2Return', '0x' & Hex($lTemp + 5, 8))
+	SetValue('StringLogStart', '0x' & Hex(GetScannedAddress('ScanStringLog', 0x16), 8))
+
+	SetValue('LoadFinishedStart', '0x' & Hex(GetScannedAddress('ScanLoadFinished', 1), 8))
+	SetValue('LoadFinishedReturn', '0x' & Hex(GetScannedAddress('ScanLoadFinished', 6), 8))
+
+	SetValue('PostMessage', '0x' & Hex(MemoryRead(GetScannedAddress('ScanPostMessage', 11)), 8))
+	If @error Then
+		CurrentAction("Failed to read post message")
+		Return 0
+	EndIf
+	SetValue('Sleep', MemoryRead(MemoryRead(GetValue('ScanSleep') + 8) + 3))
+	If @error Then
+		CurrentAction("Failed to read sleep")
+		Return 0
+	EndIf
+	;SetValue('SalvageFunction', MemoryRead(GetValue('ScanSalvageFunction') + 8) - 18)
+	SetValue('SalvageFunction', '0x' & Hex(GetScannedAddress('ScanSalvageFunction', -10), 8))
+	If @error Then
+		CurrentAction("Failed to read salvage function")
+		Return 0
+	EndIf
+	SetValue('SalvageGlobal', '0x' & Hex(MemoryRead(GetScannedAddress('ScanSalvageGlobal', 1) - 0x4), 8))
+	If @error Then
+		CurrentAction("Failed to read salvage global")
+		Return 0
+	EndIf
+	;SetValue('SalvageGlobal', MemoryRead(MemoryRead(GetValue('ScanSalvageGlobal') + 8) + 1))
+	SetValue('IncreaseAttributeFunction', '0x' & Hex(GetScannedAddress('ScanIncreaseAttributeFunction', -0x5A), 8))
+	If @error Then
+		CurrentAction("Failed to read increase attribute function")
+		Return 0
+	EndIf
+	SetValue("DecreaseAttributeFunction", "0x" & Hex(GetScannedAddress("ScanDecreaseAttributeFunction", 25), 8))
+	If @error Then
+		CurrentAction("Failed to read decrease attribute function")
+		Return 0
+	EndIf
+	SetValue('MoveFunction', '0x' & Hex(GetScannedAddress('ScanMoveFunction', 1), 8))
+	If @error Then
+		CurrentAction("Failed to read move function")
+		Return 0
+	EndIf
+	SetValue('UseSkillFunction', '0x' & Hex(GetScannedAddress('ScanUseSkillFunction', -0x125), 8))
+	If @error Then
+		CurrentAction("Failed to read use skill function")
+		Return 0
+	EndIf
+	SetValue('ChangeTargetFunction', '0x' & Hex(GetScannedAddress('ScanChangeTargetFunction', -0x0089) + 1, 8))
+	If @error Then
+		CurrentAction("Failed to read change target function")
+		Return 0
+	EndIf
+	SetValue('WriteChatFunction', '0x' & Hex(GetScannedAddress('ScanWriteChatFunction', -0x3D), 8))
+	If @error Then
+		CurrentAction("Failed to read write chat function")
+		Return 0
+	EndIf
+	SetValue('SellItemFunction', '0x' & Hex(GetScannedAddress('ScanSellItemFunction', -85), 8))
+	If @error Then
+		CurrentAction("Failed to read sell item function")
+		Return 0
+	EndIf
+	
+	; C7 47 54 00 00 00 00 81 E6 for the send function
+	;$lwGwBase = ScanForProcess()
+	;$sendpacket = Hex(($lwGwBase + (0x3723C1) - 0x1000),8)
+	;CurrentAction("PacketSendFunc: 0x" & $sendpacket)
+	SetValue('PacketSendFunction', '0x' & Hex(GetScannedAddress('ScanPacketSendFunction', -0x50), 8))
+	;SetValue('PacketSendFunction', '0x' & $sendpacket)
+	
+	If @error Then
+		CurrentAction("Failed to read packet send function")
+		Return 0
+	EndIf
+
+	SetValue('ActionBase', '0x' & Hex(MemoryRead(GetScannedAddress('ScanActionBase', -3)), 8))
+	If @error Then
+		CurrentAction("Failed to read action base")
+		Return 0
+	EndIf
+
+	SetValue('ActionFunction', '0x' & Hex(GetScannedAddress('ScanActionFunction', -3), 8))
+	If @error Then
+		CurrentAction("Failed to read action function")
+		Return 0
+	EndIf
+	SetValue('UseHeroSkillFunction', '0x' & Hex(GetScannedAddress('ScanUseHeroSkillFunction', -0x59), 8))
+	If @error Then
+		CurrentAction("Failed to read use hero skill function")
+		Return 0
+	EndIf
+	SetValue('BuyItemBase', '0x' & Hex(MemoryRead(GetScannedAddress('ScanBuyItemBase', 15)), 8))
+	If @error Then
+		CurrentAction("Failed to read buy item base")
+		Return 0
+	EndIf
+	SetValue('TransactionFunction', '0x' & Hex(GetScannedAddress('ScanTransactionFunction', -0x7E), 8))
+	If @error Then
+		CurrentAction("Failed to read transaction function")
+		Return 0
+	EndIf
+	SetValue('RequestQuoteFunction', '0x' & Hex(GetScannedAddress('ScanRequestQuoteFunction', -0x34), 8))
+	If @error Then
+		CurrentAction("Failed to read request quote function")
+		Return 0
+	EndIf
+	;SetValue('TraderFunction', '0x' & Hex(GetScannedAddress('ScanTraderFunction', -71), 8))
+	SetValue('TraderFunction', '0x' & Hex(GetScannedAddress('ScanTraderFunction', -0x1E), 8))
+	If @error Then
+		CurrentAction("Failed to read trader function")
+		Return 0
+	EndIf
+	SetValue('ClickToMoveFix', '0x' & Hex(GetScannedAddress("ScanClickToMoveFix", 1), 8))
+	If @error Then
+		CurrentAction("Failed to read click to move fix")
+		Return 0
+	EndIf
+	SetValue('ChangeStatusFunction', '0x' & Hex(GetScannedAddress("ScanChangeStatusFunction", 1), 8))
+	If @error Then
+		CurrentAction("Failed to read change status function")
+		Return 0
+	EndIf
+
+	SetValue('QueueSize', '0x00000010')
+	SetValue('SkillLogSize', '0x00000010')
+	SetValue('ChatLogSize', '0x00000010')
+	SetValue('TargetLogSize', '0x00000200')
+	SetValue('StringLogSize', '0x00000200')
+	SetValue('CallbackEvent', '0x00000501')
+	$MTradeHackAddress = GetScannedAddress("ScanTradeHack", 0)
+	If @error Then
+		CurrentAction("Failed to read trade hack address")
+		Return 0
+	EndIf
+
+	ModifyMemory()
+
+	$mQueueCounter = MemoryRead(GetValue('QueueCounter'))
+	If @error Then
+		CurrentAction("Failed to read queue counter")
+		Return 0
+	EndIf
+	$mQueueSize = GetValue('QueueSize') - 1
+	$mQueueBase = GetValue('QueueBase')
+	$mTargetLogBase = GetValue('TargetLogBase')
+	$mStringLogBase = GetValue('StringLogBase')
+	$mMapIsLoaded = GetValue('MapIsLoaded')
+	$mEnsureEnglish = GetValue('EnsureEnglish')
+	$mTraderQuoteID = GetValue('TraderQuoteID')
+	$mTraderCostID = GetValue('TraderCostID')
+	$mTraderCostValue = GetValue('TraderCostValue')
+	$mDisableRendering = GetValue('DisableRendering')
+	$mAgentCopyCount = GetValue('AgentCopyCount')
+	$mAgentCopyBase = GetValue('AgentCopyBase')
+	$mLastDialogID = GetValue('LastDialogID')
+
+	; Event System
+	If $mUseEventSystem Then
+		MemoryWrite(GetValue('CallbackHandle'), $mGUI)
+		If @error Then
+			CurrentAction("Failed to write callback handle")
+			Return 0
+		EndIf
+		CurrentAction("Event system initialized")
+	EndIf
+
+	; Packet Structures
+	DllStructSetData($mInviteGuild, 1, GetValue('CommandPacketSend'))
+	If @error Then
+		CurrentAction("Failed to set invite guild command")
+		Return 0
+	EndIf
+	DllStructSetData($mInviteGuild, 2, 0x4C)
+	If @error Then
+		CurrentAction("Failed to set invite guild subcommand")
+		Return 0
+	EndIf
+	DllStructSetData($mUseSkill, 1, GetValue('CommandUseSkill'))
+	If @error Then
+		CurrentAction("Failed to set use skill command")
+		Return 0
+	EndIf
+	DllStructSetData($mMove, 1, GetValue('CommandMove'))
+	If @error Then
+		CurrentAction("Failed to set move command")
+		Return 0
+	EndIf
+	DllStructSetData($mChangeTarget, 1, GetValue('CommandChangeTarget'))
+	If @error Then
+		CurrentAction("Failed to set change target command")
+		Return 0
+	EndIf
+	DllStructSetData($mPacket, 1, GetValue('CommandPacketSend'))
+	If @error Then
+		CurrentAction("Failed to set packet send command")
+		Return 0
+	EndIf
+	DllStructSetData($mSellItem, 1, GetValue('CommandSellItem'))
+	If @error Then
+		CurrentAction("Failed to set sell item command")
+		Return 0
+	EndIf
+	DllStructSetData($mAction, 1, GetValue('CommandAction'))
+	If @error Then
+		CurrentAction("Failed to set action command")
+		Return 0
+	EndIf
+	DllStructSetData($mToggleLanguage, 1, GetValue('CommandToggleLanguage'))
+	If @error Then
+		CurrentAction("Failed to set toggle language command")
+		Return 0
+	EndIf
+	DllStructSetData($mUseHeroSkill, 1, GetValue('CommandUseHeroSkill'))
+	If @error Then
+		CurrentAction("Failed to set use hero skill command")
+		Return 0
+	EndIf
+	DllStructSetData($mBuyItem, 1, GetValue('CommandBuyItem'))
+	If @error Then
+		CurrentAction("Failed to set buy item command")
+		Return 0
+	EndIf
+	DllStructSetData($mSendChat, 1, GetValue('CommandSendChat'))
+	If @error Then
+		CurrentAction("Failed to set send chat command")
+		Return 0
+	EndIf
+	DllStructSetData($mSendChat, 2, $HEADER_SEND_CHAT_MESSAGE)
+	If @error Then
+		CurrentAction("Failed to set send chat subcommand")
+		Return 0
+	EndIf
+	DllStructSetData($mWriteChat, 1, GetValue('CommandWriteChat'))
+	If @error Then
+		CurrentAction("Failed to set write chat command")
+		Return 0
+	EndIf
+	DllStructSetData($mRequestQuote, 1, GetValue('CommandRequestQuote'))
+	If @error Then
+		CurrentAction("Failed to set request quote command")
+		Return 0
+	EndIf
+	DllStructSetData($mRequestQuoteSell, 1, GetValue('CommandRequestQuoteSell'))
+	If @error Then
+		CurrentAction("Failed to set request quote sell command")
+		Return 0
+	EndIf
+	DllStructSetData($mTraderBuy, 1, GetValue('CommandTraderBuy'))
+	If @error Then
+		CurrentAction("Failed to set trader buy command")
+		Return 0
+	EndIf
+	DllStructSetData($mTraderSell, 1, GetValue('CommandTraderSell'))
+	If @error Then
+		CurrentAction("Failed to set trader sell command")
+		Return 0
+	EndIf
+	DllStructSetData($mSalvage, 1, GetValue('CommandSalvage'))
+	If @error Then
+		CurrentAction("Failed to set salvage command")
+		Return 0
+	EndIf
+	DllStructSetData($mIncreaseAttribute, 1, GetValue('CommandIncreaseAttribute'))
+	If @error Then
+		CurrentAction("Failed to set increase attribute command")
+		Return 0
+	EndIf
+	DllStructSetData($mDecreaseAttribute, 1, GetValue('CommandDecreaseAttribute'))
+	If @error Then
+		CurrentAction("Failed to set decrease attribute command")
+		Return 0
+	EndIf
+	DllStructSetData($mMakeAgentArray, 1, GetValue('CommandMakeAgentArray'))
+	If @error Then
+		CurrentAction("Failed to set make agent array command")
+		Return 0
+	EndIf
+	DllStructSetData($mChangeStatus, 1, GetValue('CommandChangeStatus'))
+	If @error Then
+		CurrentAction("Failed to set change status command")
+		Return 0
+	EndIf
+
+	; Change window title
+	If $bChangeTitle Then
+		WinSetTitle($mGWWindowHandle, '', 'Guild Wars - ' & GetCharname())
+		If @error Then
+			CurrentAction("Failed to change window title")
+			Return 0
+		EndIf
+		CurrentAction("Window title changed")
+	EndIf
+
+	; Return the window handle
+	CurrentAction("Initialization complete")
+	Return $mGWWindowHandle
+EndFunc   ;==>Initialize
 
 
 
@@ -816,7 +826,7 @@ Func SetValue($aKey, $aValue)
 EndFunc   ;==>SetValue
 
 ;~ Description: Internal use only.
-;~ Description: Scan patterns for Guild Wars game client. 
+;~ Description: Scan patterns for Guild Wars game client.
 Func Scan()
 	Local $lGwBase = ScanForProcess()
 	$mASMSize = 0
@@ -824,303 +834,303 @@ Func Scan()
 	$mASMString = ''
 
 	_('MainModPtr/4')
-  
-	; Scan patterns  
-	_('ScanBasePointer:')  
-	AddPattern('506A0F6A00FF35') ;85C0750F8BCE CHECKED ; STILL UPDATED 23.12.24  
-  
-	_('ScanAgentBase:') ; Still in use? (16/06-2023)  
-	;AddPattern('FF50104783C6043BFB75E1') ; Still in use? (16/06-2023)  
-	AddPattern('FF501083C6043BF775E2') ; UPDATED 23.12.24  
-  
-	_('ScanAgentBasePointer:')  
-	AddPattern('FF501083C6043BF775E28B35') ;UPDATED 26.12.24  
-  
-	_('ScanCurrentTarget:')  
-	AddPattern('83C4085F8BE55DC3CCCCCCCCCCCCCCCCCCCCCC55') ;UPDATED 23.12.24  
-  
-	_('ScanMyID:')  
-	AddPattern('83EC08568BF13B15') ; STILL WORKING 23.12.24  
-  
-	_('ScanEngine:')  
-	AddPattern('56FFD083C4048BCEE897') ; UPDATED 23.12.24 NEEDS TO GET UPDATED EACH PATCH  
-  
-	_('ScanRenderFunc:')  
-	AddPattern('F6C401741C68B1010000BA') ; STILL WORKING 23.12.24  
-  
-	_('ScanLoadFinished:')  
-	AddPattern('8B561C8BCF52E8') ; COULD NOT UPDATE! 23.12.24  
-  
-	_('ScanPostMessage:')  
-	AddPattern('6A00680080000051FF15') ; COULD NOT UPDATE! 23.12.24  
-  
-	_('ScanTargetLog:')  
-	AddPattern('5356578BFA894DF4E8') ; COULD NOT UPDATE! 23.12.24  
-  
-	_('ScanChangeTargetFunction:')  
-	AddPattern('3BDF0F95') ; STILL WORKING 23.12.24, 33C03BDA0F95C033  
-  
-	_('ScanMoveFunction:')  
-	AddPattern('558BEC83EC208D45F0') ; STILL WORKING 23.12.24, 558BEC83EC2056578BF98D4DF0  
-  
-	_('ScanPing:')  
-	AddPattern('E874651600') ; UPDATED 23.12.24  
-  
-	_('ScanMapID:')  
-	AddPattern('558BEC8B450885C074078B') ;STILL WORKING 23.12.24, B07F8D55  
-  
-	_('ScanMapLoading:')  
-	AddPattern('2480ED0000000000') ; UPDATED 25.12.24, 6A2C50E8  
-  
-	_('ScanLoggedIn:')  
-	AddPattern('C705ACDE740000000000C3CCCCCCCC') ; UPDATED 26.12.24, NEED TO GET UPDATED EACH PATCH OLD:BFFFC70580 85C07411B807  
-  
-	_('ScanRegion:')  
-	AddPattern('8BF0EB038B750C3B') ; STILL WORKING 23.12.24  
-  
-	_('ScanMapInfo:')  
-	AddPattern('8BF0EB038B750C3B') ; STILL WORKING 23.12.24, 83F9FD7406  
-  
-	_('ScanLanguage:')  
-	AddPattern('C38B75FC8B04B5') ; COULD NOT UPDATE! 23.12.24  
-  
-	_('ScanUseSkillFunction:')  
-	AddPattern('85F6745B83FE1174') ; STILL WORKING 23.12.24, 558BEC83EC1053568BD9578BF2895DF0  
-  
-	_('ScanPacketSendFunction:')  
-	AddPattern('F7D81BC02500800000') ;UPDATED 24.12.24 old: F7D9C74754010000001BC981, 558BEC83EC2C5356578BF985  
-  
-	_('ScanBaseOffset:')  
-	AddPattern('83C40433C08BE55DC3A1') ; STILL WORKING 23.12.24, 5633F63BCE740E5633D2  
-  
-	_('ScanWriteChatFunction:')  
-	AddPattern('8D85E0FEFFFF50681C01') ;STILL WORKING 23.12.24, 558BEC5153894DFC8B4D0856578B  
-  
-	_('ScanSkillLog:')  
-	AddPattern('408946105E5B5D') ; COULD NOT UPDATE! 23.12.24  
-  
-	_('ScanSkillCompleteLog:')  
-	AddPattern('741D6A006A40') ; COULD NOT UPDATE! 23.12.24  
-  
-	_('ScanSkillCancelLog:')  
-	AddPattern('741D6A006A48') ; COULD NOT UPDATE! 23.12.24  
-  
-	_('ScanChatLog:')  
-	AddPattern('8B45F48B138B4DEC50') ; COULD NOT UPDATE! 23.12.24  
-  
-	_('ScanSellItemFunction:')  
-	AddPattern('8B4D2085C90F858E') ; COULD NOT UPDATE! 23.12.24  
-  
-	_('ScanStringLog:')  
-	AddPattern('893E8B7D10895E04397E08') ; COULD NOT UPDATE! 23.12.24  
-  
-	_('ScanStringFilter1:')  
-	AddPattern('8B368B4F2C6A006A008B06') ; COULD NOT UPDATE! 23.12.24  
-  
-	_('ScanStringFilter2:')  
-	AddPattern('515356578BF933D28B4F2C') ; COULD NOT UPDATE! 23.12.24  
-  
-	_('ScanActionFunction:')  
-	AddPattern('8B7508578BF983FE09750C6876') ;STILL WORKING 23.12.24, ;8B7D0883FF098BF175116876010000  
-  
-	_('ScanActionBase:')  
-	AddPattern('8D1C87899DF4') ; UPDATED 24.12.24, OLD: 8D1C87899DF4FEFFFF8BC32BC7C1F802, 8B4208A80175418B4A08  
-  
-	_('ScanSkillBase:')  
-	AddPattern('8D04B6C1E00505') ;STILL WORKING 23.12.24  
-  
-	_('ScanUseHeroSkillFunction:')  
-	AddPattern('BA02000000B954080000') ;STILL WORKING 23.12.24  
-  
-	_('ScanTransactionFunction:')  
-	AddPattern('85FF741D8B4D14EB08') ;STILL WORKING 23.12.24 ;558BEC81ECC000000053568B75085783FE108BFA8BD97614  
-  
-	_('ScanBuyItemFunction:') ; Still in use? (16/06-2023)  
-	AddPattern('D9EED9580CC74004') ;STILL WORKING 23.12.24 ; Still in use? (16/06-2023)  
-  
-	_('ScanBuyItemBase:')  
-	AddPattern('D9EED9580CC74004') ;STILL WORKING 23.12.24  
-  
-	_('ScanRequestQuoteFunction:')  
-	AddPattern('8B752083FE107614')  ;STILL WORKING 23.12.24;8B750C5783FE107614 ;53568B750C5783FE10  
-  
-	_('ScanTraderFunction:')  
-	;AddPattern('8B45188B551085') ;83FF10761468  
-	AddPattern('83FF10761468D2210000') ;STILL WORKING 23.12.24  
-  
-	_('ScanTraderHook:')  
-	AddPattern('8955FC6A008D55F8B9BB') ; COULD NOT UPDATE! 23.12.24 ;50516A466A06 ;007BA579  
-  
-	_('ScanSleep:')  
-	AddPattern('6A0057FF15D8408A006860EA0000') ; UPDATED 24.12.24, OLD:5F5E5B741A6860EA0000  
-  
-	_('ScanSalvageFunction:')  
-	AddPattern('33C58945FC8B45088945F08B450C8945F48B45108945F88D45EC506A10C745EC76') ; UPDATED 24.12.24 OLD:33C58945FC8B45088945F08B450C8945F48B45108945F88D45EC506A10C745EC75  
-	;AddPattern('8BFA8BD9897DF0895DF4')  
-  
-	_('ScanSalvageGlobal:')  
-	AddPattern('8B4A04538945F48B4208') ; UPDATED 24.12.24, OLD: 8B5104538945F48B4108568945E88B410C578945EC8B4110528955E48945F0  
-	;AddPattern('8B018B4904A3')  
-  
-	_('ScanIncreaseAttributeFunction:')  
-	AddPattern('8B7D088B702C8B1F3B9E00050000') ;STILL WORKING 23.12.24, 8B702C8B3B8B86  
-  
-	_("ScanDecreaseAttributeFunction:")  
-	AddPattern("8B8AA800000089480C5DC3CC") ;STILL WORKING 23.12.24, 8B402C8BCE059C0000008B1089118B50  
-  
-	_('ScanSkillTimer:')  
-	AddPattern('FFD68B4DF08BD88B4708') ;STILL WORKING 23.12.24, 85c974158bd62bd183fa64  
-  
-	_('ScanClickToMoveFix:')  
-	AddPattern('3DD301000074') ;STILL WORKING 23.12.24,  
-  
-	_('ScanZoomStill:')  
-	AddPattern('558BEC8B41085685C0') ; COULD NOT UPDATE! 23.12.24  
-  
-	_('ScanZoomMoving:')  
-	AddPattern('EB358B4304') ; COULD NOT UPDATE! 23.12.24  
-  
-	_('ScanBuildNumber:')  
-	AddPattern('558BEC83EC4053568BD9') ; COULD NOT UPDATE! 23.12.24  
-  
-	_('ScanChangeStatusFunction:')  
-	AddPattern('558BEC568B750883FE047C14') ;STILL WORKING 23.12.24, 568BF183FE047C14682F020000  
-  
-	_('ScanCharslots:')  
-	AddPattern('8B551041897E38897E3C897E34897E48897E4C890D') ; COULD NOT UPDATE! 23.12.24  
-  
-	_('ScanReadChatFunction:')  
-	AddPattern('A128B6EB00') ; COULD NOT UPDATE! 23.12.24  
-  
-	_('ScanDialogLog:')  
-	AddPattern('8B45088945FC8D45F8506A08C745F841') ;STILL WORKING 23.12.24, 558BEC83EC285356578BF28BD9  
-  
-	_("ScanTradeHack:")  
-	AddPattern("8BEC8B450883F846") ;STILL WORKING 23.12.24  
-  
-	_("ScanClickCoords:")  
+
+	; Scan patterns
+	_('ScanBasePointer:')
+	AddPattern('506A0F6A00FF35') ;85C0750F8BCE CHECKED ; STILL UPDATED 23.12.24
+
+	_('ScanAgentBase:') ; Still in use? (16/06-2023)
+	;AddPattern('FF50104783C6043BFB75E1') ; Still in use? (16/06-2023)
+	AddPattern('FF501083C6043BF775E2') ; UPDATED 23.12.24
+
+	_('ScanAgentBasePointer:')
+	AddPattern('FF501083C6043BF775E28B35') ;UPDATED 26.12.24
+
+	_('ScanCurrentTarget:')
+	AddPattern('83C4085F8BE55DC3CCCCCCCCCCCCCCCCCCCCCC55') ;UPDATED 23.12.24
+
+	_('ScanMyID:')
+	AddPattern('83EC08568BF13B15') ; STILL WORKING 23.12.24
+
+	_('ScanEngine:')
+	AddPattern('56FFD083C4048BCEE897') ; UPDATED 23.12.24 NEEDS TO GET UPDATED EACH PATCH
+
+	_('ScanRenderFunc:')
+	AddPattern('F6C401741C68B1010000BA') ; STILL WORKING 23.12.24
+
+	_('ScanLoadFinished:')
+	AddPattern('8B561C8BCF52E8') ; COULD NOT UPDATE! 23.12.24
+
+	_('ScanPostMessage:')
+	AddPattern('6A00680080000051FF15') ; COULD NOT UPDATE! 23.12.24
+
+	_('ScanTargetLog:')
+	AddPattern('5356578BFA894DF4E8') ; COULD NOT UPDATE! 23.12.24
+
+	_('ScanChangeTargetFunction:')
+	AddPattern('3BDF0F95') ; STILL WORKING 23.12.24, 33C03BDA0F95C033
+
+	_('ScanMoveFunction:')
+	AddPattern('558BEC83EC208D45F0') ; STILL WORKING 23.12.24, 558BEC83EC2056578BF98D4DF0
+
+	_('ScanPing:')
+	AddPattern('E874651600') ; UPDATED 23.12.24
+
+	_('ScanMapID:')
+	AddPattern('558BEC8B450885C074078B') ;STILL WORKING 23.12.24, B07F8D55
+
+	_('ScanMapLoading:')
+	AddPattern('2480ED0000000000') ; UPDATED 25.12.24, 6A2C50E8
+
+	_('ScanLoggedIn:')
+	AddPattern('C705ACDE740000000000C3CCCCCCCC') ; UPDATED 26.12.24, NEED TO GET UPDATED EACH PATCH OLD:BFFFC70580 85C07411B807
+
+	_('ScanRegion:')
+	AddPattern('8BF0EB038B750C3B') ; STILL WORKING 23.12.24
+
+	_('ScanMapInfo:')
+	AddPattern('8BF0EB038B750C3B') ; STILL WORKING 23.12.24, 83F9FD7406
+
+	_('ScanLanguage:')
+	AddPattern('C38B75FC8B04B5') ; COULD NOT UPDATE! 23.12.24
+
+	_('ScanUseSkillFunction:')
+	AddPattern('85F6745B83FE1174') ; STILL WORKING 23.12.24, 558BEC83EC1053568BD9578BF2895DF0
+
+	_('ScanPacketSendFunction:')
+	AddPattern('C747540000000081E6') ;UPDATED 28.12.24 old: F7D9C74754010000001BC981, 558BEC83EC2C5356578BF985
+
+	_('ScanBaseOffset:')
+	AddPattern('83C40433C08BE55DC3A1') ; STILL WORKING 23.12.24, 5633F63BCE740E5633D2
+
+	_('ScanWriteChatFunction:')
+	AddPattern('8D85E0FEFFFF50681C01') ;STILL WORKING 23.12.24, 558BEC5153894DFC8B4D0856578B
+
+	_('ScanSkillLog:')
+	AddPattern('408946105E5B5D') ; COULD NOT UPDATE! 23.12.24
+
+	_('ScanSkillCompleteLog:')
+	AddPattern('741D6A006A40') ; COULD NOT UPDATE! 23.12.24
+
+	_('ScanSkillCancelLog:')
+	AddPattern('741D6A006A48') ; COULD NOT UPDATE! 23.12.24
+
+	_('ScanChatLog:')
+	AddPattern('8B45F48B138B4DEC50') ; COULD NOT UPDATE! 23.12.24
+
+	_('ScanSellItemFunction:')
+	AddPattern('8B4D2085C90F858E') ; COULD NOT UPDATE! 23.12.24
+
+	_('ScanStringLog:')
+	AddPattern('893E8B7D10895E04397E08') ; COULD NOT UPDATE! 23.12.24
+
+	_('ScanStringFilter1:')
+	AddPattern('8B368B4F2C6A006A008B06') ; COULD NOT UPDATE! 23.12.24
+
+	_('ScanStringFilter2:')
+	AddPattern('515356578BF933D28B4F2C') ; COULD NOT UPDATE! 23.12.24
+
+	_('ScanActionFunction:')
+	AddPattern('8B7508578BF983FE09750C6876') ;STILL WORKING 23.12.24, ;8B7D0883FF098BF175116876010000
+
+	_('ScanActionBase:')
+	AddPattern('8D1C87899DF4') ; UPDATED 24.12.24, OLD: 8D1C87899DF4FEFFFF8BC32BC7C1F802, 8B4208A80175418B4A08
+
+	_('ScanSkillBase:')
+	AddPattern('8D04B6C1E00505') ;STILL WORKING 23.12.24
+
+	_('ScanUseHeroSkillFunction:')
+	AddPattern('BA02000000B954080000') ;STILL WORKING 23.12.24
+
+	_('ScanTransactionFunction:')
+	AddPattern('85FF741D8B4D14EB08') ;STILL WORKING 23.12.24 ;558BEC81ECC000000053568B75085783FE108BFA8BD97614
+
+	_('ScanBuyItemFunction:') ; Still in use? (16/06-2023)
+	AddPattern('D9EED9580CC74004') ;STILL WORKING 23.12.24 ; Still in use? (16/06-2023)
+
+	_('ScanBuyItemBase:')
+	AddPattern('D9EED9580CC74004') ;STILL WORKING 23.12.24
+
+	_('ScanRequestQuoteFunction:')
+	AddPattern('8B752083FE107614')  ;STILL WORKING 23.12.24;8B750C5783FE107614 ;53568B750C5783FE10
+
+	_('ScanTraderFunction:')
+	;AddPattern('8B45188B551085') ;83FF10761468
+	AddPattern('83FF10761468D2210000') ;STILL WORKING 23.12.24
+
+	_('ScanTraderHook:')
+	AddPattern('8955FC6A008D55F8B9BB') ; COULD NOT UPDATE! 23.12.24 ;50516A466A06 ;007BA579
+
+	_('ScanSleep:')
+	AddPattern('6A0057FF15D8408A006860EA0000') ; UPDATED 24.12.24, OLD:5F5E5B741A6860EA0000
+
+	_('ScanSalvageFunction:')
+	AddPattern('33C58945FC8B45088945F08B450C8945F48B45108945F88D45EC506A10C745EC76') ; UPDATED 24.12.24 OLD:33C58945FC8B45088945F08B450C8945F48B45108945F88D45EC506A10C745EC75
+	;AddPattern('8BFA8BD9897DF0895DF4')
+
+	_('ScanSalvageGlobal:')
+	AddPattern('8B4A04538945F48B4208') ; UPDATED 24.12.24, OLD: 8B5104538945F48B4108568945E88B410C578945EC8B4110528955E48945F0
+	;AddPattern('8B018B4904A3')
+
+	_('ScanIncreaseAttributeFunction:')
+	AddPattern('8B7D088B702C8B1F3B9E00050000') ;STILL WORKING 23.12.24, 8B702C8B3B8B86
+
+	_("ScanDecreaseAttributeFunction:")
+	AddPattern("8B8AA800000089480C5DC3CC") ;STILL WORKING 23.12.24, 8B402C8BCE059C0000008B1089118B50
+
+	_('ScanSkillTimer:')
+	AddPattern('FFD68B4DF08BD88B4708') ;STILL WORKING 23.12.24, 85c974158bd62bd183fa64
+
+	_('ScanClickToMoveFix:')
+	AddPattern('3DD301000074') ;STILL WORKING 23.12.24,
+
+	_('ScanZoomStill:')
+	AddPattern('558BEC8B41085685C0') ; COULD NOT UPDATE! 23.12.24
+
+	_('ScanZoomMoving:')
+	AddPattern('EB358B4304') ; COULD NOT UPDATE! 23.12.24
+
+	_('ScanBuildNumber:')
+	AddPattern('558BEC83EC4053568BD9') ; COULD NOT UPDATE! 23.12.24
+
+	_('ScanChangeStatusFunction:')
+	AddPattern('558BEC568B750883FE047C14') ;STILL WORKING 23.12.24, 568BF183FE047C14682F020000
+
+	_('ScanCharslots:')
+	AddPattern('8B551041897E38897E3C897E34897E48897E4C890D') ; COULD NOT UPDATE! 23.12.24
+
+	_('ScanReadChatFunction:')
+	AddPattern('A128B6EB00') ; COULD NOT UPDATE! 23.12.24
+
+	_('ScanDialogLog:')
+	AddPattern('8B45088945FC8D45F8506A08C745F841') ;STILL WORKING 23.12.24, 558BEC83EC285356578BF28BD9
+
+	_("ScanTradeHack:")
+	AddPattern("8BEC8B450883F846") ;STILL WORKING 23.12.24
+
+	_("ScanClickCoords:")
 	AddPattern("8B451C85C0741CD945F8") ;STILL WORKING 23.12.24
 
-	_('ScanProc:')	; Label for the scan procedure  
-	_('pushad')	; Push all general-purpose registers onto the stack to save their values  
-	_('mov ecx,' & Hex($lGwBase, 8))	; Move the base address of the Guild Wars process into the ECX register  
-	_('mov esi,ScanProc')	; Move the address of the ScanProc label into the ESI register  
-	_('ScanLoop:')	; Label for the scan loop  
-	_('inc ecx')	; Increment the value in the ECX register by 1  
-	_('mov al,byte[ecx]')	; Move the byte value at the address stored in ECX into the AL register  
-	_('mov edx,ScanBasePointer')	; Move the address of the ScanBasePointer into the EDX register
+	_('ScanProc:') ; Label for the scan procedure
+	_('pushad') ; Push all general-purpose registers onto the stack to save their values
+	_('mov ecx,' & Hex($lGwBase, 8)) ; Move the base address of the Guild Wars process into the ECX register
+	_('mov esi,ScanProc') ; Move the address of the ScanProc label into the ESI register
+	_('ScanLoop:') ; Label for the scan loop
+	_('inc ecx') ; Increment the value in the ECX register by 1
+	_('mov al,byte[ecx]') ; Move the byte value at the address stored in ECX into the AL register
+	_('mov edx,ScanBasePointer') ; Move the address of the ScanBasePointer into the EDX register
 
 
-	_('ScanInnerLoop:')	; Label for the inner scan loop  
-	_('mov ebx,dword[edx]')	; Move the 4-byte value at the address stored in EDX into the EBX register  
-	_('cmp ebx,-1')	; Compare the value in EBX to -1  
-	_('jnz ScanContinue')	; Jump to the ScanContinue label if the comparison is not zero  
-	_('add edx,50')	; Add 50 to the value in the EDX register  
-	_('cmp edx,esi')	; Compare the value in EDX to the value in ESI  
-	_('jnz ScanInnerLoop')	; Jump to the ScanInnerLoop label if the comparison is not zero  
-	_('cmp ecx,' & SwapEndian(Hex($lGwBase + 5238784, 8)))	; Compare the value in ECX to a specific address (+4FF000)  
-	_('jnz ScanLoop')	; Jump to the ScanLoop label if the comparison is not zero  
-	_('jmp ScanExit')	; Jump to the ScanExit label
+	_('ScanInnerLoop:') ; Label for the inner scan loop
+	_('mov ebx,dword[edx]') ; Move the 4-byte value at the address stored in EDX into the EBX register
+	_('cmp ebx,-1') ; Compare the value in EBX to -1
+	_('jnz ScanContinue') ; Jump to the ScanContinue label if the comparison is not zero
+	_('add edx,50') ; Add 50 to the value in the EDX register
+	_('cmp edx,esi') ; Compare the value in EDX to the value in ESI
+	_('jnz ScanInnerLoop') ; Jump to the ScanInnerLoop label if the comparison is not zero
+	_('cmp ecx,' & SwapEndian(Hex($lGwBase + 5238784, 8))) ; Compare the value in ECX to a specific address (+4FF000)
+	_('jnz ScanLoop') ; Jump to the ScanLoop label if the comparison is not zero
+	_('jmp ScanExit') ; Jump to the ScanExit label
 
 
-	_('ScanContinue:')	; Label for the scan continue section  
-	_('lea edi,dword[edx+ebx]')	; Load the effective address of the value at EDX + EBX into the EDI register  
-	_('add edi,C')	; Add the value of C to the address in EDI  
-	_('mov ah,byte[edi]')	; Move the byte value at the address stored in EDI into the AH register  
-	_('cmp al,ah')	; Compare the value in AL to the value in AH  
-	_('jz ScanMatched')	; Jump to the ScanMatched label if the comparison is zero (i.e., the values match)  
-	_('mov dword[edx],0')	; Move the value 0 into the 4-byte location at the address stored in EDX  
-	_('add edx,50')	; Add 50 to the value in the EDX register  
-	_('cmp edx,esi')	; Compare the value in EDX to the value in ESI  
-	_('jnz ScanInnerLoop')	; Jump to the ScanInnerLoop label if the comparison is not zero  
-	_('cmp ecx,' & SwapEndian(Hex($lGwBase + 5238784, 8)))	; Compare the value in ECX to a specific address (+4FF000)  
-	_('jnz ScanLoop')	; Jump to the ScanLoop label if the comparison is not zero  
-	_('jmp ScanExit')	; Jump to the ScanExit label
+	_('ScanContinue:') ; Label for the scan continue section
+	_('lea edi,dword[edx+ebx]') ; Load the effective address of the value at EDX + EBX into the EDI register
+	_('add edi,C') ; Add the value of C to the address in EDI
+	_('mov ah,byte[edi]') ; Move the byte value at the address stored in EDI into the AH register
+	_('cmp al,ah') ; Compare the value in AL to the value in AH
+	_('jz ScanMatched') ; Jump to the ScanMatched label if the comparison is zero (i.e., the values match)
+	_('mov dword[edx],0') ; Move the value 0 into the 4-byte location at the address stored in EDX
+	_('add edx,50') ; Add 50 to the value in the EDX register
+	_('cmp edx,esi') ; Compare the value in EDX to the value in ESI
+	_('jnz ScanInnerLoop') ; Jump to the ScanInnerLoop label if the comparison is not zero
+	_('cmp ecx,' & SwapEndian(Hex($lGwBase + 5238784, 8))) ; Compare the value in ECX to a specific address (+4FF000)
+	_('jnz ScanLoop') ; Jump to the ScanLoop label if the comparison is not zero
+	_('jmp ScanExit') ; Jump to the ScanExit label
 
 
-	_('ScanMatched:')	; Label for the scan matched section  
-	_('inc ebx')	; Increment the value in the EBX register by 1  
-	_('mov edi,dword[edx+4]')	; Move the 4-byte value at the address EDX + 4 into the EDI register  
-	_('cmp ebx,edi')	; Compare the value in EBX to the value in EDI  
-	_('jz ScanFound')	; Jump to the ScanFound label if the comparison is zero (i.e., the values match)  
-	_('mov dword[edx],ebx')	; Move the value in EBX into the 4-byte location at the address stored in EDX  
-	_('add edx,50')	; Add 50 to the value in the EDX register  
-	_('cmp edx,esi')	; Compare the value in EDX to the value in ESI  
-	_('jnz ScanInnerLoop')	; Jump to the ScanInnerLoop label if the comparison is not zero  
-	_('cmp ecx,' & SwapEndian(Hex($lGwBase + 5238784, 8)))	; Compare the value in ECX to a specific address (+4FF000)  
-	_('jnz ScanLoop')	; Jump to the ScanLoop label if the comparison is not zero  
-	_('jmp ScanExit')	; Jump to the ScanExit label
+	_('ScanMatched:') ; Label for the scan matched section
+	_('inc ebx') ; Increment the value in the EBX register by 1
+	_('mov edi,dword[edx+4]') ; Move the 4-byte value at the address EDX + 4 into the EDI register
+	_('cmp ebx,edi') ; Compare the value in EBX to the value in EDI
+	_('jz ScanFound') ; Jump to the ScanFound label if the comparison is zero (i.e., the values match)
+	_('mov dword[edx],ebx') ; Move the value in EBX into the 4-byte location at the address stored in EDX
+	_('add edx,50') ; Add 50 to the value in the EDX register
+	_('cmp edx,esi') ; Compare the value in EDX to the value in ESI
+	_('jnz ScanInnerLoop') ; Jump to the ScanInnerLoop label if the comparison is not zero
+	_('cmp ecx,' & SwapEndian(Hex($lGwBase + 5238784, 8))) ; Compare the value in ECX to a specific address (+4FF000)
+	_('jnz ScanLoop') ; Jump to the ScanLoop label if the comparison is not zero
+	_('jmp ScanExit') ; Jump to the ScanExit label
 
 
-	_('ScanFound:')	; Label for the scan found section  
-	_('lea edi,dword[edx+8]')	; Load the effective address of the value at EDX + 8 into the EDI register  
-	_('mov dword[edi],ecx')	; Move the value in ECX into the 4-byte location at the address stored in EDI  
-	_('mov dword[edx],-1')	; Move the value -1 into the 4-byte location at the address stored in EDX (mark as found)  
-	_('add edx,50')	; Add 50 to the value in the EDX register  
-	_('cmp edx,esi')	; Compare the value in EDX to the value in ESI  
-	_('jnz ScanInnerLoop')	; Jump to the ScanInnerLoop label if the comparison is not zero  
-	_('cmp ecx,' & SwapEndian(Hex($lGwBase + 5238784, 8)))	; Compare the value in ECX to a specific address (+4FF000)  
-	_('jnz ScanLoop')	; Jump to the ScanLoop label if the comparison is not zero  
-  
-	_('ScanExit:')	; Label for the scan exit section  
-	_('popad')	; Pop all general-purpose registers from the stack to restore their original values  
-	_('retn')	; Return from the current function (exit the scan routine)
+	_('ScanFound:') ; Label for the scan found section
+	_('lea edi,dword[edx+8]') ; Load the effective address of the value at EDX + 8 into the EDI register
+	_('mov dword[edi],ecx') ; Move the value in ECX into the 4-byte location at the address stored in EDI
+	_('mov dword[edx],-1') ; Move the value -1 into the 4-byte location at the address stored in EDX (mark as found)
+	_('add edx,50') ; Add 50 to the value in the EDX register
+	_('cmp edx,esi') ; Compare the value in EDX to the value in ESI
+	_('jnz ScanInnerLoop') ; Jump to the ScanInnerLoop label if the comparison is not zero
+	_('cmp ecx,' & SwapEndian(Hex($lGwBase + 5238784, 8))) ; Compare the value in ECX to a specific address (+4FF000)
+	_('jnz ScanLoop') ; Jump to the ScanLoop label if the comparison is not zero
 
-  
-	$mBase = $lGwBase + 0x9DF000   
-	Local $lScanMemory = MemoryRead($mBase, 'ptr')  
-  
-	; Check if the scan memory address is empty (no previous injection)  
-	If $lScanMemory = 0 Then  
-		; Allocate a new block of memory for the scan routine  
-		$mMemory = DllCall($mKernelHandle, 'ptr', 'VirtualAllocEx', 'handle', $mGWProcHandle, 'ptr', 0, 'ulong_ptr', $mASMSize, 'dword', 0x1000, 'dword', 0x40)  
-		$mMemory = $mMemory[0] ; Get the allocated memory address  
-  
-		; Write the allocated memory address to the scan memory location  
-		MemoryWrite($mBase, $mMemory)  
-  
-		;~ out("First Inject: " & $mMemory) 
-	Else  
-		; If the scan memory address is not empty, use the existing memory address  
-		$mMemory = $lScanMemory  
+	_('ScanExit:') ; Label for the scan exit section
+	_('popad') ; Pop all general-purpose registers from the stack to restore their original values
+	_('retn') ; Return from the current function (exit the scan routine)
+
+
+	$mBase = $lGwBase + 0x9DF000
+	Local $lScanMemory = MemoryRead($mBase, 'ptr')
+
+	; Check if the scan memory address is empty (no previous injection)
+	If $lScanMemory = 0 Then
+		; Allocate a new block of memory for the scan routine
+		$mMemory = DllCall($mKernelHandle, 'ptr', 'VirtualAllocEx', 'handle', $mGWProcHandle, 'ptr', 0, 'ulong_ptr', $mASMSize, 'dword', 0x1000, 'dword', 0x40)
+		$mMemory = $mMemory[0] ; Get the allocated memory address
+
+		; Write the allocated memory address to the scan memory location
+		MemoryWrite($mBase, $mMemory)
+
+;~ out("First Inject: " & $mMemory)
+	Else
+		; If the scan memory address is not empty, use the existing memory address
+		$mMemory = $lScanMemory
 	EndIf
 
 
-	; Complete the assembly code for the scan routine  
-	CompleteASMCode()  
-  
-	; Check if this is the first injection (no previous scan memory address)  
-	If $lScanMemory = 0 Then  
-		; Write the assembly code to the allocated memory address  
-		WriteBinary($mASMString, $mMemory + $mASMCodeOffset)  
-  
-		; Create a new thread in the target process to execute the scan routine  
-		Local $lThread = DllCall($mKernelHandle, 'int', 'CreateRemoteThread', 'int', $mGWProcHandle, 'ptr', 0, 'int', 0, 'int', GetLabelInfo('ScanProc'), 'ptr', 0, 'int', 0, 'int', 0)  
-		$lThread = $lThread[0] ; Get the thread ID  
-  
-		; Wait for the thread to finish executing  
-		Local $lResult  
-		Do  
-			; Wait for up to 50ms for the thread to finish  
-			$lResult = DllCall($mKernelHandle, 'int', 'WaitForSingleObject', 'int', $lThread, 'int', 50)  
-		Until $lResult[0] <> 258 ; Wait until the thread is no longer waiting (258 is the WAIT_TIMEOUT constant)  
-  
-		; Close the thread handle to free up system resources  
-		DllCall($mKernelHandle, 'int', 'CloseHandle', 'int', $lThread)  
-	EndIf  
-EndFunc  ;==>Scan
+	; Complete the assembly code for the scan routine
+	CompleteASMCode()
 
-; **Function to Retrieve Guild Wars Process Base Address**  
-Func GetGWBase()  
-	; **Scan for Guild Wars Process and Get Base Address**  
-	Local $lGwBase = ScanForProcess() - 4096 ; Subtract 4096 from the process address to get the base address  
-  
-	; **Convert Base Address to Hexadecimal String**  
-	$lGwBase = "0x" & Hex($lGwBase) ; Prefix the hexadecimal value with "0x"  
-  
-	; **Return Base Address as Hexadecimal String**  
-	Return $lGwBase  
-EndFunc  ;==>GetGWBase
+	; Check if this is the first injection (no previous scan memory address)
+	If $lScanMemory = 0 Then
+		; Write the assembly code to the allocated memory address
+		WriteBinary($mASMString, $mMemory + $mASMCodeOffset)
+
+		; Create a new thread in the target process to execute the scan routine
+		Local $lThread = DllCall($mKernelHandle, 'int', 'CreateRemoteThread', 'int', $mGWProcHandle, 'ptr', 0, 'int', 0, 'int', GetLabelInfo('ScanProc'), 'ptr', 0, 'int', 0, 'int', 0)
+		$lThread = $lThread[0] ; Get the thread ID
+
+		; Wait for the thread to finish executing
+		Local $lResult
+		Do
+			; Wait for up to 50ms for the thread to finish
+			$lResult = DllCall($mKernelHandle, 'int', 'WaitForSingleObject', 'int', $lThread, 'int', 50)
+		Until $lResult[0] <> 258 ; Wait until the thread is no longer waiting (258 is the WAIT_TIMEOUT constant)
+
+		; Close the thread handle to free up system resources
+		DllCall($mKernelHandle, 'int', 'CloseHandle', 'int', $lThread)
+	EndIf
+EndFunc   ;==>Scan
+
+; **Function to Retrieve Guild Wars Process Base Address**
+Func GetGWBase()
+	; **Scan for Guild Wars Process and Get Base Address**
+	Local $lGwBase = ScanForProcess() - 4096 ; Subtract 4096 from the process address to get the base address
+
+	; **Convert Base Address to Hexadecimal String**
+	$lGwBase = "0x" & Hex($lGwBase) ; Prefix the hexadecimal value with "0x"
+
+	; **Return Base Address as Hexadecimal String**
+	Return $lGwBase
+EndFunc   ;==>GetGWBase
 
 Func ScanForProcess()
 	Local $lCharNameCode = BinaryToString('0x558BEC83EC105356578B7D0833F63BFE')
@@ -2006,7 +2016,7 @@ Func GoNPC($aAgent)
 		$lAgentID = DllStructGetData($aAgent, 'ID')
 	EndIf
 
-	Return SendPacket(0xC, $HEADER_NPC_TALK, $lAgentID)
+	Return SendPacket(0xC, $HEADER_INTERACT_LIVING, $lAgentID)
 EndFunc   ;==>GoNPC
 
 ;~ Description: Talks to NPC and waits until you reach them.
@@ -3721,69 +3731,69 @@ EndFunc   ;==>GetAgentPtr
 
 
 ;---- Used for testing purposes and finding accurate Offsets
-;Func GetAgentPtr($aAgentID)  
-;	Local $lOffset[3] = [0, 4 * ConvertID($aAgentID), 0]  
-;	Local $lAgentStructAddress = MemoryReadPtr($mAgentBase, $lOffset)  
-;	  
-;	If @error Then  
-;		CurrentAction("Error reading memory: " & @error & @CRLF)  
-;		Return 0  
-;	EndIf  
-;	  
-;	If $lAgentStructAddress[0] < $mAgentBase Or $lAgentStructAddress[0] > $mAgentBase + 0x100000 Then  
-;		CurrentAction("Invalid offset: " & $lOffset[1] & @CRLF)  
-;		Return 0  
-;	EndIf  
-;	  
-;	Return $lAgentStructAddress[0]  
+;Func GetAgentPtr($aAgentID)
+;	Local $lOffset[3] = [0, 4 * ConvertID($aAgentID), 0]
+;	Local $lAgentStructAddress = MemoryReadPtr($mAgentBase, $lOffset)
+;
+;	If @error Then
+;		CurrentAction("Error reading memory: " & @error & @CRLF)
+;		Return 0
+;	EndIf
+;
+;	If $lAgentStructAddress[0] < $mAgentBase Or $lAgentStructAddress[0] > $mAgentBase + 0x100000 Then
+;		CurrentAction("Invalid offset: " & $lOffset[1] & @CRLF)
+;		Return 0
+;	EndIf
+;
+;	Return $lAgentStructAddress[0]
 ;EndFunc  ;==>GetAgentPtr
 
 
-;---- based on the result adjust the address 
-;Func GetAgentPtr($aAgentID)  
-;   Local $lOffset[3] = [0, 4 * ConvertID($aAgentID), 0]  
-;   Local $lAgentStructAddress = MemoryReadPtr($mAgentBase, $lOffset)  
-;    
-;   If @error Then  
-;      CurrentAction("Error reading memory: " & @error & @CRLF)  
-;      Return 0  
-;   EndIf  
-    
- 
-;   If $lAgentStructAddress[0] = 0 Or $lAgentStructAddress[0] = 156 Then  
-;      CurrentAction("Invalid offset: " & $lOffset[1] & @CRLF)  
-;      Return 0  
-;   EndIf  
-    
-;   Return $lAgentStructAddress[0]  
+;---- based on the result adjust the address
+;Func GetAgentPtr($aAgentID)
+;   Local $lOffset[3] = [0, 4 * ConvertID($aAgentID), 0]
+;   Local $lAgentStructAddress = MemoryReadPtr($mAgentBase, $lOffset)
+;
+;   If @error Then
+;      CurrentAction("Error reading memory: " & @error & @CRLF)
+;      Return 0
+;   EndIf
+
+
+;   If $lAgentStructAddress[0] = 0 Or $lAgentStructAddress[0] = 156 Then
+;      CurrentAction("Invalid offset: " & $lOffset[1] & @CRLF)
+;      Return 0
+;   EndIf
+
+;   Return $lAgentStructAddress[0]
 ;EndFunc  ;==>GetAgentPtr
 
-;Func GetAgentPtr($aAgentID)  
-;   Local $minOffset = -10000  
-;   Local $maxOffset = 10000  
-;   Local $step = 4  
-;  
-;   For $i = $minOffset To $maxOffset Step $step  
-;      Local $lOffset[3] = [0, 4 * ConvertID($aAgentID) + $i, 0]  
-;      Local $lAgentStructAddress = MemoryReadPtr($mAgentBase, $lOffset)  
-;  
-;      If @error Then  
-;        CurrentAction("Error reading memory: " & @error)  
-;        ContinueLoop  
-;      EndIf  
-;  
-;      ; Validate the offset  
-;      If $lAgentStructAddress[0] <> 0 And $lAgentStructAddress[0] <> 156 Then  
-;        CurrentAction("Valid offset found: " & $i)  
-;        Return $lAgentStructAddress[0]  
-;      EndIf  
-;  
-;      FileWriteLine("log.txt", "Offset " & $i & ": " & $lOffset[1] & " -> " & $lAgentStructAddress[0])  
-;      Sleep(10)  ; Add a small delay to avoid overwhelming the system  
-;   Next  
-;  
-;   CurrentAction("No valid offset found within the range")  
-;   Return 0  
+;Func GetAgentPtr($aAgentID)
+;   Local $minOffset = -10000
+;   Local $maxOffset = 10000
+;   Local $step = 4
+;
+;   For $i = $minOffset To $maxOffset Step $step
+;      Local $lOffset[3] = [0, 4 * ConvertID($aAgentID) + $i, 0]
+;      Local $lAgentStructAddress = MemoryReadPtr($mAgentBase, $lOffset)
+;
+;      If @error Then
+;        CurrentAction("Error reading memory: " & @error)
+;        ContinueLoop
+;      EndIf
+;
+;      ; Validate the offset
+;      If $lAgentStructAddress[0] <> 0 And $lAgentStructAddress[0] <> 156 Then
+;        CurrentAction("Valid offset found: " & $i)
+;        Return $lAgentStructAddress[0]
+;      EndIf
+;
+;      FileWriteLine("log.txt", "Offset " & $i & ": " & $lOffset[1] & " -> " & $lAgentStructAddress[0])
+;      Sleep(10)  ; Add a small delay to avoid overwhelming the system
+;   Next
+;
+;   CurrentAction("No valid offset found within the range")
+;   Return 0
 ;EndFunc  ;==>GetAgentPtr
 
 
@@ -4874,7 +4884,7 @@ EndFunc   ;==>InviteGuest
 
 ;~ Description: Internal use only.
 Func SendPacket($aSize, $aHeader, $aParam1 = 0, $aParam2 = 0, $aParam3 = 0, $aParam4 = 0, $aParam5 = 0, $aParam6 = 0, $aParam7 = 0, $aParam8 = 0, $aParam9 = 0, $aParam10 = 0)
-	If GetAgentExists(-2) Then
+	;If GetAgentExists(-2) Then
 		DllStructSetData($mPacket, 2, $aSize)
 		DllStructSetData($mPacket, 3, $aHeader)
 		DllStructSetData($mPacket, 4, $aParam1)
@@ -4889,9 +4899,9 @@ Func SendPacket($aSize, $aHeader, $aParam1 = 0, $aParam2 = 0, $aParam3 = 0, $aPa
 		DllStructSetData($mPacket, 13, $aParam10)
 		Enqueue($mPacketPtr, 52)
 		Return True
-	Else
-		Return False
-	EndIf
+	;Else
+	;	Return False
+	;EndIf
 EndFunc   ;==>SendPacket
 
 ;~ Description: Internal use only.
@@ -5750,6 +5760,8 @@ Func CreateCommands()
 	_('push edx')
 	_('mov ebx,dword[eax+4]')
 	_('push ebx')
+	;_('push edx')
+	;_('push ebx')
 	_('mov eax,dword[PacketLocation]')
 	_('push eax')
 	_('call PacketSendFunction')
