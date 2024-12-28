@@ -36,8 +36,10 @@ Global Const $HEADER_HERO_KICK = 0x001E             ; Remove a hero from the par
 
 ; Action operations
 Global Const $HEADER_ACTION_ATTACK = 0x0025         ; Initiate an attack.
+;Global Const $HEADER_ATTACK_AGENT = 0x0024 ; Initiates an attack on a selected agent
 Global Const $HEADER_ACTION_CANCEL = 0x0027         ; Cancel the current action.
 Global Const $HEADER_BUFF_DROP = 0x0028             ; Drop or remove a buff.
+Global Const $HEADER_CALL_TARGET = 0x21 ;Calls the target without attacking (Ctrl+Shift+Space)
 ;~ Global Const $HEADER_MAP_DRAW = 0x0029              ; Draw or update the map (not in use).
 Global Const $HEADER_DROP_ITEM = 0x002B             ; Drop an item from the inventory.
 Global Const $HEADER_DROP_GOLD = 0x002E             ; Drop gold or currency.

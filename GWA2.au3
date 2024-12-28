@@ -2060,7 +2060,7 @@ Func GoSignpost($aAgent)
 		$lAgentID = DllStructGetData($aAgent, 'ID')
 	EndIf
 
-	Return SendPacket(0xC, $HEADER_SIGNPOST_RUN, $lAgentID, 0)
+	Return SendPacket(0xC, $HEADER_GADGET_INTERACT, $lAgentID, 0)
 EndFunc   ;==>GoSignpost
 
 ;~ Description: Go to signpost and waits until you reach it.
@@ -2104,7 +2104,7 @@ Func Attack($aAgent, $aCallTarget = False)
 		$lAgentID = DllStructGetData($aAgent, 'ID')
 	EndIf
 
-	Return SendPacket(0xC, $HEADER_ATTACK_AGENT, $lAgentID, $aCallTarget)
+	Return SendPacket(0xC, $HEADER_CALL_TARGET, $lAgentID, $aCallTarget)
 EndFunc   ;==>Attack
 
 ;~ Description: Turn character to the left.
