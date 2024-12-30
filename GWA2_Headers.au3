@@ -39,7 +39,7 @@ Global Const $HEADER_ACTION_ATTACK = 0x0025         ; Initiate an attack.
 ;Global Const $HEADER_ATTACK_AGENT = 0x0024 ; Initiates an attack on a selected agent
 Global Const $HEADER_ACTION_CANCEL = 0x0027         ; Cancel the current action.
 Global Const $HEADER_BUFF_DROP = 0x0028             ; Drop or remove a buff.
-Global Const $HEADER_CALL_TARGET = 0x21 ;Calls the target without attacking (Ctrl+Shift+Space)
+Global Const $HEADER_CALL_TARGET = 0x22 ;Calls the target without attacking (Ctrl+Shift+Space)
 ;~ Global Const $HEADER_MAP_DRAW = 0x0029              ; Draw or update the map (not in use).
 Global Const $HEADER_DROP_ITEM = 0x002B             ; Drop an item from the inventory.
 Global Const $HEADER_DROP_GOLD = 0x002E             ; Drop gold or currency.
@@ -54,7 +54,7 @@ Global Const $HEADER_ITEM_INTERACT = 0x003E         ; Interact with an item.
 Global Const $HEADER_PROFESSION_CHANGE = 0x0040     ; Change player's profession.
 ;~ Global Const $HEADER_SKILLS_OPEN = 0x0040           ; Open the skills interface (not in use).
 ;~ Global Const $HEADER_PROFESSION_ULOCK = 0x0040      ; Unlock a profession (not in use).
-;~ Global Const $HEADER_SKILL_USE = 0x0044             ; Use a specific skill (not in use).
+Global Const $HEADER_SKILL_USE = 0x0045             ; Use a specific skill (not in use).
 Global Const $HEADER_TRADE_INITIATE = 0x0048        ; Initiate a trade with another player.
 ;~ Global Const $HEADER_BUY_MATERIALS = 0x0048         ; Buy materials (not in use).
 ;~ Global Const $HEADER_REQUEST_QUOTE = 0x004A         ; Request a quote for services or goods (not in use).
@@ -111,7 +111,7 @@ Global Const $HEADER_PARTY_TRAVEL = 0x00B0                ; Travel to a new loca
 Global Const $HEADER_PARTY_LEAVE_GUILD_HALL = 0x00B1      ; Leave the guild hall.
 
 ;=ITEMS=
-Global Const $HEADER_ITEM_PICKUP = 0x3D ;Picks up an item from ground
+Global Const $HEADER_ITEM_PICKUP = 0x3E ;Picks up an item from ground
 Global Const $HEADER_ITEM_MOVE_EX = 0x73 ;Moves an item, with amount to be moved.
 Global Const $HEADER_UPGRADE = 0x86 ;used by gwapi. is it even useful? NOT TESTED
 Global Const $HEADER_UPGRADE_ARMOR_1 = 0x83 ;used by gwapi. is it even useful? NOT TESTED
