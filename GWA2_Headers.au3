@@ -4,6 +4,7 @@
 ;# Update Checked 25.12.24                           #
 ;#####################################################
 
+
 ; Trading operations
 Global Const $HEADER_TRADE_CANCEL = 0x0001          ; Cancel the current trade.
 Global Const $HEADER_TRADE_ADD_ITEM = 0x0002        ; Add an item to the trade offer.
