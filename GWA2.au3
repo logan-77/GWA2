@@ -39,6 +39,7 @@ Local $mGWWindowHandle
 Local $mTargetLogBase, $mStringLogBase, $mSkillBase
 Local $mEnsureEnglish
 Local $mMyID, $mCurrentTarget
+Local $packetlocation
 Local $mAgentBase, $mBasePointer
 Local $mRegion, $mLanguage
 Local $mPing, $mCharname, $mMapID
@@ -46,11 +47,12 @@ Local $mMaxAgents, $mMapLoading, $mMapIsLoaded, $mLoggedIn
 Local $mStringHandlerPtr, $mWriteChatSender
 Local $mTraderQuoteID, $mTraderCostID, $mTraderCostValue
 Local $mSkillTimer, $mBuildNumber
+Local $lTemp
 Local $mZoomStill, $mZoomMoving
 Local $mDisableRendering, $mAgentCopyCount, $mAgentCopyBase
 Local $mCurrentStatus, $mLastDialogID
 Local $mUseStringLog, $mUseEventSystem
-;~ Local $mCharslots
+Local $mCharslots
 #EndRegion Declarations
 
 
