@@ -995,7 +995,7 @@ Func DropItem($aItem, $aAmount = 0)
 		EndIf
 	EndIf
 
-	Return SendPacket(0xC, $HEADER_ITEM_DROP, $lItemID, $lAmount)
+	Return SendPacket(0xC, $HEADER_DROP_ITEM, $lItemID, $lAmount)
 EndFunc   ;==>DropItem
 
 ;~ Description: Moves an item.
@@ -1261,31 +1261,32 @@ Func TraderBuy()
 	Return True
 EndFunc   ;==>TraderBuy
 
-;;; This is incorrect way to use this function
-;~ Description: Request a quote to sell an item to the trader.
-;Func TraderRequestSell($aItem)
-;	Local $lItemID
-;	Local $lFound = False
-;	Local $lQuoteID = MemoryRead($mTraderQuoteID)
-;
-;	If IsDllStruct($aItem) = 0 Then
-;		$lItemID = $aItem
-;	Else
-;		$lItemID = DllStructGetData($aItem, 'ID')
-;	EndIf
-;
-;	DllStructSetData($mRequestQuoteSell, 2, $lItemID)
-;	Enqueue($mRequestQuoteSellPtr, 8)
-;
-;	Local $lDeadlock = TimerInit()
-;	Do
-;		Sleep(20)
-;		$lFound = MemoryRead($mTraderQuoteID) <> $lQuoteID
-;	Until $lFound Or TimerDiff($lDeadlock) > GetPing() + 5000
-;	Return $lFound
-;EndFunc   ;==>TraderRequestSell
+;~ Description: This shit might not work as intended :3
+Func TraderRequestBuy($aItem)  
+	Local $lItemID  
+	Local $lFound = False  
+	Local $lQuoteID = MemoryRead($mTraderQuoteID)  
+   
+	If IsDllStruct($aItem) = 0 Then  
+	   $lItemID = $aItem  
+	Else  
+	   $lItemID = DllStructGetData($aItem, 'ID')  
+	EndIf  
+   
+	DllStructSetData($mRequestQuote, 1, $HEADER_REQUEST_QUOTE)  
+	DllStructSetData($mRequestQuote, 2, $lItemID)  
+	Enqueue($mRequestQuotePtr, 8)  
+   
+	Local $lDeadlock = TimerInit()  
+	$lFound = False  
+	Do  
+	   Sleep(20)  
+	   $lFound = MemoryRead($mTraderQuoteID) <> $lQuoteID  
+	Until $lFound Or TimerDiff($lDeadlock) > GetPing() + 5000  
+   
+	Return $lFound  
+ EndFunc  ;==>TraderRequestBuy
 
-;CorrectWay
 ;~ Description: Request a quote to sell an item to the trader
 Func TraderRequestSell($aItem)
 	Local $lItemID
@@ -1330,7 +1331,7 @@ Func DropGold($aAmount = 0)
 		$lAmount = GetGoldCharacter()
 	EndIf
 
-	Return SendPacket(0x8, $HEADER_GOLD_DROP, $lAmount)
+	Return SendPacket(0x8, $HEADER_DROP_GOLD, $lAmount)
 EndFunc   ;==>DropGold
 
 ;~ Description: Deposit gold into storage.
@@ -1384,13 +1385,8 @@ Func KickHero($aHeroId)
 	Return SendPacket(0x8, $HEADER_HERO_KICK, $aHeroId)
 EndFunc   ;==>KickHero
 
-;Following function has incorrect address so let's fix it another way.
-;~ Description: Kicks all heroes from the party.
-;Func KickAllHeroes()
-;	Return SendPacket(0x8, $HEADER_HEROES_KICK, 0x26)
-;EndFunc   ;==>KickAllHeroes
 
-; Function to kick all heroes
+;~ Description: Kicks all heroes from the party.
 Func KickAllHeroes()
 	; Array of all hero IDs
 	Local $aHeroIds[] = [$HERO_Norgu, $HERO_Goren, $HERO_Tahlkora, $HERO_MasterOfWhispers, $HERO_AcolyteJin, $HERO_Koss, $HERO_Dunkoro, $HERO_AcolyteSousuke, $HERO_Melonni, _
@@ -1405,7 +1401,6 @@ Func KickAllHeroes()
 		Sleep(100) ; Add a delay of 100 milliseconds
 	Next
 EndFunc   ;==>KickAllHeroes
-
 
 ;~ Description: Add a henchman to the party.
 Func AddNpc($aNpcId)
@@ -1525,6 +1520,7 @@ Func MoveTo($aX, $aY, $aRandom = 50)
 	Until ComputeDistance(DllStructGetData($lMe, 'X'), DllStructGetData($lMe, 'Y'), $lDestX, $lDestY) < 25 Or $lBlocked > 14
 EndFunc   ;==>MoveTo
 
+;~ Global $CustomMoveToReturn
 Global $CustomMoveToCombatLooting = False ; Set True to Loot during combat
 Global $CustomMoveToLootingDistance = 125 ; Distance at which we try to loot an looteable
 Global $CustomMoveToAggro = True ; Set to False to stop fighting with enimies within $DistanceCasting
@@ -1533,7 +1529,6 @@ Global $CustomMoveToReturnSuccess = 1
 Global $CustomMoveToReturnDead = 2
 Global $CustomMoveToReturnStuck = 3
 Global $CustomMoveToReturnMapLoading = 4
-;~ Global $CustomMoveToReturn
 
 ;~ Description: Move to a location and wait until you reach it.
 Func CustomMoveTo($aX, $aY, $aRandom = 50)
