@@ -1380,14 +1380,21 @@ Func AddHero($aHeroId)
 	Return SendPacket(0x8, $HEADER_HERO_ADD, $aHeroId)
 EndFunc   ;==>AddHero
 
+Func KickHero()
+    Return SendPacket(0x8, $HEADER_HERO_KICK, 0x26)
+EndFunc
+
 ;~ Description: Kicks a hero from the party.
-Func KickHero($aHeroId)
+Func KickHero1($aHeroId)
 	Return SendPacket(0x8, $HEADER_HERO_KICK, $aHeroId)
 EndFunc   ;==>KickHero
 
+Func KickAllHeroes()
+    Return SendPacket(0x8, $HEADER_HERO_KICK, 0x26)
+EndFunc
 
 ;~ Description: Kicks all heroes from the party.
-Func KickAllHeroes()
+Func KickAllHeroes1()
 	; Array of all hero IDs
 	Local $aHeroIds[] = [$HERO_Norgu, $HERO_Goren, $HERO_Tahlkora, $HERO_MasterOfWhispers, $HERO_AcolyteJin, $HERO_Koss, $HERO_Dunkoro, $HERO_AcolyteSousuke, $HERO_Melonni, _
 			$HERO_ZhedShadowhoof, $HERO_GeneralMorgahn, $HERO_Olias, $HERO_Razah, $HERO_MOX, $HERO_Jora, $HERO_PyreFierceshot, _
@@ -1415,7 +1422,7 @@ EndFunc   ;==>KickNpc
 ;~ Description: Clear the position flag from a hero.
 Func CancelHero($aHeroNumber)
 	Local $lAgentID = GetHeroID($aHeroNumber)
-	Return SendPacket(0x14, $HEADER_HERO_CLEAR_FLAG, $lAgentID, 0x7F800000, 0x7F800000, 0)
+	Return SendPacket(0x14, $HEADER_HERO_FLAG_ALL, $lAgentID, 0x7F800000, 0x7F800000, 0)
 EndFunc   ;==>CancelHero
 
 ;~ Description: Clear the position flag from all heroes.
@@ -1744,7 +1751,7 @@ Func Attack($aAgent, $aCallTarget = False)
 		$lAgentID = DllStructGetData($aAgent, 'ID')
 	EndIf
 
-	Return SendPacket(0xC, $HEADER_CALL_TARGET, $lAgentID, $aCallTarget)
+	Return SendPacket(0xC, $HEADER_ACTION_ATTACK, $lAgentID, $aCallTarget)
 EndFunc   ;==>Attack
 
 ;~ Description: Turn character to the left.
