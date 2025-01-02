@@ -1380,17 +1380,14 @@ Func AddHero($aHeroId)
 	Return SendPacket(0x8, $HEADER_HERO_ADD, $aHeroId)
 EndFunc   ;==>AddHero
 
-Func KickHero()
-    Return SendPacket(0x8, $HEADER_HERO_KICK, 0x26)
-EndFunc
-
 ;~ Description: Kicks a hero from the party.
-Func KickHero1($aHeroId)
+Func KickHero($aHeroId)
 	Return SendPacket(0x8, $HEADER_HERO_KICK, $aHeroId)
 EndFunc   ;==>KickHero
 
+;~ Description: Kicks all heroes from the party.
 Func KickAllHeroes()
-    Return SendPacket(0x8, $HEADER_HERO_KICK, 0x26)
+	Return SendPacket(0x8, $HEADER_HERO_KICK, 0x26)
 EndFunc
 
 ;~ Description: Kicks all heroes from the party.
