@@ -1,5 +1,34 @@
 ; This Version is specified for scripts coming from MrJambix, If it doesn't work for you check your functions vs this one.
 
+; Require admin privileges
+#RequireAdmin
+
+; Display a message box to ask the user if they want to clear the prefetch cache
+Local $iResponse = MsgBox(4 + 32, "Prefetch Cache", "Do you want to clear the prefetch cache?")
+
+If $iResponse = 6 Then ; User pressed "Yes"
+    ; Sleep for a bit before running the command to ensure all processes are ready
+    Sleep(1000)
+
+    ; Run the PowerShell command to clear the Prefetch directory
+    Local $sCmd = "powershell.exe -Command Get-ChildItem -Path C:\Windows\Prefetch | Remove-Item -Force -Recurse"
+    Local $iRetVal = RunWait($sCmd, "", @SW_HIDE)
+
+    Sleep(1000) ; Wait a bit after command execution
+
+    ; Check if the Prefetch directory still exists
+    If FileExists(@WindowsDir & "\Prefetch") Then
+        MsgBox(48, "Prefetch Cache", "Prefetch directory still exists. Try rebooting first.")
+    Else
+        MsgBox(64, "Prefetch Cache", "Prefetch cache cleared successfully.")
+    EndIf
+ElseIf $iResponse = 7 Then ; User pressed "No"
+    MsgBox(64, "Prefetch Cache", "Operation canceled, prefetch will not be cleared.")
+EndIf
+
+
+
+
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Outfile_type=a3x
 #AutoIt3Wrapper_Outfile=..\Exe\Froggy.a3x
