@@ -2729,6 +2729,16 @@ EndFunc   ;==>FloatToInt
 
 #Region Queries
 #Region Titles
+
+; Constants for title identifiers
+Global Const $NO_TITLE = 0x00
+Global Const $SPEARMARSHALL = 0x11
+Global Const $LIGHTBRINGER = 0x14
+Global Const $ASURAN = 0x26
+Global Const $DWARVEN = 0x27
+Global Const $EBON_VANGUARD = 0x28
+Global Const $NORN = 0x29
+
 Func SetDisplayedTitle($aTitle = 0)
 ;~ If $aTitle Then
 ;~ 	Return SendPacket(0x8, $HEADER_TITLE_DISPLAY, $aTitle)
@@ -2759,6 +2769,36 @@ EndFunc   ;==>SetDisplayedTitle
 ;~ Norn = 0x29
 ;EndFunc   ;==>SetTitleUpdate
 
+
+; Function to set the title to Spearmarshall
+Func SetTitleSpearmarshall()
+    SendTitlePacket($HEADER_TITLE_DISPLAY, $SPEARMARSHALL)
+EndFunc
+
+; Function to set the title to Lightbringer
+Func SetTitleLightbringer()
+    SendTitlePacket($HEADER_TITLE_DISPLAY, $LIGHTBRINGER)
+EndFunc
+
+; Function to set the title to Asuran
+Func SetTitleAsuran()
+    SendTitlePacket($HEADER_TITLE_DISPLAY, $ASURAN)
+EndFunc
+
+; Function to set the title to Dwarven
+Func SetTitleDwarven()
+    SendTitlePacket($HEADER_TITLE_DISPLAY, $DWARVEN)
+EndFunc
+
+; Function to set the title to Ebon Vanguard
+Func SetTitleEbonVanguard()
+    SendTitlePacket($HEADER_TITLE_DISPLAY, $EBON_VANGUARD)
+EndFunc
+
+; Function to set the title to Norn
+Func SetTitleNorn()
+    SendTitlePacket($HEADER_TITLE_DISPLAY, $NORN)
+EndFunc
 
 ;~ Description: Returns Hero title progress.
 Func GetHeroTitle()
