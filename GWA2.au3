@@ -481,8 +481,6 @@ Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSy
 EndFunc  ;==>Initialize
 
 
-
-
 ;~ Description: Internal use only.
 Func GetValue($aKey)
 	For $i = 1 To $mLabels[0][0]
@@ -2772,32 +2770,32 @@ EndFunc   ;==>SetDisplayedTitle
 
 ; Function to set the title to Spearmarshall
 Func SetTitleSpearmarshall()
-    SendTitlePacket($HEADER_TITLE_DISPLAY, $SPEARMARSHALL)
+    SendTitlePacket(0x8, $HEADER_TITLE_DISPLAY, $SPEARMARSHALL)
 EndFunc
 
 ; Function to set the title to Lightbringer
 Func SetTitleLightbringer()
-    SendTitlePacket($HEADER_TITLE_DISPLAY, $LIGHTBRINGER)
+    SendTitlePacket(0x8, $HEADER_TITLE_DISPLAY, $LIGHTBRINGER)
 EndFunc
 
 ; Function to set the title to Asuran
 Func SetTitleAsuran()
-    SendTitlePacket($HEADER_TITLE_DISPLAY, $ASURAN)
+    SendTitlePacket(0x8, $HEADER_TITLE_DISPLAY, $ASURAN)
 EndFunc
 
 ; Function to set the title to Dwarven
 Func SetTitleDwarven()
-    SendTitlePacket($HEADER_TITLE_DISPLAY, $DWARVEN)
+    SendTitlePacket(0x8, $HEADER_TITLE_DISPLAY, $DWARVEN)
 EndFunc
 
 ; Function to set the title to Ebon Vanguard
 Func SetTitleEbonVanguard()
-    SendTitlePacket($HEADER_TITLE_DISPLAY, $EBON_VANGUARD)
+    SendTitlePacket(0x8, $HEADER_TITLE_DISPLAY, $EBON_VANGUARD)
 EndFunc
 
 ; Function to set the title to Norn
 Func SetTitleNorn()
-    SendTitlePacket($HEADER_TITLE_DISPLAY, $NORN)
+    SendTitlePacket(0x8, $HEADER_TITLE_DISPLAY, $NORN)
 EndFunc
 
 ;~ Description: Returns Hero title progress.
