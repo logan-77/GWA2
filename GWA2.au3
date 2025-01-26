@@ -3,31 +3,6 @@
 ; Require admin privileges
 #RequireAdmin
 
-; Display a message box to ask the user if they want to clear the prefetch cache
-Local $iResponse = MsgBox(4 + 32, "Prefetch Cache", "Do you want to clear the prefetch cache?")
-
-If $iResponse = 6 Then ; User pressed "Yes"
-    ; Sleep for a bit before running the command to ensure all processes are ready
-    Sleep(1000)
-
-    ; Run the PowerShell command to clear the Prefetch directory
-    Local $sCmd = "powershell.exe -Command Get-ChildItem -Path C:\Windows\Prefetch | Remove-Item -Force -Recurse"
-    Local $iRetVal = RunWait($sCmd, "", @SW_HIDE)
-
-    Sleep(1000) ; Wait a bit after command execution
-
-    ; Check if the Prefetch directory still exists
-    If FileExists(@WindowsDir & "\Prefetch") Then
-        MsgBox(48, "Prefetch Cache", "Prefetch directory still exists. Try rebooting first.")
-    Else
-        MsgBox(64, "Prefetch Cache", "Prefetch cache cleared successfully.")
-    EndIf
-ElseIf $iResponse = 7 Then ; User pressed "No"
-    MsgBox(64, "Prefetch Cache", "Operation canceled, prefetch will not be cleared.")
-EndIf
-
-
-
 
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Outfile_type=a3x
@@ -1550,6 +1525,45 @@ Func MoveTo($aX, $aY, $aRandom = 50)
 		EndIf
 	Until ComputeDistance(DllStructGetData($lMe, 'X'), DllStructGetData($lMe, 'Y'), $lDestX, $lDestY) < 25 Or $lBlocked > 14
 EndFunc   ;==>MoveTo
+
+Func AggroMoveTo($x, $y, $s = "", $z = 1450)
+    Local $TimerToKill = TimerInit()
+    $random = 50
+    $iBlocked = 0
+
+    If $DeadOnTheRun = 0 Then Move($x, $y, $random)
+
+    $lMe = GetAgentByID(-2)
+    $coordsX = DllStructGetData($lMe, "X")
+    $coordsY = DllStructGetData($lMe, "Y")
+
+    If $DeadOnTheRun = 0 Then
+        Do
+            If $DeadOnTheRun = 1 Then ExitLoop
+            $oldCoordsX = $coordsX
+            $oldCoordsY = $coordsY
+            $nearestEnemy = GetNearestEnemyToAgent(-2)
+            $lDistance = GetDistance($nearestEnemy, -2)
+            If $lDistance < $z AND DllStructGetData($nearestEnemy, 'ID') <> 0 AND $DeadOnTheRun = 0 Then
+                Fight($z, $s)
+            EndIf
+
+            $lMe = GetAgentByID(-2)
+            $coordsX = DllStructGetData($lMe, "X")
+            $coordsY = DllStructGetData($lMe, "Y")
+            If $oldCoordsX = $coordsX AND $oldCoordsY = $coordsY Then
+                $iBlocked += 1
+                If $DeadOnTheRun = 0 Then
+                    Move($coordsX, $coordsY, 500)
+                    RndSlp(350)
+                    Move($x, $y, $random)
+                EndIf
+            EndIf
+        Until ComputeDistanceEx($coordsX, $coordsY, $x, $y) < 250 OR $iBlocked > 20 OR $DeadOnTheRun = 1
+    EndIf
+    $TimerToKillDiff = TimerDiff($TimerToKill)
+EndFunc
+
 
 ;~ Global $CustomMoveToReturn
 Global $CustomMoveToCombatLooting = False ; Set True to Loot during combat
@@ -6591,7 +6605,19 @@ Func __ProcessGetName($i_PID)
 	Return SetError(1, 0, '')
 EndFunc   ;==>__ProcessGetName
 
-Func CheckArea($aX, $aY, $range)
+Func CheckArea($aX, $aY)
+    $ret = False
+    $pX = DllStructGetData(GetAgentByID(-2), "X")
+    $pY = DllStructGetData(GetAgentByID(-2), "Y")
+
+    If ($pX == $aX) And ($pY == $aY) Then
+        $ret = True
+    EndIf
+    Return $ret
+EndFunc   ;==>CheckArea
+
+
+Func CheckAreaRange($aX, $aY, $range)
 	$ret = False
 	$pX = DllStructGetData(GetAgentByID(-2), "X")
 	$pY = DllStructGetData(GetAgentByID(-2), "Y")
