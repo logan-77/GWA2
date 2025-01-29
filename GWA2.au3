@@ -2660,7 +2660,9 @@ Func DecreaseAttribute($aAttributeID, $aHeroNumber = 0)
 EndFunc   ;==>DecreaseAttribute
 
 ;~ Description: Set all attributes to 0
-Func ClearAttributes($aHeroNumber = 0)
+;Func ClearAttributes($aHeroNumber = 0)
+
+Func ClearAttributes($aHeroNumber)
 	Local $lLevel
 	If GetMapLoading() <> 0 Then Return
 	For $i = 0 To 44
@@ -2677,6 +2679,7 @@ Func ClearAttributes($aHeroNumber = 0)
 		EndIf
 	Next
 EndFunc   ;==>ClearAttributes
+
 
 ;~ Description: Change your secondary profession.
 Func ChangeSecondProfession($aProfession, $aHeroNumber = 0)
@@ -2781,35 +2784,41 @@ EndFunc   ;==>SetDisplayedTitle
 ;~ Norn = 0x29
 ;EndFunc   ;==>SetTitleUpdate
 
+Global $NORN = 0x29
+Global $EBON_VANGUARD = 0x28
+Global $DWARVEN = 0x27
+Global $ASURAN = 0x26
+Global $LIGHTBRINGER = 0x14
+Global $SPEARMARSHALL = 0x11
 
 ; Function to set the title to Spearmarshall
 Func SetTitleSpearmarshall()
-    SendTitlePacket(0x8, $HEADER_TITLE_DISPLAY, $SPEARMARSHALL)
+    SendPacket(0x8, $HEADER_TITLE_DISPLAY, $SPEARMARSHALL)
 EndFunc
 
 ; Function to set the title to Lightbringer
 Func SetTitleLightbringer()
-    SendTitlePacket(0x8, $HEADER_TITLE_DISPLAY, $LIGHTBRINGER)
+    SendPacket(0x8, $HEADER_TITLE_DISPLAY, $LIGHTBRINGER)
 EndFunc
 
 ; Function to set the title to Asuran
 Func SetTitleAsuran()
-    SendTitlePacket(0x8, $HEADER_TITLE_DISPLAY, $ASURAN)
+    SendPacket(0x8, $HEADER_TITLE_DISPLAY, $ASURAN)
 EndFunc
 
 ; Function to set the title to Dwarven
 Func SetTitleDwarven()
-    SendTitlePacket(0x8, $HEADER_TITLE_DISPLAY, $DWARVEN)
+    SendPacket(0x8, $HEADER_TITLE_DISPLAY, $DWARVEN)
 EndFunc
 
 ; Function to set the title to Ebon Vanguard
 Func SetTitleEbonVanguard()
-    SendTitlePacket(0x8, $HEADER_TITLE_DISPLAY, $EBON_VANGUARD)
+    SendPacket(0x8, $HEADER_TITLE_DISPLAY, $EBON_VANGUARD)
 EndFunc
 
 ; Function to set the title to Norn
 Func SetTitleNorn()
-    SendTitlePacket(0x8, $HEADER_TITLE_DISPLAY, $NORN)
+    SendPacket(0x8, $HEADER_TITLE_DISPLAY, $NORN)
 EndFunc
 
 ;~ Description: Returns Hero title progress.
@@ -6626,7 +6635,7 @@ Func CheckAreaRange($aX, $aY, $range)
 		$ret = True
 	EndIf
 	Return $ret
-EndFunc   ;==>CheckArea
+EndFunc   ;==>CheckAreaRange
 
 Func CountItemInBagsByModelID($ItemModelID)
 	Local Enum $BAG_Backpack = 1, $BAG_BeltPouch, $BAG_Bag1, $BAG_Bag2, $BAG_EquipmentPack, $BAG_UnclaimedItems = 7, $BAG_Storage1, $BAG_Storage2, _
