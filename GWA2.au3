@@ -2784,13 +2784,6 @@ EndFunc   ;==>SetDisplayedTitle
 ;~ Norn = 0x29
 ;EndFunc   ;==>SetTitleUpdate
 
-Global $NORN = 0x29
-Global $EBON_VANGUARD = 0x28
-Global $DWARVEN = 0x27
-Global $ASURAN = 0x26
-Global $LIGHTBRINGER = 0x14
-Global $SPEARMARSHALL = 0x11
-
 ; Function to set the title to Spearmarshall
 Func SetTitleSpearmarshall()
     SendPacket(0x8, $HEADER_TITLE_DISPLAY, $SPEARMARSHALL)
