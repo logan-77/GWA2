@@ -6618,6 +6618,16 @@ Func CheckArea($aX, $aY)
     Return $ret
 EndFunc   ;==>CheckArea
 
+Func CheckAreaWRange($aX, $aY, $range)
+    $ret = False
+    $pX = DllStructGetData(GetAgentByID(-2), "X")
+    $pY = DllStructGetData(GetAgentByID(-2), "Y")
+
+    If ($pX < $aX + $range) And ($pX > $aX - $range) And ($pY < $aY + $range) And ($pY > $aY - $range) Then
+        $ret = True
+    EndIf
+    Return $ret
+EndFunc   ;==>CheckAreaRange
 
 Func CheckAreaRange($aX, $aY, $range)
 	$ret = False
