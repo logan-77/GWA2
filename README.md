@@ -1,3 +1,8 @@
+## Branch Updates
+
+Potential Updates -> https://github.com/JAG-GW
+
+
 ## GWA2 Version Updated
 
 Fully working GWA2 as off 28.12.24
