@@ -242,217 +242,217 @@ Func GetHwnd($aProc)
 	Next
 EndFunc   ;==>GetHwnd
 
-;~ Description: Injects GWA² into the game client.  
-Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSystem = True)  
-   ; Initialize variables  
-   Local $lWinList, $lWinList2, $mGWProcessId  
-   $mUseStringLog = $aUseStringLog  
-   $mUseEventSystem = $aUseEventSystem  
-  
-   ; Check if $aGW is a string or a process ID  
-   If IsString($aGW) Then  
-      ; Find the process ID of the game client  
-      Local $lProcessList = ProcessList("gw.exe")  
-      For $i = 1 To $lProcessList[0][0]  
-        $mGWProcessId = $lProcessList[$i][1]  
-        $mGWWindowHandle = GetHwnd($mGWProcessId)  
-        MemoryOpen($mGWProcessId)  
-        If $mGWProcHandle Then  
-           ; Check if the character name matches  
-           If StringRegExp(ScanForCharname(), $aGW) = 1 Then  
-              ExitLoop  
-           EndIf  
-        EndIf  
-        MemoryClose()  
-        $mGWProcHandle = 0  
-      Next  
-   Else  
-      ; Use the provided process ID  
-      $mGWProcessId = $aGW  
-      $mGWWindowHandle = GetHwnd($mGWProcessId)  
-      MemoryOpen($aGW)  
-      ScanForCharname()  
-   EndIf  
-  
-   Scan()  
-  
-   ; Read Memory Values for Game Data  
-   $mBasePointer = MemoryRead(GetScannedAddress('ScanBasePointer', 8))  
-   SetValue('BasePointer', '0x' & Hex($mBasePointer, 8))  
-  
-   $mAgentBase = MemoryRead(GetScannedAddress('ScanAgentBasePointer', 8) + 0xC - 7)  
-   SetValue('AgentBase', '0x' & Hex($mAgentBase, 8))  
-  
-   $mMaxAgents = $mAgentBase + 8  
-   SetValue('MaxAgents', '0x' & Hex($mMaxAgents, 8))  
-  
-   $mMyID = MemoryRead(GetScannedAddress('ScanMyID', -3))  
-   SetValue('MyID', '0x' & Hex($mMyID, 8))  
-  
-   $mCurrentTarget = MemoryRead(GetScannedAddress('ScanCurrentTarget', -14))  
-  
-   $packetlocation = Hex(MemoryRead(GetScannedAddress('ScanBaseOffset', 11)), 8)  
-   SetValue('PacketLocation', '0x' & $packetlocation)  
-  
-   $mPing = MemoryRead(GetScannedAddress('ScanPing', -0x14))  
-  
-   $mMapID = MemoryRead(GetScannedAddress('ScanMapID', 28))  
-  
-   $mMapLoading = MemoryRead(GetScannedAddress('ScanMapLoading', 0xB))  
-  
-   $mLoggedIn = MemoryRead(GetScannedAddress('ScanLoggedIn', 0x3))  
-  
-   $mLanguage = MemoryRead(GetScannedAddress('ScanMapInfo', 11)) + 0xC  
-   $mRegion = $mLanguage + 4  
-  
-   $mSkillBase = MemoryRead(GetScannedAddress('ScanSkillBase', 8))  
-   $mSkillTimer = MemoryRead(GetScannedAddress('ScanSkillTimer', -3))  
-  
-   $lTemp = GetScannedAddress('ScanBuildNumber', 0x2C)  
-   $mBuildNumber = MemoryRead($lTemp + MemoryRead($lTemp) + 5)  
-  
-   $mZoomStill = GetScannedAddress("ScanZoomStill", 0x33)  
-   $mZoomMoving = GetScannedAddress("ScanZoomMoving", 0x21)  
-  
-   $mCurrentStatus = MemoryRead(GetScannedAddress('ScanChangeStatusFunction', 35))  
-   $mCharslots = MemoryRead(GetScannedAddress('ScanCharslots', 22))  
-  
-   $lTemp = GetScannedAddress('ScanEngine', -0x22)  
-   SetValue('MainStart', '0x' & Hex($lTemp, 8))  
-   SetValue('MainReturn', '0x' & Hex($lTemp + 5, 8))  
-  
-   $lTemp = GetScannedAddress('ScanTargetLog', 1)  
-   SetValue('TargetLogStart', '0x' & Hex($lTemp, 8))  
-   SetValue('TargetLogReturn', '0x' & Hex($lTemp + 5, 8))  
-  
-   $lTemp = GetScannedAddress('ScanSkillLog', 1)  
-   SetValue('SkillLogStart', '0x' & Hex($lTemp, 8))  
-   SetValue('SkillLogReturn', '0x' & Hex($lTemp + 5, 8))  
-  
-   $lTemp = GetScannedAddress('ScanSkillCompleteLog', -4)  
-   SetValue('SkillCompleteLogStart', '0x' & Hex($lTemp, 8))  
-   SetValue('SkillCompleteLogReturn', '0x' & Hex($lTemp + 5, 8))  
-  
-   $lTemp = GetScannedAddress('ScanSkillCancelLog', 5)  
-   SetValue('SkillCancelLogStart', '0x' & Hex($lTemp, 8))  
-   SetValue('SkillCancelLogReturn', '0x' & Hex($lTemp + 6, 8))  
-  
-   $lTemp = GetScannedAddress('ScanChatLog', 18)  
-   SetValue('ChatLogStart', '0x' & Hex($lTemp, 8))  
-   SetValue('ChatLogReturn', '0x' & Hex($lTemp + 6, 8))  
-  
-   $lTemp = GetScannedAddress('ScanTraderHook', -0x2F)  
-   SetValue('TraderHookStart', '0x' & Hex($lTemp, 8))  
-   SetValue('TraderHookReturn', '0x' & Hex($lTemp + 5, 8))  
-  
-   $lTemp = GetScannedAddress('ScanDialogLog', -4)  
-   SetValue('DialogLogStart', '0x' & Hex($lTemp, 8))  
-   SetValue('DialogLogReturn', '0x' & Hex($lTemp + 5, 8))  
-  
-   $lTemp = GetScannedAddress('ScanStringFilter1', -5)  
-   SetValue('StringFilter1Start', '0x' & Hex($lTemp, 8))  
-   SetValue('StringFilter1Return', '0x' & Hex($lTemp + 5, 8))  
-  
-   $lTemp = GetScannedAddress('ScanStringFilter2', 0x16)  
-   SetValue('StringFilter2Start', '0x' & Hex($lTemp, 8))  
-   SetValue('StringFilter2Return', '0x' & Hex($lTemp + 5, 8))  
-  
-   SetValue('StringLogStart', '0x' & Hex(GetScannedAddress('ScanStringLog', 0x16), 8))  
-  
-   SetValue('LoadFinishedStart', '0x' & Hex(GetScannedAddress('ScanLoadFinished', 1), 8))  
-   SetValue('LoadFinishedReturn', '0x' & Hex(GetScannedAddress('ScanLoadFinished', 6), 8))  
-  
-   SetValue('PostMessage', '0x' & Hex(MemoryRead(GetScannedAddress('ScanPostMessage', 11)), 8))  
-   SetValue('Sleep', MemoryRead(MemoryRead(GetValue('ScanSleep') + 8) + 3))  
-  
-   SetValue('SalvageFunction', '0x' & Hex(GetScannedAddress('ScanSalvageFunction', -10), 8))  
-   SetValue('SalvageGlobal', '0x' & Hex(MemoryRead(GetScannedAddress('ScanSalvageGlobal', 1) - 0x4), 8))  
-  
-   SetValue('IncreaseAttributeFunction', '0x' & Hex(GetScannedAddress('ScanIncreaseAttributeFunction', -0x5A), 8))  
-   SetValue("DecreaseAttributeFunction", "0x" & Hex(GetScannedAddress("ScanDecreaseAttributeFunction", 25), 8))  
-  
-   SetValue('MoveFunction', '0x' & Hex(GetScannedAddress('ScanMoveFunction', 1), 8))  
-   SetValue('UseSkillFunction', '0x' & Hex(GetScannedAddress('ScanUseSkillFunction', -0x125), 8))  
-  
+;~ Description: Injects GWA² into the game client.
+Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSystem = True)
+   ; Initialize variables
+   Local $lWinList, $lWinList2, $mGWProcessId
+   $mUseStringLog = $aUseStringLog
+   $mUseEventSystem = $aUseEventSystem
+
+   ; Check if $aGW is a string or a process ID
+   If IsString($aGW) Then
+      ; Find the process ID of the game client
+      Local $lProcessList = ProcessList("gw.exe")
+      For $i = 1 To $lProcessList[0][0]
+        $mGWProcessId = $lProcessList[$i][1]
+        $mGWWindowHandle = GetHwnd($mGWProcessId)
+        MemoryOpen($mGWProcessId)
+        If $mGWProcHandle Then
+           ; Check if the character name matches
+           If StringRegExp(ScanForCharname(), $aGW) = 1 Then
+              ExitLoop
+           EndIf
+        EndIf
+        MemoryClose()
+        $mGWProcHandle = 0
+      Next
+   Else
+      ; Use the provided process ID
+      $mGWProcessId = $aGW
+      $mGWWindowHandle = GetHwnd($mGWProcessId)
+      MemoryOpen($aGW)
+      ScanForCharname()
+   EndIf
+
+   Scan()
+
+   ; Read Memory Values for Game Data
+   $mBasePointer = MemoryRead(GetScannedAddress('ScanBasePointer', 8))
+   SetValue('BasePointer', '0x' & Hex($mBasePointer, 8))
+
+   $mAgentBase = MemoryRead(GetScannedAddress('ScanAgentBasePointer', 8) + 0xC - 7)
+   SetValue('AgentBase', '0x' & Hex($mAgentBase, 8))
+
+   $mMaxAgents = $mAgentBase + 8
+   SetValue('MaxAgents', '0x' & Hex($mMaxAgents, 8))
+
+   $mMyID = MemoryRead(GetScannedAddress('ScanMyID', -3))
+   SetValue('MyID', '0x' & Hex($mMyID, 8))
+
+   $mCurrentTarget = MemoryRead(GetScannedAddress('ScanCurrentTarget', -14))
+
+   $packetlocation = Hex(MemoryRead(GetScannedAddress('ScanBaseOffset', 11)), 8)
+   SetValue('PacketLocation', '0x' & $packetlocation)
+
+   $mPing = MemoryRead(GetScannedAddress('ScanPing', -0x14))
+
+   $mMapID = MemoryRead(GetScannedAddress('ScanMapID', 28))
+
+   $mMapLoading = MemoryRead(GetScannedAddress('ScanMapLoading', 0xB))
+
+   $mLoggedIn = MemoryRead(GetScannedAddress('ScanLoggedIn', 0x3))
+
+   $mLanguage = MemoryRead(GetScannedAddress('ScanMapInfo', 11)) + 0xC
+   $mRegion = $mLanguage + 4
+
+   $mSkillBase = MemoryRead(GetScannedAddress('ScanSkillBase', 8))
+   $mSkillTimer = MemoryRead(GetScannedAddress('ScanSkillTimer', -3))
+
+   $lTemp = GetScannedAddress('ScanBuildNumber', 0x2C)
+   $mBuildNumber = MemoryRead($lTemp + MemoryRead($lTemp) + 5)
+
+   $mZoomStill = GetScannedAddress("ScanZoomStill", 0x33)
+   $mZoomMoving = GetScannedAddress("ScanZoomMoving", 0x21)
+
+   $mCurrentStatus = MemoryRead(GetScannedAddress('ScanChangeStatusFunction', 35))
+   $mCharslots = MemoryRead(GetScannedAddress('ScanCharslots', 22))
+
+   $lTemp = GetScannedAddress('ScanEngine', -0x22)
+   SetValue('MainStart', '0x' & Hex($lTemp, 8))
+   SetValue('MainReturn', '0x' & Hex($lTemp + 5, 8))
+
+   $lTemp = GetScannedAddress('ScanTargetLog', 1)
+   SetValue('TargetLogStart', '0x' & Hex($lTemp, 8))
+   SetValue('TargetLogReturn', '0x' & Hex($lTemp + 5, 8))
+
+   $lTemp = GetScannedAddress('ScanSkillLog', 1)
+   SetValue('SkillLogStart', '0x' & Hex($lTemp, 8))
+   SetValue('SkillLogReturn', '0x' & Hex($lTemp + 5, 8))
+
+   $lTemp = GetScannedAddress('ScanSkillCompleteLog', -4)
+   SetValue('SkillCompleteLogStart', '0x' & Hex($lTemp, 8))
+   SetValue('SkillCompleteLogReturn', '0x' & Hex($lTemp + 5, 8))
+
+   $lTemp = GetScannedAddress('ScanSkillCancelLog', 5)
+   SetValue('SkillCancelLogStart', '0x' & Hex($lTemp, 8))
+   SetValue('SkillCancelLogReturn', '0x' & Hex($lTemp + 6, 8))
+
+   $lTemp = GetScannedAddress('ScanChatLog', 18)
+   SetValue('ChatLogStart', '0x' & Hex($lTemp, 8))
+   SetValue('ChatLogReturn', '0x' & Hex($lTemp + 6, 8))
+
+   $lTemp = GetScannedAddress('ScanTraderHook', -0x2F)
+   SetValue('TraderHookStart', '0x' & Hex($lTemp, 8))
+   SetValue('TraderHookReturn', '0x' & Hex($lTemp + 5, 8))
+
+   $lTemp = GetScannedAddress('ScanDialogLog', -4)
+   SetValue('DialogLogStart', '0x' & Hex($lTemp, 8))
+   SetValue('DialogLogReturn', '0x' & Hex($lTemp + 5, 8))
+
+   $lTemp = GetScannedAddress('ScanStringFilter1', -5)
+   SetValue('StringFilter1Start', '0x' & Hex($lTemp, 8))
+   SetValue('StringFilter1Return', '0x' & Hex($lTemp + 5, 8))
+
+   $lTemp = GetScannedAddress('ScanStringFilter2', 0x16)
+   SetValue('StringFilter2Start', '0x' & Hex($lTemp, 8))
+   SetValue('StringFilter2Return', '0x' & Hex($lTemp + 5, 8))
+
+   SetValue('StringLogStart', '0x' & Hex(GetScannedAddress('ScanStringLog', 0x16), 8))
+
+   SetValue('LoadFinishedStart', '0x' & Hex(GetScannedAddress('ScanLoadFinished', 1), 8))
+   SetValue('LoadFinishedReturn', '0x' & Hex(GetScannedAddress('ScanLoadFinished', 6), 8))
+
+   SetValue('PostMessage', '0x' & Hex(MemoryRead(GetScannedAddress('ScanPostMessage', 11)), 8))
+   SetValue('Sleep', MemoryRead(MemoryRead(GetValue('ScanSleep') + 8) + 3))
+
+   SetValue('SalvageFunction', '0x' & Hex(GetScannedAddress('ScanSalvageFunction', -10), 8))
+   SetValue('SalvageGlobal', '0x' & Hex(MemoryRead(GetScannedAddress('ScanSalvageGlobal', 1) - 0x4), 8))
+
+   SetValue('IncreaseAttributeFunction', '0x' & Hex(GetScannedAddress('ScanIncreaseAttributeFunction', -0x5A), 8))
+   SetValue("DecreaseAttributeFunction", "0x" & Hex(GetScannedAddress("ScanDecreaseAttributeFunction", 25), 8))
+
+   SetValue('MoveFunction', '0x' & Hex(GetScannedAddress('ScanMoveFunction', 1), 8))
+   SetValue('UseSkillFunction', '0x' & Hex(GetScannedAddress('ScanUseSkillFunction', -0x125), 8))
+
   ;SetValue('ChangeTargetFunction', '0x' & Hex(GetScannedAddress('ScanChangeTargetFunction', -0x0089) + 1, 8))
-   SetValue('ChangeTargetFunction', '0x' & Hex(GetScannedAddress('ScanChangeTargetFunction', -0x0086) + 1, 8))  
-   SetValue('WriteChatFunction', '0x' & Hex(GetScannedAddress('ScanWriteChatFunction', -0x3D), 8))  
-  
-   SetValue('SellItemFunction', '0x' & Hex(GetScannedAddress('ScanSellItemFunction', -85), 8))  
-   SetValue('PacketSendFunction', '0x' & Hex(GetScannedAddress('ScanPacketSendFunction', -0x50), 8))  
-  
-   SetValue('ActionBase', '0x' & Hex(MemoryRead(GetScannedAddress('ScanActionBase', -3)), 8))  
-   SetValue('ActionFunction', '0x' & Hex(GetScannedAddress('ScanActionFunction', -3), 8))  
-  
-   SetValue('UseHeroSkillFunction', '0x' & Hex(GetScannedAddress('ScanUseHeroSkillFunction', -0x59), 8))  
-   SetValue('BuyItemBase', '0x' & Hex(MemoryRead(GetScannedAddress('ScanBuyItemBase', 15)), 8))  
-  
-   SetValue('TransactionFunction', '0x' & Hex(GetScannedAddress('ScanTransactionFunction', -0x7E), 8))  
-   SetValue('RequestQuoteFunction', '0x' & Hex(GetScannedAddress('ScanRequestQuoteFunction', -0x34), 8))  
-  
-   SetValue('TraderFunction', '0x' & Hex(GetScannedAddress('ScanTraderFunction', -0x1E), 8))  
-   SetValue('ClickToMoveFix', '0x' & Hex(GetScannedAddress("ScanClickToMoveFix", 1), 8))  
-  
-   SetValue('ChangeStatusFunction', '0x' & Hex(GetScannedAddress("ScanChangeStatusFunction", 1), 8))  
-  
-   SetValue('QueueSize', '0x00000010')  
-   SetValue('SkillLogSize', '0x00000010')  
-   SetValue('ChatLogSize', '0x00000010')  
-   SetValue('TargetLogSize', '0x00000200')  
-   SetValue('StringLogSize', '0x00000200')  
-   SetValue('CallbackEvent', '0x00000501')  
-   $MTradeHackAddress = GetScannedAddress("ScanTradeHack", 0)  
-  
-   ModifyMemory()  
-  
-   $mQueueCounter = MemoryRead(GetValue('QueueCounter'))  
-   $mQueueSize = GetValue('QueueSize') - 1  
-   $mQueueBase = GetValue('QueueBase')  
-   $mTargetLogBase = GetValue('TargetLogBase')  
-   $mStringLogBase = GetValue('StringLogBase')  
-   $mMapIsLoaded = GetValue('MapIsLoaded')  
-   $mEnsureEnglish = GetValue('EnsureEnglish')  
-   $mTraderQuoteID = GetValue('TraderQuoteID')  
-   $mTraderCostID = GetValue('TraderCostID')  
-   $mTraderCostValue = GetValue('TraderCostValue')  
-   $mDisableRendering = GetValue('DisableRendering')  
-   $mAgentCopyCount = GetValue('AgentCopyCount')  
-   $mAgentCopyBase = GetValue('AgentCopyBase')  
-   $mLastDialogID = GetValue('LastDialogID')  
-  
-   If $mUseEventSystem Then  
-      MemoryWrite(GetValue('CallbackHandle'), $mGUI)  
-   EndIf  
-  
-   DllStructSetData($mInviteGuild, 1, GetValue('CommandPacketSend'))  
-   DllStructSetData($mInviteGuild, 2, 0x4C)  
-   DllStructSetData($mUseSkill, 1, GetValue('CommandUseSkill'))  
-   DllStructSetData($mMove, 1, GetValue('CommandMove'))  
-   DllStructSetData($mChangeTarget, 1, GetValue('CommandChangeTarget'))  
-   DllStructSetData($mPacket, 1, GetValue('CommandPacketSend'))  
-   DllStructSetData($mSellItem, 1, GetValue('CommandSellItem'))  
-   DllStructSetData($mAction, 1, GetValue('CommandAction'))  
-   DllStructSetData($mToggleLanguage, 1, GetValue('CommandToggleLanguage'))  
-   DllStructSetData($mUseHeroSkill, 1, GetValue('CommandUseHeroSkill'))  
-   DllStructSetData($mBuyItem, 1, GetValue('CommandBuyItem'))  
-   DllStructSetData($mSendChat, 1, GetValue('CommandSendChat'))  
-   DllStructSetData($mSendChat, 2, $HEADER_SEND_CHAT_MESSAGE)  
-   DllStructSetData($mWriteChat, 1, GetValue('CommandWriteChat'))  
-   DllStructSetData($mRequestQuote, 1, GetValue('CommandRequestQuote'))  
-   DllStructSetData($mRequestQuoteSell, 1, GetValue('CommandRequestQuoteSell'))  
-   DllStructSetData($mTraderBuy, 1, GetValue('CommandTraderBuy'))  
-   DllStructSetData($mTraderSell, 1, GetValue('CommandTraderSell'))  
-   DllStructSetData($mSalvage, 1, GetValue('CommandSalvage'))  
-   DllStructSetData($mIncreaseAttribute, 1, GetValue('CommandIncreaseAttribute'))  
-   DllStructSetData($mDecreaseAttribute, 1, GetValue('CommandDecreaseAttribute'))  
-   DllStructSetData($mMakeAgentArray, 1, GetValue('CommandMakeAgentArray'))  
-   DllStructSetData($mChangeStatus, 1, GetValue('CommandChangeStatus'))  
-  
-   If $bChangeTitle Then  
-      WinSetTitle($mGWWindowHandle, '', 'Guild Wars - ' & GetCharname())  
-   EndIf  
-  
-   Return $mGWWindowHandle  
+   SetValue('ChangeTargetFunction', '0x' & Hex(GetScannedAddress('ScanChangeTargetFunction', -0x0086) + 1, 8))
+   SetValue('WriteChatFunction', '0x' & Hex(GetScannedAddress('ScanWriteChatFunction', -0x3D), 8))
+
+   SetValue('SellItemFunction', '0x' & Hex(GetScannedAddress('ScanSellItemFunction', -85), 8))
+   SetValue('PacketSendFunction', '0x' & Hex(GetScannedAddress('ScanPacketSendFunction', -0x50), 8))
+
+   SetValue('ActionBase', '0x' & Hex(MemoryRead(GetScannedAddress('ScanActionBase', -3)), 8))
+   SetValue('ActionFunction', '0x' & Hex(GetScannedAddress('ScanActionFunction', -3), 8))
+
+   SetValue('UseHeroSkillFunction', '0x' & Hex(GetScannedAddress('ScanUseHeroSkillFunction', -0x59), 8))
+   SetValue('BuyItemBase', '0x' & Hex(MemoryRead(GetScannedAddress('ScanBuyItemBase', 15)), 8))
+
+   SetValue('TransactionFunction', '0x' & Hex(GetScannedAddress('ScanTransactionFunction', -0x7E), 8))
+   SetValue('RequestQuoteFunction', '0x' & Hex(GetScannedAddress('ScanRequestQuoteFunction', -0x34), 8))
+
+   SetValue('TraderFunction', '0x' & Hex(GetScannedAddress('ScanTraderFunction', -0x1E), 8))
+   SetValue('ClickToMoveFix', '0x' & Hex(GetScannedAddress("ScanClickToMoveFix", 1), 8))
+
+   SetValue('ChangeStatusFunction', '0x' & Hex(GetScannedAddress("ScanChangeStatusFunction", 1), 8))
+
+   SetValue('QueueSize', '0x00000010')
+   SetValue('SkillLogSize', '0x00000010')
+   SetValue('ChatLogSize', '0x00000010')
+   SetValue('TargetLogSize', '0x00000200')
+   SetValue('StringLogSize', '0x00000200')
+   SetValue('CallbackEvent', '0x00000501')
+   $MTradeHackAddress = GetScannedAddress("ScanTradeHack", 0)
+
+   ModifyMemory()
+
+   $mQueueCounter = MemoryRead(GetValue('QueueCounter'))
+   $mQueueSize = GetValue('QueueSize') - 1
+   $mQueueBase = GetValue('QueueBase')
+   $mTargetLogBase = GetValue('TargetLogBase')
+   $mStringLogBase = GetValue('StringLogBase')
+   $mMapIsLoaded = GetValue('MapIsLoaded')
+   $mEnsureEnglish = GetValue('EnsureEnglish')
+   $mTraderQuoteID = GetValue('TraderQuoteID')
+   $mTraderCostID = GetValue('TraderCostID')
+   $mTraderCostValue = GetValue('TraderCostValue')
+   $mDisableRendering = GetValue('DisableRendering')
+   $mAgentCopyCount = GetValue('AgentCopyCount')
+   $mAgentCopyBase = GetValue('AgentCopyBase')
+   $mLastDialogID = GetValue('LastDialogID')
+
+   If $mUseEventSystem Then
+      MemoryWrite(GetValue('CallbackHandle'), $mGUI)
+   EndIf
+
+   DllStructSetData($mInviteGuild, 1, GetValue('CommandPacketSend'))
+   DllStructSetData($mInviteGuild, 2, 0x4C)
+   DllStructSetData($mUseSkill, 1, GetValue('CommandUseSkill'))
+   DllStructSetData($mMove, 1, GetValue('CommandMove'))
+   DllStructSetData($mChangeTarget, 1, GetValue('CommandChangeTarget'))
+   DllStructSetData($mPacket, 1, GetValue('CommandPacketSend'))
+   DllStructSetData($mSellItem, 1, GetValue('CommandSellItem'))
+   DllStructSetData($mAction, 1, GetValue('CommandAction'))
+   DllStructSetData($mToggleLanguage, 1, GetValue('CommandToggleLanguage'))
+   DllStructSetData($mUseHeroSkill, 1, GetValue('CommandUseHeroSkill'))
+   DllStructSetData($mBuyItem, 1, GetValue('CommandBuyItem'))
+   DllStructSetData($mSendChat, 1, GetValue('CommandSendChat'))
+   DllStructSetData($mSendChat, 2, $HEADER_SEND_CHAT_MESSAGE)
+   DllStructSetData($mWriteChat, 1, GetValue('CommandWriteChat'))
+   DllStructSetData($mRequestQuote, 1, GetValue('CommandRequestQuote'))
+   DllStructSetData($mRequestQuoteSell, 1, GetValue('CommandRequestQuoteSell'))
+   DllStructSetData($mTraderBuy, 1, GetValue('CommandTraderBuy'))
+   DllStructSetData($mTraderSell, 1, GetValue('CommandTraderSell'))
+   DllStructSetData($mSalvage, 1, GetValue('CommandSalvage'))
+   DllStructSetData($mIncreaseAttribute, 1, GetValue('CommandIncreaseAttribute'))
+   DllStructSetData($mDecreaseAttribute, 1, GetValue('CommandDecreaseAttribute'))
+   DllStructSetData($mMakeAgentArray, 1, GetValue('CommandMakeAgentArray'))
+   DllStructSetData($mChangeStatus, 1, GetValue('CommandChangeStatus'))
+
+   If $bChangeTitle Then
+      WinSetTitle($mGWWindowHandle, '', 'Guild Wars - ' & GetCharname())
+   EndIf
+
+   Return $mGWWindowHandle
 EndFunc  ;==>Initialize
 
 
@@ -1264,29 +1264,29 @@ Func TraderBuy()
 EndFunc   ;==>TraderBuy
 
 ;~ Description: This shit might not work as intended :3
-Func TraderRequestBuy($aItem)  
-	Local $lItemID  
-	Local $lFound = False  
-	Local $lQuoteID = MemoryRead($mTraderQuoteID)  
-   
-	If IsDllStruct($aItem) = 0 Then  
-	   $lItemID = $aItem  
-	Else  
-	   $lItemID = DllStructGetData($aItem, 'ID')  
-	EndIf  
-   
-	DllStructSetData($mRequestQuote, 1, $HEADER_REQUEST_QUOTE)  
-	DllStructSetData($mRequestQuote, 2, $lItemID)  
-	Enqueue($mRequestQuotePtr, 8)  
-   
-	Local $lDeadlock = TimerInit()  
-	$lFound = False  
-	Do  
-	   Sleep(20)  
-	   $lFound = MemoryRead($mTraderQuoteID) <> $lQuoteID  
-	Until $lFound Or TimerDiff($lDeadlock) > GetPing() + 5000  
-   
-	Return $lFound  
+Func TraderRequestBuy($aItem)
+	Local $lItemID
+	Local $lFound = False
+	Local $lQuoteID = MemoryRead($mTraderQuoteID)
+
+	If IsDllStruct($aItem) = 0 Then
+	   $lItemID = $aItem
+	Else
+	   $lItemID = DllStructGetData($aItem, 'ID')
+	EndIf
+
+	DllStructSetData($mRequestQuote, 1, $HEADER_REQUEST_QUOTE)
+	DllStructSetData($mRequestQuote, 2, $lItemID)
+	Enqueue($mRequestQuotePtr, 8)
+
+	Local $lDeadlock = TimerInit()
+	$lFound = False
+	Do
+	   Sleep(20)
+	   $lFound = MemoryRead($mTraderQuoteID) <> $lQuoteID
+	Until $lFound Or TimerDiff($lDeadlock) > GetPing() + 5000
+
+	Return $lFound
  EndFunc  ;==>TraderRequestBuy
 
 ;~ Description: Request a quote to sell an item to the trader
@@ -3141,7 +3141,7 @@ EndFunc   ;==>GetCanPickUp
 ;~ Description: Returns struct of an inventory bag.
 Func GetBag($aBag)
 	Local $lOffset[5] = [0, 0x18, 0x40, 0xF8, 0x4 * $aBag]
-	Local $lBagStruct = DllStructCreate('byte unknown1[4];long index;long id;ptr containerItem;long ItemsCount;ptr bagArray;ptr itemArray;long fakeSlots;long slots')
+	Local $lBagStruct = DllStructCreate('long TypeBag;long index;long id;ptr containerItem;long ItemsCount;ptr bagArray;ptr itemArray;long fakeSlots;long slots')
 	Local $lBagPtr = MemoryReadPtr($mBasePointer, $lOffset)
 	If $lBagPtr[1] = 0 Then Return
 	DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lBagPtr[1], 'ptr', DllStructGetPtr($lBagStruct), 'int', DllStructGetSize($lBagStruct), 'int', '')
@@ -3565,79 +3565,79 @@ EndFunc   ;==>GetNearestEnemyToAgent
 
 
 
-;~ Description: Returns the nearest agent to a set of coordinates.  
-  
-Func GoToNearestNPC($aX, $aY)  
-   Local $lNearestAgent = 0  ;  variable $lNearestAgent is always 0, so the function will always return immediately 
-   If Not IsDllStruct($lNearestAgent) Then  
-      Return  
-   EndIf  
-  
-   Local $lAgentX = DllStructGetData($lNearestAgent, 'X')  
-   Local $lAgentY = DllStructGetData($lNearestAgent, 'Y')  
-   Local $lMe  
-   Local $lBlocked = 0  
-   Local $lMapLoading = GetMapLoading(), $lMapLoadingOld  
-  
-   Move($lAgentX, $lAgentY, 100)  
-   Sleep(100)  
-   GoNPC($lNearestAgent)  
-  
-   Do  
-      Sleep(100)  
-      $lMe = GetAgentByID(-2)  
-  
-      If DllStructGetData($lMe, 'HP') <= 0 Then ExitLoop  
-  
-      $lMapLoadingOld = $lMapLoading  
-      $lMapLoading = GetMapLoading()  
-      If $lMapLoading <> $lMapLoadingOld Then ExitLoop  
-  
-      If DllStructGetData($lMe, 'MoveX') == 0 And DllStructGetData($lMe, 'MoveY') == 0 Then  
-        $lBlocked += 1  
-        Move($lAgentX, $lAgentY, 100)  
-        Sleep(100)  
-        GoNPC($lNearestAgent)  
-      EndIf  
-   Until ComputeDistance(DllStructGetData($lMe, 'X'), DllStructGetData($lMe, 'Y'), $lAgentX, $lAgentY) < 250 Or $lBlocked > 14  
-   Sleep(GetPing() + Random(1500, 2000, 1))  
+;~ Description: Returns the nearest agent to a set of coordinates.
+
+Func GoToNearestNPC($aX, $aY)
+   Local $lNearestAgent = 0  ;  variable $lNearestAgent is always 0, so the function will always return immediately
+   If Not IsDllStruct($lNearestAgent) Then
+      Return
+   EndIf
+
+   Local $lAgentX = DllStructGetData($lNearestAgent, 'X')
+   Local $lAgentY = DllStructGetData($lNearestAgent, 'Y')
+   Local $lMe
+   Local $lBlocked = 0
+   Local $lMapLoading = GetMapLoading(), $lMapLoadingOld
+
+   Move($lAgentX, $lAgentY, 100)
+   Sleep(100)
+   GoNPC($lNearestAgent)
+
+   Do
+      Sleep(100)
+      $lMe = GetAgentByID(-2)
+
+      If DllStructGetData($lMe, 'HP') <= 0 Then ExitLoop
+
+      $lMapLoadingOld = $lMapLoading
+      $lMapLoading = GetMapLoading()
+      If $lMapLoading <> $lMapLoadingOld Then ExitLoop
+
+      If DllStructGetData($lMe, 'MoveX') == 0 And DllStructGetData($lMe, 'MoveY') == 0 Then
+        $lBlocked += 1
+        Move($lAgentX, $lAgentY, 100)
+        Sleep(100)
+        GoNPC($lNearestAgent)
+      EndIf
+   Until ComputeDistance(DllStructGetData($lMe, 'X'), DllStructGetData($lMe, 'Y'), $lAgentX, $lAgentY) < 250 Or $lBlocked > 14
+   Sleep(GetPing() + Random(1500, 2000, 1))
 EndFunc  ;==>GoToNearestNPC
 
 
-Func GoToNearestNPC2($aX, $aY)  
+Func GoToNearestNPC2($aX, $aY)
    Local $lNearestAgent = GetNearestAgentToCoords($aX, $aY)  ;to get the nearest agent to the specified coordinates.
-   If Not IsDllStruct($lNearestAgent) Then  
-      Return  
-   EndIf  
-  
-   Local $lAgentX = DllStructGetData($lNearestAgent, 'X')  
-   Local $lAgentY = DllStructGetData($lNearestAgent, 'Y')  
-   Local $lMe  
-   Local $lBlocked = 0  
-   Local $lMapLoading = GetMapLoading(), $lMapLoadingOld  
-  
-   Move($lAgentX, $lAgentY, 100)  
-   Sleep(100)  
-   GoNPC($lNearestAgent)  
-  
-   Do  
-      Sleep(100)  
-      $lMe = GetAgentByID(-2)  
-  
-      If DllStructGetData($lMe, 'HP') <= 0 Then ExitLoop  
-  
-      $lMapLoadingOld = $lMapLoading  
-      $lMapLoading = GetMapLoading()  
-      If $lMapLoading <> $lMapLoadingOld Then ExitLoop  
-  
-      If DllStructGetData($lMe, 'MoveX') == 0 And DllStructGetData($lMe, 'MoveY') == 0 Then  
-        $lBlocked += 1  
-        Move($lAgentX, $lAgentY, 100)  
-        Sleep(100)  
-        GoNPC($lNearestAgent)  
-      EndIf  
-   Until ComputeDistance(DllStructGetData($lMe, 'X'), DllStructGetData($lMe, 'Y'), $lAgentX, $lAgentY) < 250 Or $lBlocked > 14  
-   Sleep(GetPing() + Random(1500, 2000, 1))  
+   If Not IsDllStruct($lNearestAgent) Then
+      Return
+   EndIf
+
+   Local $lAgentX = DllStructGetData($lNearestAgent, 'X')
+   Local $lAgentY = DllStructGetData($lNearestAgent, 'Y')
+   Local $lMe
+   Local $lBlocked = 0
+   Local $lMapLoading = GetMapLoading(), $lMapLoadingOld
+
+   Move($lAgentX, $lAgentY, 100)
+   Sleep(100)
+   GoNPC($lNearestAgent)
+
+   Do
+      Sleep(100)
+      $lMe = GetAgentByID(-2)
+
+      If DllStructGetData($lMe, 'HP') <= 0 Then ExitLoop
+
+      $lMapLoadingOld = $lMapLoading
+      $lMapLoading = GetMapLoading()
+      If $lMapLoading <> $lMapLoadingOld Then ExitLoop
+
+      If DllStructGetData($lMe, 'MoveX') == 0 And DllStructGetData($lMe, 'MoveY') == 0 Then
+        $lBlocked += 1
+        Move($lAgentX, $lAgentY, 100)
+        Sleep(100)
+        GoNPC($lNearestAgent)
+      EndIf
+   Until ComputeDistance(DllStructGetData($lMe, 'X'), DllStructGetData($lMe, 'Y'), $lAgentX, $lAgentY) < 250 Or $lBlocked > 14
+   Sleep(GetPing() + Random(1500, 2000, 1))
 EndFunc  ;==>GoToNearestNPC
 
 
