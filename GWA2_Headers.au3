@@ -3,6 +3,7 @@
 ;# Shout out to Greg76 for providing GWToolBox Plugin#
 ;# Update Checked 25.12.24                           #
 ;#####################################################
+#include-once
 
 
 ; Trading operations

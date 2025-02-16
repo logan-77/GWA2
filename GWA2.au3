@@ -6,13 +6,12 @@
 
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Outfile_type=a3x
-#AutoIt3Wrapper_Outfile=..\Exe\Froggy.a3x
 #AutoIt3Wrapper_Run_AU3Check=n
 #AutoIt3Wrapper_Run_Tidy=y
 #AutoIt3Wrapper_Run_Au3Stripper=y
 #Au3Stripper_Parameters=/pe /sf /tl
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
-#RequireAdmin
+#include-once
 
 If @AutoItX64 Then
 	MsgBox(16, "Error!", "Please run all bots in 32-bit (x86) mode.")
@@ -57,6 +56,7 @@ Local $mDisableRendering, $mAgentCopyCount, $mAgentCopyBase
 Local $mCurrentStatus, $mLastDialogID
 Local $mUseStringLog, $mUseEventSystem
 Local $mCharslots
+Local $mInstanceInfo
 #EndRegion Declarations
 
 
@@ -298,7 +298,7 @@ Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSy
 
    $mMapID = MemoryRead(GetScannedAddress('ScanMapID', 28))
 
-   $mMapLoading = MemoryRead(GetScannedAddress('ScanMapLoading', 0xB))
+;~    $mMapLoading = MemoryRead(GetScannedAddress('ScanMapLoading', 0xB))
 
    $mLoggedIn = MemoryRead(GetScannedAddress('ScanLoggedIn', 0x3))
 
@@ -317,9 +317,15 @@ Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSy
    $mCurrentStatus = MemoryRead(GetScannedAddress('ScanChangeStatusFunction', 35))
    $mCharslots = MemoryRead(GetScannedAddress('ScanCharslots', 22))
 
+   $mInstanceInfo = MemoryRead(GetScannedAddress('ScanInstanceInfo', 0xE))
+
    $lTemp = GetScannedAddress('ScanEngine', -0x22)
    SetValue('MainStart', '0x' & Hex($lTemp, 8))
    SetValue('MainReturn', '0x' & Hex($lTemp + 5, 8))
+
+   $lTemp = GetScannedAddress('ScanRenderFunc', -0x67)
+   	SetValue('RenderingMod', '0x' & Hex($lTemp, 8))
+	SetValue('RenderingModReturn', '0x' & Hex($lTemp + 10, 8))
 
    $lTemp = GetScannedAddress('ScanTargetLog', 1)
    SetValue('TargetLogStart', '0x' & Hex($lTemp, 8))
@@ -526,8 +532,8 @@ Func Scan()
 	_('ScanMapID:')
 	AddPattern('558BEC8B450885C074078B') ;STILL WORKING 23.12.24, B07F8D55
 
-	_('ScanMapLoading:')
-	AddPattern('2480ED0000000000') ; UPDATED 25.12.24, 6A2C50E8
+;~ 	_('ScanMapLoading:')
+;~ 	AddPattern('2480ED0000000000') ; UPDATED 25.12.24, 6A2C50E8
 
 	_('ScanLoggedIn:')
 	AddPattern('C705ACDE740000000000C3CCCCCCCC') ; UPDATED 26.12.24, NEED TO GET UPDATED EACH PATCH OLD:BFFFC70580 85C07411B807
@@ -658,6 +664,9 @@ Func Scan()
 	_("ScanClickCoords:")
 	AddPattern("8B451C85C0741CD945F8") ;STILL WORKING 23.12.24
 
+	_("ScanInstanceInfo:")
+	AddPattern("6A2C50E80000000083C408C7") ;Added by Greg76 to get Instance Info
+
 	_('ScanProc:') ; Label for the scan procedure
 	_('pushad') ; Push all general-purpose registers onto the stack to save their values
 	_('mov ecx,' & Hex($lGwBase, 8)) ; Move the base address of the Guild Wars process into the ECX register
@@ -686,6 +695,8 @@ Func Scan()
 	_('mov ah,byte[edi]') ; Move the byte value at the address stored in EDI into the AH register
 	_('cmp al,ah') ; Compare the value in AL to the value in AH
 	_('jz ScanMatched') ; Jump to the ScanMatched label if the comparison is zero (i.e., the values match)
+	_('cmp ah,00')    ;Added by Greg76 for scan wildcards
+	_('jz ScanMatched')    ;Added by Greg76 for scan wildcards
 	_('mov dword[edx],0') ; Move the value 0 into the 4-byte location at the address stored in EDX
 	_('add edx,50') ; Add 50 to the value in the EDX register
 	_('cmp edx,esi') ; Compare the value in EDX to the value in ESI
@@ -809,15 +820,21 @@ Func ScanForProcess()
 EndFunc   ;==>ScanForProcess
 
 ;~ Description: Internal use only.
-Func AddPattern($aPattern)
-	Local $lSize = Int(0.5 * StringLen($aPattern))
-	$mASMString &= '00000000' & SwapEndian(Hex($lSize, 8)) & '00000000' & $aPattern
-	$mASMSize += $lSize + 12
-	For $i = 1 To 68 - $lSize
-		$mASMSize += 1
-		$mASMString &= '00'
-	Next
-EndFunc   ;==>AddPattern
+Func AddPattern($aPattern) ;modified by Greg76 for scan wildcards
+    Local $lSize = Int(0.5 * StringLen($aPattern))
+    Local $pattern_header = "00000000" & _
+                           SwapEndian(Hex($lSize, 8)) & _
+                           "00000000"
+
+    $mASMString &= $pattern_header & $aPattern
+    $mASMSize += $lSize + 12
+
+    Local $padding_count = 68 - $lSize
+    For $i = 1 To $padding_count
+        $mASMSize += 1
+        $mASMString &= "00"
+    Next
+EndFunc
 
 ;~ Description: Internal use only.
 Func GetScannedAddress($aLabel, $aOffset)
@@ -1501,7 +1518,7 @@ EndFunc   ;==>Move
 Func MoveTo($aX, $aY, $aRandom = 50)
 	Local $lBlocked = 0
 	Local $lMe
-	Local $lMapLoading = GetMapLoading(), $lMapLoadingOld
+	Local $lMapLoading = GetInstanceType(), $lMapLoadingOld
 	Local $lDestX = $aX + Random(-$aRandom, $aRandom)
 	Local $lDestY = $aY + Random(-$aRandom, $aRandom)
 
@@ -1514,7 +1531,7 @@ Func MoveTo($aX, $aY, $aRandom = 50)
 		If DllStructGetData($lMe, 'HP') <= 0 Then ExitLoop
 
 		$lMapLoadingOld = $lMapLoading
-		$lMapLoading = GetMapLoading()
+		$lMapLoading = GetInstanceType()
 		If $lMapLoading <> $lMapLoadingOld Then ExitLoop
 
 		If DllStructGetData($lMe, 'MoveX') == 0 And DllStructGetData($lMe, 'MoveY') == 0 Then
@@ -1580,7 +1597,7 @@ Func CustomMoveTo($aX, $aY, $aRandom = 50)
 	Local $lBlocked = 0
 	Local $lBlockedAbortCount = 14
 	Local $lMe
-	Local $lMapLoading = GetMapLoading(), $lMapLoadingOld
+	Local $lMapLoading = GetInstanceType(), $lMapLoadingOld
 	Local $lDestX = $aX + Random(-$aRandom, $aRandom)
 	Local $lDestY = $aY + Random(-$aRandom, $aRandom)
 	Local $lDestSuccessRange = 25
@@ -1595,7 +1612,7 @@ Func CustomMoveTo($aX, $aY, $aRandom = 50)
 		If DllStructGetData($lMe, 'HP') <= 0 Then ExitLoop
 
 		$lMapLoadingOld = $lMapLoading
-		$lMapLoading = GetMapLoading()
+		$lMapLoading = GetInstanceType()
 		If $lMapLoading <> $lMapLoadingOld Then ExitLoop
 
 		; object count
@@ -1619,7 +1636,7 @@ Func CustomMoveTo($aX, $aY, $aRandom = 50)
 			If $LooteableObjectCount > 0 And $CustomMoveToCombatLooting == True Then
 				; do a loop running a custom function doing the checks
 				; Maybe do a GetLoggedIn() GetAgentExists(-2) GetIsDead(-2) GetIsAttacking(-2) GetIsCasting(-2) check
-				; If GetMapLoading() == 2 Then Return $CustomMoveToReturnMapLoading
+				; If GetInstanceType() == 2 Then Return $CustomMoveToReturnMapLoading
 				;
 				; Maybe a loop based on count
 				If $EnemyUnitDistance > $LooteableObjectDistance Then
@@ -1709,7 +1726,7 @@ Func GoToNPC($aAgent)
 	If Not IsDllStruct($aAgent) Then $aAgent = GetAgentByID($aAgent)
 	Local $lMe
 	Local $lBlocked = 0
-	Local $lMapLoading = GetMapLoading(), $lMapLoadingOld
+	Local $lMapLoading = GetInstanceType(), $lMapLoadingOld
 
 	Move(DllStructGetData($aAgent, 'X'), DllStructGetData($aAgent, 'Y'), 100)
 	Sleep(100)
@@ -1722,7 +1739,7 @@ Func GoToNPC($aAgent)
 		If DllStructGetData($lMe, 'HP') <= 0 Then ExitLoop
 
 		$lMapLoadingOld = $lMapLoading
-		$lMapLoading = GetMapLoading()
+		$lMapLoading = GetInstanceType()
 		If $lMapLoading <> $lMapLoadingOld Then ExitLoop
 
 		If DllStructGetData($lMe, 'MoveX') == 0 And DllStructGetData($lMe, 'MoveY') == 0 Then
@@ -1753,7 +1770,7 @@ Func GoToSignpost($aAgent)
 	If Not IsDllStruct($aAgent) Then $aAgent = GetAgentByID($aAgent)
 	Local $lMe
 	Local $lBlocked = 0
-	Local $lMapLoading = GetMapLoading(), $lMapLoadingOld
+	Local $lMapLoading = GetInstanceType(), $lMapLoadingOld
 
 	Move(DllStructGetData($aAgent, 'X'), DllStructGetData($aAgent, 'Y'), 100)
 	Sleep(100)
@@ -1766,7 +1783,7 @@ Func GoToSignpost($aAgent)
 		If DllStructGetData($lMe, 'HP') <= 0 Then ExitLoop
 
 		$lMapLoadingOld = $lMapLoading
-		$lMapLoading = GetMapLoading()
+		$lMapLoading = GetInstanceType()
 		If $lMapLoading <> $lMapLoadingOld Then ExitLoop
 
 		If DllStructGetData($lMe, 'MoveX') == 0 And DllStructGetData($lMe, 'MoveY') == 0 Then
@@ -1861,14 +1878,14 @@ EndFunc   ;==>ReverseDirection
 ;~ Description: Map travel to an outpost.
 Func TravelTo($aMapID, $aDis = 0)
 	;returns true if successful
-	If GetMapID() = $aMapID And $aDis = 0 And GetMapLoading() = 0 Then Return True
+	If GetMapID() = $aMapID And $aDis = 0 And GetInstanceType() = 0 Then Return True
 	ZoneMap($aMapID, $aDis)
 	Return WaitMapLoading($aMapID)
 EndFunc   ;==>TravelTo
 
 Func TravelToEx($aMapID, $aDis = 0)
 	;returns true if successful
-	If GetMapID() = $aMapID And $aDis = 0 And GetMapLoading() = 0 Then Return True
+	If GetMapID() = $aMapID And $aDis = 0 And GetInstanceType() = 0 Then Return True
 	ZoneMap($aMapID, $aDis)
 	Return WaitMapLoadingEx($aMapID)
 EndFunc   ;==>TravelToEx
@@ -2667,7 +2684,7 @@ EndFunc   ;==>DecreaseAttribute
 ;~ Description: Set all attributes to 0
 Func ClearAttributes($aHeroNumber = 0)
 	Local $lLevel
-	If GetMapLoading() <> 0 Then Return
+	If GetInstanceType() <> 0 Then Return
 	For $i = 0 To 44
 		If GetAttributeByID($i, False, $aHeroNumber) > 0 Then
 			Do
@@ -3579,7 +3596,7 @@ Func GoToNearestNPC($aX, $aY)
    Local $lAgentY = DllStructGetData($lNearestAgent, 'Y')
    Local $lMe
    Local $lBlocked = 0
-   Local $lMapLoading = GetMapLoading(), $lMapLoadingOld
+   Local $lMapLoading = GetInstanceType(), $lMapLoadingOld
 
    Move($lAgentX, $lAgentY, 100)
    Sleep(100)
@@ -3592,7 +3609,7 @@ Func GoToNearestNPC($aX, $aY)
       If DllStructGetData($lMe, 'HP') <= 0 Then ExitLoop
 
       $lMapLoadingOld = $lMapLoading
-      $lMapLoading = GetMapLoading()
+      $lMapLoading = GetInstanceType()
       If $lMapLoading <> $lMapLoadingOld Then ExitLoop
 
       If DllStructGetData($lMe, 'MoveX') == 0 And DllStructGetData($lMe, 'MoveY') == 0 Then
@@ -3616,7 +3633,7 @@ Func GoToNearestNPC2($aX, $aY)
    Local $lAgentY = DllStructGetData($lNearestAgent, 'Y')
    Local $lMe
    Local $lBlocked = 0
-   Local $lMapLoading = GetMapLoading(), $lMapLoadingOld
+   Local $lMapLoading = GetInstanceType(), $lMapLoadingOld
 
    Move($lAgentX, $lAgentY, 100)
    Sleep(100)
@@ -3629,7 +3646,7 @@ Func GoToNearestNPC2($aX, $aY)
       If DllStructGetData($lMe, 'HP') <= 0 Then ExitLoop
 
       $lMapLoadingOld = $lMapLoading
-      $lMapLoading = GetMapLoading()
+      $lMapLoading = GetInstanceType()
       If $lMapLoading <> $lMapLoadingOld Then ExitLoop
 
       If DllStructGetData($lMe, 'MoveX') == 0 And DllStructGetData($lMe, 'MoveY') == 0 Then
@@ -4355,9 +4372,33 @@ Func GetMapID()
 EndFunc   ;==>GetMapID
 
 ;~ Description: Returns current load-state.
-Func GetMapLoading()
-	Return MemoryRead($mMapLoading)
-EndFunc   ;==>GetMapLoading
+;~ Func GetMapLoading()
+;~ 	Return MemoryRead($mMapLoading)
+;~ EndFunc   ;==>GetInstanceType
+
+Func GetInstanceType()
+	Local $lOffset[1] = [0x4]
+	Local $lResult = MemoryReadPtr($mInstanceInfo, $lOffset, "dword")
+	Return $lResult[1]
+EndFunc
+
+Func GetMapCampaign()
+	Local $lOffset[2] = [0x8, 0x0]
+	Local $lResult = MemoryReadPtr($mInstanceInfo, $lOffset, "dword")
+	Return $lResult[1]
+EndFunc
+
+Func GetMapRegion()
+	Local $lOffset[2] = [0x8, 0x4]
+	Local $lResult = MemoryReadPtr($mInstanceInfo, $lOffset, "dword")
+	Return $lResult[1]
+EndFunc
+
+Func GetMapRegionType()
+	Local $lOffset[2] = [0x8, 0x8]
+	Local $lResult = MemoryReadPtr($mInstanceInfo, $lOffset, "dword")
+	Return $lResult[1]
+EndFunc
 
 ;~ Description: Returns if map has been loaded. Reset with InitMapLoad().
 Func GetMapIsLoaded()
@@ -4489,13 +4530,8 @@ Func TolSleep($aAmount = 150, $aTolerance = 50)
 EndFunc   ;==>TolSleep
 
 ;~ Description: Returns window handle of Guild Wars.
-;Func GetWindowHandle()
-;	Return $mGWWindowHandle
-;EndFunc   ;==>GetWindowHandle
-
 Func GetWindowHandle()
-	Local $hWnd = WinGetHandle("Guild Wars") ; Adjust window title as necessary
-	Return $hWnd
+	Return $mGWWindowHandle
 EndFunc   ;==>GetWindowHandle
 
 ;~ Description: Returns the distance between two coordinate pairs.
@@ -6518,6 +6554,8 @@ Func _($aASM)
 					$lOpCode = '8B5B18'            ; this was added
 				Case 'mov ecx,dword[ecx+0xF4]'     ; this was added for crafting
 					$lOpCode = '8B89F4000000'      ; this was added for crafting
+				Case 'cmp ah,00' ;Added by Greg76 for scan wildcards
+					$lOpCode = '80FC00'
 				Case Else
 					MsgBox(0x0, 'ASM', 'Could not assemble: ' & $aASM)
 					Exit
@@ -6667,7 +6705,7 @@ Func Disconnected()
 	Local $lDeadlock = TimerInit()
 	Do
 		Sleep(20)
-		$lCheck = GetMapLoading() <> 2 And GetAgentExists(-2)
+		$lCheck = GetInstanceType() <> 2 And GetAgentExists(-2)
 	Until $lCheck Or TimerDiff($lDeadlock) > 5000
 	If $lCheck = False Then
 ;~ 		Out("Disconnected!")
@@ -6676,7 +6714,7 @@ Func Disconnected()
 		$lDeadlock = TimerInit()
 		Do
 			Sleep(20)
-			$lCheck = GetMapLoading() <> 2 And GetAgentExists(-2)
+			$lCheck = GetInstanceType() <> 2 And GetAgentExists(-2)
 		Until $lCheck Or TimerDiff($lDeadlock) > 60000
 		If $lCheck = False Then
 ;~ 			Out("Failed to Reconnect 1!")
@@ -6685,7 +6723,7 @@ Func Disconnected()
 			$lDeadlock = TimerInit()
 			Do
 				Sleep(20)
-				$lCheck = GetMapLoading() <> 2 And GetAgentExists(-2)
+				$lCheck = GetInstanceType() <> 2 And GetAgentExists(-2)
 			Until $lCheck Or TimerDiff($lDeadlock) > 60000
 			If $lCheck = False Then
 ;~ 				Out("Failed to Reconnect 2!")
@@ -6694,7 +6732,7 @@ Func Disconnected()
 				$lDeadlock = TimerInit()
 				Do
 					Sleep(20)
-					$lCheck = GetMapLoading() <> 2 And GetAgentExists(-2)
+					$lCheck = GetInstanceType() <> 2 And GetAgentExists(-2)
 				Until $lCheck Or TimerDiff($lDeadlock) > 60000
 				If $lCheck = False Then
 ;~ 					Out("Could not reconnect!")
@@ -6766,34 +6804,15 @@ Func GetBestTarget($aRange = 1320)
 	Return $lBestTarget
 EndFunc   ;==>GetBestTarget
 
-;~ Description: Wait for map to load.
-;~ Wait until every context are loaded and on the MapID (Character, Agents, Skillbar, Party)
-Func WaitMapLoading($aMapID = 0)
+;~ Description: Wait for map to load until every context are loaded.
+Func WaitMapLoading($aMapID = -1, $aInstanceType = -1)
     Local $lOffset[5] = [0, 0x18, 0x2C, 0x6F0, 0xBC]
 
-    Do
-        Sleep(250)
-        $lSkillbarStruct = MemoryReadPtr($mBasePointer, $lOffset, 'ptr') ;Skillbar
-    Until GetAgentPtr(-2) <> 0 And GetMaxAgents() <> 0 And GetMapID() = $aMapID And $lSkillbarStruct[0] <> 0 And GetPartySize() <> 0
-EndFunc
-
-Func WaitMapLoadingEx($iMap)
-	Local $lDeadlock
-	$lDeadlock = TimerInit()
-;~	Out("Waiting for MapID: " & $iMap & " to load")
 	Do
 		Sleep(250)
-	Until GetMapID() == $iMap Or TimerDiff($lDeadlock) > 20000
-	If GetMapID() <> $iMap Then
-;~		Out("Failed to load MapID. Current MapID is: " & GetMapID())
-		Return False
-	EndIf
-	If GetMapID() == $iMap Then
-		;PingSleep(2000) ;~ Give time for map load
-;~		Out("Successfully loaded MapID: " & $iMap)
-		Return True
-	EndIf
-EndFunc   ;==>WaitMapLoadingEx
+		$lSkillbarStruct = MemoryReadPtr($mBasePointer, $lOffset, 'ptr') ; Skillbar
+	Until GetAgentPtr(-2) <> 0 And GetMaxAgents() <> 0 And $lSkillbarStruct[0] <> 0 And GetPartySize() <> 0 And ($aInstanceType = -1 Or GetInstanceType() = $aInstanceType) And ($aMapID = -1 Or GetMapID() = $aMapID)
+EndFunc
 
 Func TradePlayer($aAgent)
 	Local $lAgentID
@@ -7133,7 +7152,7 @@ Func HasEffect($aEffectSkillID)
 EndFunc   ;==>HasEffect
 
 Func GetIsExplorableArea()
-	Return GetMapLoading() == 1
+	Return GetInstanceType() == 1
 EndFunc   ;==>GetIsExplorableArea
 
 Func _PurgeHook()
