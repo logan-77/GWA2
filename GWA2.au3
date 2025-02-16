@@ -606,7 +606,7 @@ Func Scan()
 	AddPattern('83FF10761468D2210000') ;STILL WORKING 23.12.24
 
 	_('ScanTraderHook:')
-	AddPattern('8955FC6A008D55F8B9BB') ; COULD NOT UPDATE! 23.12.24 ;50516A466A06 ;007BA579
+	AddPattern('50516A466A06')
 
 	_('ScanSleep:')
 	AddPattern('6A0057FF15D8408A006860EA0000') ; UPDATED 24.12.24, OLD:5F5E5B741A6860EA0000
@@ -5229,8 +5229,16 @@ EndFunc   ;==>CreateChatLog
 ;~ Description: Internal use only.
 Func CreateTraderHook()
 	_('TraderHookProc:')
-	_('mov dword[TraderCostID],ecx')
-	_('mov dword[TraderCostValue],edx')
+	_('push eax')
+	_('mov eax,dword[ebx+28] -> 8b 43 28')
+	_('mov eax,[eax] -> 8b 00')
+	_('mov dword[TraderCostID],eax')
+	_('mov eax,dword[ebx+28] -> 8b 43 28')
+	_('mov eax,[eax+4] -> 8b 40 04')
+	_('mov dword[TraderCostValue],eax')
+	_('pop eax')
+	_('mov ebx,dword[ebp+C] -> 8B 5D 0C')
+	_('mov esi,eax')
 	_('push eax')
 	_('mov eax,dword[TraderQuoteID]')
 	_('inc eax')
@@ -5240,8 +5248,6 @@ Func CreateTraderHook()
 	_('TraderSkipReset:')
 	_('mov dword[TraderQuoteID],eax')
 	_('pop eax')
-	_('mov ebp,esp')
-	_('sub esp,8')
 	_('ljmp TraderHookReturn')
 EndFunc   ;==>CreateTraderHook
 
@@ -6760,25 +6766,16 @@ Func GetBestTarget($aRange = 1320)
 	Return $lBestTarget
 EndFunc   ;==>GetBestTarget
 
-;~ Description: Wait for map to load. Returns true if successful.
-Func WaitMapLoading($aMapID = 0, $aDeadlock = 2000)
-;~ 	Waits $aDeadlock for load to start, and $aDeadLock for agent to load after map is loaded.
-	Local $lMapLoading
-	Local $lDeadlock = TimerInit()
+;~ Description: Wait for map to load.
+;~ Wait until every context are loaded and on the MapID (Character, Agents, Skillbar, Party)
+Func WaitMapLoading($aMapID = 0)
+    Local $lOffset[5] = [0, 0x18, 0x2C, 0x6F0, 0xBC]
 
-	InitMapLoad()
-
-	Do
-		Sleep(200)
-		$lMapLoading = GetMapLoading()
-		If $lMapLoading == 2 Then $lDeadlock = TimerInit()
-		If TimerDiff($lDeadlock) > $aDeadlock And $aDeadlock > 0 Then Return False
-	Until $lMapLoading <> 2 And GetMapIsLoaded() And (GetMapID() = $aMapID Or $aMapID = 0)
-
-	RndSleep(GetPing() + 1000)
-
-	Return True
-EndFunc   ;==>WaitMapLoading
+    Do
+        Sleep(250)
+        $lSkillbarStruct = MemoryReadPtr($mBasePointer, $lOffset, 'ptr') ;Skillbar
+    Until GetAgentPtr(-2) <> 0 And GetMaxAgents() <> 0 And GetMapID() = $aMapID And $lSkillbarStruct[0] <> 0 And GetPartySize() <> 0
+EndFunc
 
 Func WaitMapLoadingEx($iMap)
 	Local $lDeadlock
