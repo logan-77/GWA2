@@ -123,8 +123,10 @@ WEnd
 
 While $BotRunning
     Sleep(500)
-    Out("Base: " & $mBasePointer)
-    Sleep(500000)
+	Out("Start")
+
+	Out("End")
+    Sleep(5000)
 WEnd
 
 Func Out($TEXT)

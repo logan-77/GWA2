@@ -56,7 +56,7 @@ Local $mDisableRendering, $mAgentCopyCount, $mAgentCopyBase
 Local $mCurrentStatus, $mLastDialogID
 Local $mUseStringLog, $mUseEventSystem
 Local $mCharslots
-Local $mInstanceInfo
+Local $mInstanceInfo, $mAreaInfo
 #EndRegion Declarations
 
 
@@ -318,6 +318,7 @@ Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSy
    $mCharslots = MemoryRead(GetScannedAddress('ScanCharslots', 22))
 
    $mInstanceInfo = MemoryRead(GetScannedAddress('ScanInstanceInfo', 0xE))
+   $mAreaInfo = MemoryRead(GetScannedAddress('ScanAreaInfo', 0x6))
 
    $lTemp = GetScannedAddress('ScanEngine', -0x22)
    SetValue('MainStart', '0x' & Hex($lTemp, 8))
@@ -590,7 +591,7 @@ Func Scan()
 	AddPattern('8D1C87899DF4') ; UPDATED 24.12.24, OLD: 8D1C87899DF4FEFFFF8BC32BC7C1F802, 8B4208A80175418B4A08
 
 	_('ScanSkillBase:')
-	AddPattern('8D04B6C1E00505') ;STILL WORKING 23.12.24
+	AddPattern('8D04B6C1E00505') ;STILL WORKING 23.12.24 ;8D 04 B6 C1 E0 05 05
 
 	_('ScanUseHeroSkillFunction:')
 	AddPattern('BA02000000B954080000') ;STILL WORKING 23.12.24
@@ -666,6 +667,9 @@ Func Scan()
 
 	_("ScanInstanceInfo:")
 	AddPattern("6A2C50E80000000083C408C7") ;Added by Greg76 to get Instance Info
+
+	_("ScanAreaInfo:")
+	AddPattern("6BC67C5E05") ;Added by Greg76 to get Area Info
 
 	_('ScanProc:') ; Label for the scan procedure
 	_('pushad') ; Push all general-purpose registers onto the stack to save their values
@@ -4382,22 +4386,32 @@ Func GetInstanceType()
 	Return $lResult[1]
 EndFunc
 
-Func GetMapCampaign()
-	Local $lOffset[2] = [0x8, 0x0]
-	Local $lResult = MemoryReadPtr($mInstanceInfo, $lOffset, "dword")
-	Return $lResult[1]
+Func GetAreaInfoByID($aMapID = 0)
+	If $aMapID = 0 Then $aMapID = GetMapID()
+    Local $lAreaInfo = DllStructCreate("dword campaign;dword continent;dword region;dword regiontype;dword flags;dword thumbnail_id;dword min_party_size;dword max_party_size;dword min_player_size;dword max_player_size;" & _
+    "dword controlled_outpost_id;dword fraction_mission;dword min_level;dword max_level;dword needed_pq;dword mission_maps_to;dword x;dword y;dword icon_start_x;dword icon_start_y;" & _
+    "dword icon_end_x;dword icon_end_y;dword icon_start_x_dupe;dword icon_start_y_dupe;dword icon_end_x_dupe;dword icon_end_y_dupe;dword file_id;dword mission_chronology;dword ha_map_chronology;" & _
+    "dword name_id;dword description_id")
+
+    Local $lAreaInfoAddress = $mAreaInfo + (0x7C * $aMapID)
+    DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lAreaInfoAddress, 'ptr', DllStructGetPtr($lAreaInfo), 'int', DllStructGetSize($lAreaInfo), 'int', '')
+
+    Return $lAreaInfo
 EndFunc
 
-Func GetMapRegion()
-	Local $lOffset[2] = [0x8, 0x4]
-	Local $lResult = MemoryReadPtr($mInstanceInfo, $lOffset, "dword")
-	Return $lResult[1]
+Func GetMapCampaign($aMapID = 0)
+	Local $lMapStruct = GetAreaInfoByID($aMapID)
+    Return DllStructGetData($lMapStruct, "campaign")
 EndFunc
 
-Func GetMapRegionType()
-	Local $lOffset[2] = [0x8, 0x8]
-	Local $lResult = MemoryReadPtr($mInstanceInfo, $lOffset, "dword")
-	Return $lResult[1]
+Func GetMapRegion($aMapID = 0)
+	Local $lMapStruct = GetAreaInfoByID($aMapID)
+    Return DllStructGetData($lMapStruct, "region")
+EndFunc
+
+Func GetMapRegionType($aMapID = 0)
+	Local $lMapStruct = GetAreaInfoByID($aMapID)
+    Return DllStructGetData($lMapStruct, "regiontype")
 EndFunc
 
 ;~ Description: Returns if map has been loaded. Reset with InitMapLoad().
