@@ -57,6 +57,7 @@ Local $mCurrentStatus, $mLastDialogID
 Local $mUseStringLog, $mUseEventSystem
 Local $mCharslots
 Local $mInstanceInfo, $mAreaInfo
+Local $mAttributeInfo
 #EndRegion Declarations
 
 
@@ -319,6 +320,9 @@ Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSy
 
    $mInstanceInfo = MemoryRead(GetScannedAddress('ScanInstanceInfo', 0xE))
    $mAreaInfo = MemoryRead(GetScannedAddress('ScanAreaInfo', 0x6))
+
+
+   $mAttributeInfo = MemoryRead(GetScannedAddress('ScanAttributeInfo', -0x3))
 
    $lTemp = GetScannedAddress('ScanEngine', -0x22)
    SetValue('MainStart', '0x' & Hex($lTemp, 8))
@@ -670,6 +674,9 @@ Func Scan()
 
 	_("ScanAreaInfo:")
 	AddPattern("6BC67C5E05") ;Added by Greg76 to get Area Info
+
+	_("ScanAttributeInfo:")
+	AddPattern("BA3300000089088d4004") ;Added by Greg76 to get Attribute Info
 
 	_('ScanProc:') ; Label for the scan procedure
 	_('pushad') ; Push all general-purpose registers onto the stack to save their values
@@ -4226,6 +4233,29 @@ Func GetMorale($aHeroNumber = 0)
 	Local $lReturn = MemoryReadPtr($mBasePointer, $lOffset)
 	Return $lReturn[1] - 100
 EndFunc   ;==>GetMorale
+
+;~ Description: Returns Attribute struct.
+Func GetAttributeInfoByID($aAttributeID)
+    Local $lAttributeStruct = DllStructCreate('dword profession_id;dword attribute_id;dword name_id;dword desc_id;dword is_pve')
+    Local $lAttributeStructAddress = $mAttributeInfo + (0x14 * $aAttributeID)
+    DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lAttributeStructAddress, 'ptr', DllStructGetPtr($lAttributeStruct), 'int', DllStructGetSize($lAttributeStruct), 'int', '')
+    Return $lAttributeStruct
+EndFunc   ;==>GetAttributeInfoByID
+
+Func GetAttributeProfession($aAttributeID)
+    Local $lAttributeInfo = GetAttributeInfoByID($aAttributeID)
+    Return DllStructGetData($lAttributeInfo, "profession_id")
+EndFunc
+
+Func GetAttributeNameID($aAttributeID)
+    Local $lAttributeInfo = GetAttributeInfoByID($aAttributeID)
+    Return DllStructGetData($lAttributeInfo, "name_id")
+EndFunc
+
+Func GetAttributeIsPvE($aAttributeID)
+    Local $lAttributeInfo = GetAttributeInfoByID($aAttributeID)
+    Return DllStructGetData($lAttributeInfo, "is_pve")
+EndFunc
 
 #Region Effects
 ;~ Description: Returns effect struct or array of effects.
