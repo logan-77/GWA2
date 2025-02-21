@@ -41,11 +41,11 @@ Local $mQueueCounter, $mQueueSize, $mQueueBase
 Local $mGWWindowHandle
 Local $mTargetLogBase, $mStringLogBase, $mSkillBase
 Local $mEnsureEnglish
-Local $mMyID, $mCurrentTarget
+Local $mCurrentTarget ;,$mMyID
 Local $packetlocation
 Local $mAgentBase, $mBasePointer
-Local $mRegion, $mLanguage
-Local $mPing, $mCharname, $mMapID
+Local $mRegion;, $mLanguage
+Local $mPing, $mCharname;, $mMapID
 Local $mMaxAgents, $mMapLoading, $mMapIsLoaded, $mLoggedIn
 Local $mStringHandlerPtr, $mWriteChatSender
 Local $mTraderQuoteID, $mTraderCostID, $mTraderCostValue
@@ -58,6 +58,7 @@ Local $mUseStringLog, $mUseEventSystem
 Local $mCharslots
 Local $mInstanceInfo, $mAreaInfo
 Local $mAttributeInfo
+Local $mWorldConst
 #EndRegion Declarations
 
 
@@ -287,8 +288,8 @@ Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSy
    $mMaxAgents = $mAgentBase + 8
    SetValue('MaxAgents', '0x' & Hex($mMaxAgents, 8))
 
-   $mMyID = MemoryRead(GetScannedAddress('ScanMyID', -3))
-   SetValue('MyID', '0x' & Hex($mMyID, 8))
+;~    $mMyID = MemoryRead(GetScannedAddress('ScanMyID', -3))
+;~    SetValue('MyID', '0x' & Hex($mMyID, 8))
 
    $mCurrentTarget = MemoryRead(GetScannedAddress('ScanCurrentTarget', -14))
 
@@ -297,14 +298,16 @@ Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSy
 
    $mPing = MemoryRead(GetScannedAddress('ScanPing', -0x14))
 
-   $mMapID = MemoryRead(GetScannedAddress('ScanMapID', 28))
+;~    $mMapID = MemoryRead(GetScannedAddress('ScanMapID', 28))
 
 ;~    $mMapLoading = MemoryRead(GetScannedAddress('ScanMapLoading', 0xB))
 
    $mLoggedIn = MemoryRead(GetScannedAddress('ScanLoggedIn', 0x3))
 
-   $mLanguage = MemoryRead(GetScannedAddress('ScanMapInfo', 11)) + 0xC
-   $mRegion = $mLanguage + 4
+;~    $mLanguage = MemoryRead(GetScannedAddress('ScanMapInfo', 11)) + 0xC
+;~    $mRegion = $mLanguage + 4
+   $mRegion = MemoryRead(GetScannedAddress('ScanRegion', -0x3))
+
 
    $mSkillBase = MemoryRead(GetScannedAddress('ScanSkillBase', 8))
    $mSkillTimer = MemoryRead(GetScannedAddress('ScanSkillTimer', -3))
@@ -323,6 +326,8 @@ Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSy
 
 
    $mAttributeInfo = MemoryRead(GetScannedAddress('ScanAttributeInfo', -0x3))
+
+   $mWorldConst = MemoryRead(GetScannedAddress('ScanWorldConst', 8))
 
    $lTemp = GetScannedAddress('ScanEngine', -0x22)
    SetValue('MainStart', '0x' & Hex($lTemp, 8))
@@ -396,6 +401,7 @@ Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSy
    SetValue('ActionFunction', '0x' & Hex(GetScannedAddress('ScanActionFunction', -3), 8))
 
    SetValue('UseHeroSkillFunction', '0x' & Hex(GetScannedAddress('ScanUseHeroSkillFunction', -0x59), 8))
+
    SetValue('BuyItemBase', '0x' & Hex(MemoryRead(GetScannedAddress('ScanBuyItemBase', 15)), 8))
 
    SetValue('TransactionFunction', '0x' & Hex(GetScannedAddress('ScanTransactionFunction', -0x7E), 8))
@@ -507,8 +513,8 @@ Func Scan()
 	_('ScanCurrentTarget:')
 	AddPattern('83C4085F8BE55DC3CCCCCCCCCCCCCCCCCCCCCC55') ;UPDATED 23.12.24
 
-	_('ScanMyID:')
-	AddPattern('83EC08568BF13B15') ; STILL WORKING 23.12.24
+;~ 	_('ScanMyID:')
+;~ 	AddPattern('83EC08568BF13B15') ; STILL WORKING 23.12.24
 
 	_('ScanEngine:')
 	AddPattern('568B3085F67478EB038D4900D9460C') ; UPDATED 23.12.24 NEEDS TO GET UPDATED EACH PATCH
@@ -534,8 +540,8 @@ Func Scan()
 	_('ScanPing:')
 	AddPattern('E874651600') ; UPDATED 23.12.24
 
-	_('ScanMapID:')
-	AddPattern('558BEC8B450885C074078B') ;STILL WORKING 23.12.24, B07F8D55
+;~ 	_('ScanMapID:')
+;~ 	AddPattern('558BEC8B450885C074078B') ;STILL WORKING 23.12.24, B07F8D55
 
 ;~ 	_('ScanMapLoading:')
 ;~ 	AddPattern('2480ED0000000000') ; UPDATED 25.12.24, 6A2C50E8
@@ -544,13 +550,13 @@ Func Scan()
 	AddPattern('C705ACDE740000000000C3CCCCCCCC') ; UPDATED 26.12.24, NEED TO GET UPDATED EACH PATCH OLD:BFFFC70580 85C07411B807
 
 	_('ScanRegion:')
-	AddPattern('8BF0EB038B750C3B') ; STILL WORKING 23.12.24
+	AddPattern('6A548D46248908') ; STILL WORKING 23.12.24
 
-	_('ScanMapInfo:')
-	AddPattern('8BF0EB038B750C3B') ; STILL WORKING 23.12.24, 83F9FD7406
+;~ 	_('ScanMapInfo:')
+;~ 	AddPattern('8BF0EB038B750C3B') ; STILL WORKING 23.12.24, 83F9FD7406
 
-	_('ScanLanguage:')
-	AddPattern('C38B75FC8B04B5') ; COULD NOT UPDATE! 23.12.24
+;~ 	_('ScanLanguage:')
+;~ 	AddPattern('C38B75FC8B04B5') ; COULD NOT UPDATE! 23.12.24
 
 	_('ScanUseSkillFunction:')
 	AddPattern('85F6745B83FE1174') ; STILL WORKING 23.12.24, 558BEC83EC1053568BD9578BF2895DF0
@@ -677,6 +683,9 @@ Func Scan()
 
 	_("ScanAttributeInfo:")
 	AddPattern("BA3300000089088d4004") ;Added by Greg76 to get Attribute Info
+
+	_("ScanWorldConst:")
+	AddPattern("8D0476C1E00405") ;Added by Greg76 to get World Info
 
 	_('ScanProc:') ; Label for the scan procedure
 	_('pushad') ; Push all general-purpose registers onto the stack to save their values
@@ -4382,7 +4391,10 @@ EndFunc   ;==>GetMaxAgents
 
 ;~ Description: Returns your agent ID.
 Func GetMyID()
-	Return MemoryRead($mMyID)
+	Local $lOffset[5] = [0, 0x18, 0x2C, 0x680, 0x14]
+	Local $lReturn = MemoryReadPtr($mBasePointer, $lOffset)
+	Return $lReturn[1]
+;~ 	Return MemoryRead($mMyID)
 EndFunc   ;==>GetMyID
 
 ;~ Description: Returns current target.
@@ -4402,7 +4414,10 @@ EndFunc   ;==>GetPing
 
 ;~ Description: Returns current map ID.
 Func GetMapID()
-	Return MemoryRead($mMapID)
+	Local $lOffset[4] = [0, 0x18, 0x44, 0x22C]
+	Local $lReturn = MemoryReadPtr($mBasePointer, $lOffset)
+	Return $lReturn[1]
+;~ 	Return MemoryRead($mMapID)
 EndFunc   ;==>GetMapID
 
 ;~ Description: Returns current load-state.
@@ -4464,7 +4479,10 @@ EndFunc   ;==>GetRegion
 
 ;~ Description: Internal use for travel functions.
 Func GetLanguage()
-	Return MemoryRead($mLanguage)
+	Local $lOffset[] = [0, 0x18, 0x44, 0x228]
+	Local $lReturn = MemoryReadPtr($mBasePointer, $lOffset)
+	Return $lReturn[1]
+;~ 	Return MemoryRead($mLanguage)
 EndFunc   ;==>GetLanguage
 
 ;~ Description: Returns quest struct.
@@ -7253,3 +7271,21 @@ Func PlayerAttrSet($experience, $kurzick_faction, $kurzick_faction_total, $luxon
 EndFunc   ;==>PlayerAttrSet
 #EndRegion "Structures Definition"
 
+;~ Description: Returns World struct. (from 0 to 8)
+Func GetWorldInfoByID($aWorldID)
+    Local $lWorldStruct = DllStructCreate(	'long MinGridWidth;' & _      ; +0x00 Grid minimum width limit
+											'long MinGridHeight;' & _     ; +0x04 Grid minimum height limit
+											'long MaxGridWidth;' & _      ; +0x08 Grid maximum width limit
+											'long MaxGridHeight;' & _     ; +0x0C Grid maximum height limit
+											'long Flags;' & _            ; +0x10 Flags (probably zone options)
+											'long Type;' & _             ; +0x14 Zone type (0x200 is often seen)
+											'long SubGridWidth;' & _     ; +0x18 Subgrid width
+											'long SubGridHeight;' & _    ; +0x1C Subgrid height
+											'long StartPosX;' & _        ; +0x20 Start position X
+											'long StartPosY;' & _        ; +0x24 Starting position Y
+											'long MapWidth;' & _         ; +0x28 Total width of the map
+											'long MapHeight')            ; +0x2C Total height of the map
+    Local $lWorldStructAddress = $mWorldConst + (0x30 * $aWorldID)
+    DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lWorldStructAddress, 'ptr', DllStructGetPtr($lWorldStruct), 'int', DllStructGetSize($lWorldStruct), 'int', '')
+    Return $lWorldStruct
+EndFunc   ;==>GetWorldInfoByID

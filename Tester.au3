@@ -123,10 +123,10 @@ WEnd
 
 While $BotRunning
     Sleep(500)
-	Out("Start")
-
-	Out("End")
-    Sleep(5000)
+    Out("Start")
+	Out(MemoryRead($mRegion))
+    Out("End")
+    Sleep(50000)
 WEnd
 
 Func Out($TEXT)
