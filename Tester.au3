@@ -124,7 +124,11 @@ WEnd
 While $BotRunning
     Sleep(500)
     Out("Start")
-	Out(MemoryRead($mRegion))
+	Local $me = GetAgentByID(-2)
+	Out(DllStructGetData($me, 'Id'))
+	Out(DllStructGetData($me, 'X'))
+	Out(DllStructGetData($me, 'Y'))
+	Out(DllStructGetData($me, 'PlayerNumber'))
     Out("End")
     Sleep(50000)
 WEnd
