@@ -43,7 +43,7 @@ Local $mTargetLogBase, $mStringLogBase, $mSkillBase
 Local $mEnsureEnglish
 Local $mCurrentTarget ;,$mMyID
 Local $packetlocation
-Local $mAgentBase, $mBasePointer
+Local $mAgentBase, $mBasePointer, $mAgentArray
 Local $mRegion;, $mLanguage
 Local $mPing, $mCharname;, $mMapID
 Local $mMaxAgents, $mMapLoading, $mMapIsLoaded, $mLoggedIn
@@ -60,7 +60,6 @@ Local $mInstanceInfo, $mAreaInfo
 Local $mAttributeInfo
 Local $mWorldConst
 #EndRegion Declarations
-
 
 #Region CommandStructs
 Local $mInviteGuild = DllStructCreate('ptr;dword;dword header;dword counter;wchar name[32];dword type')
@@ -138,6 +137,20 @@ Local $mChangeStatusPtr = DllStructGetPtr($mChangeStatus)
 Global $MTradeHackAddress
 Global $mLabels[1][2] = [[0]]
 #EndRegion CommandStructs
+
+#Region Gwa2 Structs
+Global $g_AgentStruct = DllStructCreate('ptr vtable;dword h0004[4];dword timer;dword timer2;dword h0018[4];long Id;float Z;float width1;float height1;float width2;float height2;float width3;float height3;float Rotation;float rotation_cos;float rotation_sin;dword NameProperties;dword ground;dword h0060;float terrain_normal_x;float terrain_normal_y;dword terrain_normal_z;byte h0070[4];float X;float Y;dword plane;byte h0080[4];float NameTagX;float NameTagY;float NameTagZ;short visual_effects;short h0092;dword h0094[2];long Type;float MoveX;float MoveY;dword h00A8;float rotation_cos2;float rotation_sin2;dword h00B4[4];long Owner;dword ItemID;dword ExtraType;dword GadgetID;dword h00D4[3];float animation_type;dword h00E4[2];float AttackSpeed;float AttackSpeedModifier;short PlayerNumber;short agent_model_type;dword transmog_npc_id;ptr Equip;dword h0100;ptr tags;short h0108;byte Primary;byte Secondary;byte Level;byte Team;byte h010E[2];dword h0110;float energy_regen;float overcast;float EnergyPercent;dword MaxEnergy;dword h0124;float HPPips;dword h012C;float HP;dword MaxHP;dword Effects;dword h013C;byte Hex;byte h0141[19];dword ModelState;dword TypeMap;dword h015C[4];dword InSpiritRange;dword visible_effects;dword visible_effects_ID;dword visible_effects_has_ended;dword h017C;dword LoginNumber;float animation_speed;dword animation_code;dword animation_id;byte h0190[32];byte LastStrike;byte Allegiance;short WeaponType;short Skill;short h01B6;byte weapon_item_type;byte offhand_item_type;short WeaponItemId;short OffhandItemId')
+Global $g_ItemStruct = DllStructCreate('long Id;long AgentId;ptr BagEquiped;ptr Bag;ptr ModStruct;long ModStructSize;ptr Customized;long ModelFileID;byte Type;byte Dye[3];short Value;short Unknown1;long Interaction;long ModelId;ptr InfoString;ptr NameEnc;ptr CompleteNameEnc;ptr SingleItemName;long Unknown2[2];short ItemFormula;byte IsMaterialSalvageable;byte Unknown3;short Quantity;byte Equiped;byte Profession;byte Slot')
+Global $g_BuffStruct = DllStructCreate('long SkillId;long unknown1;long BuffId;long TargetId')
+Global $g_EffectStruct = DllStructCreate('long SkillId;long AttributeLevel;long EffectId;long AgentId;float Duration;long TimeStamp')
+Global $g_BagStruct = DllStructCreate('long TypeBag;long index;long unknown1;ptr containerItem;long ItemsCount;ptr bagArray;ptr itemArray')
+Global $g_SkillbarStruct = DllStructCreate('long AgentId;long AdrenalineA1;long AdrenalineB1;dword Recharge1;dword Id1;dword Event1;long AdrenalineA2;long AdrenalineB2;dword Recharge2;dword Id2;dword Event2;long AdrenalineA3;long AdrenalineB3;dword Recharge3;dword Id3;dword Event3;long AdrenalineA4;long AdrenalineB4;dword Recharge4;dword Id4;dword Event4;long AdrenalineA5;long AdrenalineB5;dword Recharge5;dword Id5;dword Event5;long AdrenalineA6;long AdrenalineB6;dword Recharge6;dword Id6;dword Event6;long AdrenalineA7;long AdrenalineB7;dword Recharge7;dword Id7;dword Event7;long AdrenalineA8;long AdrenalineB8;dword Recharge8;dword Id8;dword Event8;dword disabled;long unknown1[2];dword Casting;long unknown2[2]')
+Global $g_SkillStruct = DllStructCreate('long ID;long Unknown1;long campaign;long Type;long Special;long ComboReq;long Effect1;long Condition;long Effect2;long WeaponReq;byte Profession;byte Attribute;short Title;long PvPID;byte Combo;byte Target;byte unknown3;byte EquipType;byte Overcast;byte EnergyCost;byte HealthCost;byte unknown4;dword Adrenaline;float Activation;float Aftercast;long Duration0;long Duration15;long Recharge;long Unknown5[4];dword SkillArguments;long Scale0;long Scale15;long BonusScale0;long BonusScale15;float AoERange;float ConstEffect;dword caster_overhead_animation_id;dword caster_body_animation_id;dword target_body_animation_id;dword target_overhead_animation_id;dword projectile_animation_1_id;dword projectile_animation_2_id;dword icon_file_id;dword icon_file_id_2;dword name;dword concise;dword description')
+Global $g_AttributeStruct = DllStructCreate('dword profession_id;dword attribute_id;dword name_id;dword desc_id;dword is_pve')
+Global $g_AreaInfoStruct = DllStructCreate("dword campaign;dword continent;dword region;dword regiontype;dword flags;dword thumbnail_id;dword min_party_size;dword max_party_size;dword min_player_size;dword max_player_size;dword controlled_outpost_id;dword fraction_mission;dword min_level;dword max_level;dword needed_pq;dword mission_maps_to;dword x;dword y;dword icon_start_x;dword icon_start_y;dword icon_end_x;dword icon_end_y;dword icon_start_x_dupe;dword icon_start_y_dupe;dword icon_end_x_dupe;dword icon_end_y_dupe;dword file_id;dword mission_chronology;dword ha_map_chronology;dword name_id;dword description_id")
+Global $g_QuestStruct = DllStructCreate('long id;long LogState;ptr Location;ptr Name;ptr NPC;long MapFrom;float X;float Y;long Z;long unlnown1;long MapTo;ptr Description;ptr Objective')
+Global $g_WorldStruct = DllStructCreate('long MinGridWidth;long MinGridHeight;long MaxGridWidth;long MaxGridHeight;long Flags;long Type;long SubGridWidth;long SubGridHeight;long StartPosX;long StartPosY;long MapWidth;long MapHeight')
+#EndRegion
 
 #Region Memory
 ;~ Description: Internal use only.
@@ -287,6 +300,8 @@ Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSy
 
    $mMaxAgents = $mAgentBase + 8
    SetValue('MaxAgents', '0x' & Hex($mMaxAgents, 8))
+
+   $mAgentArray = MemoryRead(GetScannedAddress('ScanAgentArray', -0x3))
 
 ;~    $mMyID = MemoryRead(GetScannedAddress('ScanMyID', -3))
 ;~    SetValue('MyID', '0x' & Hex($mMyID, 8))
@@ -468,6 +483,7 @@ Func Initialize($aGW, $bChangeTitle = True, $aUseStringLog = False, $aUseEventSy
    If $bChangeTitle Then
       WinSetTitle($mGWWindowHandle, '', 'Guild Wars - ' & GetCharname())
    EndIf
+   SetMaxMemory()
 
    Return $mGWWindowHandle
 EndFunc  ;==>Initialize
@@ -509,6 +525,9 @@ Func Scan()
 
 	_('ScanAgentBasePointer:')
 	AddPattern('FF501083C6043BF775E28B35') ;UPDATED 26.12.24
+
+	_('ScanAgentArray:')
+	AddPattern('8B0C9085C97419')
 
 	_('ScanCurrentTarget:')
 	AddPattern('83C4085F8BE55DC3CCCCCCCCCCCCCCCCCCCCCC55') ;UPDATED 23.12.24
@@ -1257,41 +1276,41 @@ EndFunc   ;==>GetInventoryItemPtrByModelId
 
 ;~ Description: Request a quote to buy an item from a trader. Returns true if successful.
 Func TraderRequest($aModelID, $aExtraID = -1)
-;~ 	Local $lItemStruct = DllStructCreate('long Id;long AgentId;byte Unknown1[4];ptr Bag;ptr ModStruct;long ModStructSize;ptr Customized;byte unknown2[4];byte Type;byte unknown4;short ExtraId;short Value;byte unknown4[2];short Interaction;long ModelId;ptr ModString;byte unknown5[4];ptr NameString;ptr SingleItemName;byte Unknown4[10];byte IsSalvageable;byte Unknown6;byte Quantity;byte Equiped;byte Profession;byte Type2;byte Slot')
-	Local $lItemStruct = DllStructCreate('long Id;long AgentId;ptr BagEquiped;ptr Bag;ptr ModStruct;long ModStructSize;ptr Customized;long ModelFileID;byte Type;byte Dye[3];short Value;short Unknown1;long Interaction;long ModelId;ptr InfoString;ptr NameEnc;ptr CompleteNameEnc;ptr SingleItemName;long Unknown2[2];short ItemFormula;byte IsMaterialSalvageable;byte Unknown3;short Quantity;byte Equiped;byte Profession;byte Slot')
+    Local $lOffset[4] = [0, 0x18, 0x40, 0xC0]
+    Local $lItemArraySize = MemoryReadPtr($mBasePointer, $lOffset)
+    Local $lOffset[5] = [0, 0x18, 0x40, 0xB8, 0]
+    Local $lItemPtr, $lItemID
+    Local $lFound = False
+    Local $lQuoteID = MemoryRead($mTraderQuoteID)
 
-	Local $lOffset[4] = [0, 0x18, 0x40, 0xC0]
-	Local $lItemArraySize = MemoryReadPtr($mBasePointer, $lOffset)
-	Local $lOffset[5] = [0, 0x18, 0x40, 0xB8, 0]
-	Local $lItemPtr, $lItemID
-	Local $lFound = False
-	Local $lQuoteID = MemoryRead($mTraderQuoteID)
+    For $lItemID = 1 To $lItemArraySize[1]
+        $lOffset[4] = 0x4 * $lItemID
+        $lItemPtr = MemoryReadPtr($mBasePointer, $lOffset)
+        If $lItemPtr[1] = 0 Then ContinueLoop
 
-	For $lItemID = 1 To $lItemArraySize[1]
-		$lOffset[4] = 0x4 * $lItemID
-		$lItemPtr = MemoryReadPtr($mBasePointer, $lOffset)
-		If $lItemPtr[1] = 0 Then ContinueLoop
+        DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lItemPtr[1], 'ptr', DllStructGetPtr($g_ItemStruct), 'int', DllStructGetSize($g_ItemStruct), 'int', '')
 
-		DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lItemPtr[1], 'ptr', DllStructGetPtr($lItemStruct), 'int', DllStructGetSize($lItemStruct), 'int', '')
-		If DllStructGetData($lItemStruct, 'ModelID') = $aModelID And DllStructGetData($lItemStruct, 'bag') = 0 And DllStructGetData($lItemStruct, 'AgentID') == 0 Then
-			If $aExtraID = -1 Or DllStructGetData($lItemStruct, 'ExtraID') = $aExtraID Then
-				$lFound = True
-				ExitLoop
-			EndIf
-		EndIf
-	Next
-	If Not $lFound Then Return False
+        If DllStructGetData($g_ItemStruct, 'ModelID') = $aModelID And DllStructGetData($g_ItemStruct, 'bag') = 0 And DllStructGetData($g_ItemStruct, 'AgentID') == 0 Then
+            If $aExtraID = -1 Or DllStructGetData($g_ItemStruct, 'ExtraID') = $aExtraID Then
+                $lFound = True
+                ExitLoop
+            EndIf
+        EndIf
+    Next
 
-	DllStructSetData($mRequestQuote, 2, DllStructGetData($lItemStruct, 'ID'))
-	Enqueue($mRequestQuotePtr, 8)
+    If Not $lFound Then Return False
 
-	Local $lDeadlock = TimerInit()
-	$lFound = False
-	Do
-		Sleep(20)
-		$lFound = MemoryRead($mTraderQuoteID) <> $lQuoteID
-	Until $lFound Or TimerDiff($lDeadlock) > GetPing() + 5000
-	Return $lFound
+    DllStructSetData($mRequestQuote, 2, DllStructGetData($g_ItemStruct, 'ID'))
+    Enqueue($mRequestQuotePtr, 8)
+
+    Local $lDeadlock = TimerInit()
+    $lFound = False
+    Do
+        Sleep(20)
+        $lFound = MemoryRead($mTraderQuoteID) <> $lQuoteID
+    Until $lFound Or TimerDiff($lDeadlock) > GetPing() + 5000
+
+    Return $lFound
 EndFunc   ;==>TraderRequest
 
 ;~ Description: Buy the requested item.
@@ -2410,36 +2429,36 @@ EndFunc   ;==>SuppressAction
 
 ;~ Description: Stop maintaining enchantment on target.
 Func DropBuff($aSkillID, $aAgentID, $aHeroNumber = 0)
-	Local $lBuffStruct = DllStructCreate('long SkillId;long unknown1;long BuffId;long TargetId')
-	Local $lBuffCount = GetBuffCount($aHeroNumber)
-	Local $lBuffStructAddress
-	Local $lOffset[4]
-	$lOffset[0] = 0
-	$lOffset[1] = 0x18
-	$lOffset[2] = 0x2C
-	$lOffset[3] = 0x510
-	Local $lCount = MemoryReadPtr($mBasePointer, $lOffset)
-	ReDim $lOffset[5]
-	$lOffset[3] = 0x508
-	Local $lBuffer
-	For $i = 0 To $lCount[1] - 1
-		$lOffset[4] = 0x24 * $i
-		$lBuffer = MemoryReadPtr($mBasePointer, $lOffset)
-		If $lBuffer[1] == GetHeroID($aHeroNumber) Then
-			$lOffset[4] = 0x4 + 0x24 * $i
-			ReDim $lOffset[6]
-			For $j = 0 To $lBuffCount - 1
-				$lOffset[5] = 0 + 0x10 * $j
-				$lBuffStructAddress = MemoryReadPtr($mBasePointer, $lOffset)
-				DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lBuffStructAddress[0], 'ptr', DllStructGetPtr($lBuffStruct), 'int', DllStructGetSize($lBuffStruct), 'int', '')
-				If (DllStructGetData($lBuffStruct, 'SkillID') == $aSkillID) And (DllStructGetData($lBuffStruct, 'TargetId') == ConvertID($aAgentID)) Then
-;~ 					out(DllStructGetData($lBuffStruct, 'BuffId'))
-					Return SendPacket(0x8, $HEADER_BUFF_DROP, DllStructGetData($lBuffStruct, 'BuffId'))
-					ExitLoop 2
-				EndIf
-			Next
-		EndIf
-	Next
+    Local $lBuffCount = GetBuffCount($aHeroNumber)
+    Local $lBuffStructAddress
+    Local $lOffset[4]
+    $lOffset[0] = 0
+    $lOffset[1] = 0x18
+    $lOffset[2] = 0x2C
+    $lOffset[3] = 0x510
+    Local $lCount = MemoryReadPtr($mBasePointer, $lOffset)
+    ReDim $lOffset[5]
+    $lOffset[3] = 0x508
+    Local $lBuffer
+
+    For $i = 0 To $lCount[1] - 1
+        $lOffset[4] = 0x24 * $i
+        $lBuffer = MemoryReadPtr($mBasePointer, $lOffset)
+        If $lBuffer[1] == GetHeroID($aHeroNumber) Then
+            $lOffset[4] = 0x4 + 0x24 * $i
+            ReDim $lOffset[6]
+            For $j = 0 To $lBuffCount - 1
+                $lOffset[5] = 0 + 0x10 * $j
+                $lBuffStructAddress = MemoryReadPtr($mBasePointer, $lOffset)
+                DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lBuffStructAddress[0], 'ptr', DllStructGetPtr($g_BuffStruct), 'int', DllStructGetSize($g_BuffStruct), 'int', '')
+
+                If (DllStructGetData($g_BuffStruct, 'SkillID') == $aSkillID) And (DllStructGetData($g_BuffStruct, 'TargetId') == ConvertID($aAgentID)) Then
+                    Return SendPacket(0x8, $HEADER_BUFF_DROP, DllStructGetData($g_BuffStruct, 'BuffId'))
+                    ExitLoop 2
+                EndIf
+            Next
+        EndIf
+    Next
 EndFunc   ;==>DropBuff
 
 ;~ Description: Take a screenshot.
@@ -3180,82 +3199,76 @@ EndFunc   ;==>GetCanPickUp
 
 ;~ Description: Returns struct of an inventory bag.
 Func GetBag($aBag)
-	Local $lOffset[5] = [0, 0x18, 0x40, 0xF8, 0x4 * $aBag]
-;~ 	Local $lBagStruct = DllStructCreate('long TypeBag;long index;long id;ptr containerItem;long ItemsCount;ptr bagArray;ptr itemArray;long fakeSlots;long slots')
-	Local $lBagStruct = DllStructCreate('long TypeBag;long index;long unknown1;ptr containerItem;long ItemsCount;ptr bagArray;ptr itemArray')
-	Local $lBagPtr = MemoryReadPtr($mBasePointer, $lOffset)
-	If $lBagPtr[1] = 0 Then Return
-	DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lBagPtr[1], 'ptr', DllStructGetPtr($lBagStruct), 'int', DllStructGetSize($lBagStruct), 'int', '')
-	Return $lBagStruct
+    Local $lOffset[5] = [0, 0x18, 0x40, 0xF8, 0x4 * $aBag]
+    Local $lBagPtr = MemoryReadPtr($mBasePointer, $lOffset)
+
+    If $lBagPtr[1] = 0 Then Return
+
+    DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lBagPtr[1], 'ptr', DllStructGetPtr($g_BagStruct), 'int', DllStructGetSize($g_BagStruct), 'int', '')
+
+    Return $g_BagStruct
 EndFunc   ;==>GetBag
 
 ;~ Description: Returns item by slot.
 Func GetItemBySlot($aBag, $aSlot)
-	Local $lBag
+    Local $lBag
 
-	If IsDllStruct($aBag) = 0 Then
-		$lBag = GetBag($aBag)
-	Else
-		$lBag = $aBag
-	EndIf
+    If IsDllStruct($aBag) = 0 Then
+        $lBag = GetBag($aBag)
+    Else
+        $lBag = $aBag
+    EndIf
 
-	Local $lItemPtr = DllStructGetData($lBag, 'ItemArray')
-	Local $lBuffer = DllStructCreate('ptr')
-;~ 	Local $lItemStruct = DllStructCreate('long Id;long AgentId;byte Unknown1[4];ptr Bag;ptr ModStruct;long ModStructSize;ptr Customized;byte unknown2[4];byte Type;byte unknown4;short ExtraId;short Value;byte unknown4[2];short Interaction;long ModelId;ptr ModString;byte unknown5[4];ptr NameString;ptr SingleItemName;byte Unknown4[10];byte IsSalvageable;byte Unknown6;byte Quantity;byte Equiped;byte Profession;byte Type2;byte Slot')
-	Local $lItemStruct = DllStructCreate('long Id;long AgentId;ptr BagEquiped;ptr Bag;ptr ModStruct;long ModStructSize;ptr Customized;long ModelFileID;byte Type;byte Dye[3];short Value;short Unknown1;long Interaction;long ModelId;ptr InfoString;ptr NameEnc;ptr CompleteNameEnc;ptr SingleItemName;long Unknown2[2];short ItemFormula;byte IsMaterialSalvageable;byte Unknown3;short Quantity;byte Equiped;byte Profession;byte Slot')
+    Local $lItemPtr = DllStructGetData($lBag, 'ItemArray')
+    Local $lBuffer = DllStructCreate('ptr')
 
-	DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', DllStructGetData($lBag, 'ItemArray') + 4 * ($aSlot - 1), 'ptr', DllStructGetPtr($lBuffer), 'int', DllStructGetSize($lBuffer), 'int', '')
-	DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', DllStructGetData($lBuffer, 1), 'ptr', DllStructGetPtr($lItemStruct), 'int', DllStructGetSize($lItemStruct), 'int', '')
-	Return $lItemStruct
+    DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', DllStructGetData($lBag, 'ItemArray') + 4 * ($aSlot - 1), 'ptr', DllStructGetPtr($lBuffer), 'int', DllStructGetSize($lBuffer), 'int', '')
+    DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', DllStructGetData($lBuffer, 1), 'ptr', DllStructGetPtr($g_ItemStruct), 'int', DllStructGetSize($g_ItemStruct), 'int', '')
+
+    Return $g_ItemStruct
 EndFunc   ;==>GetItemBySlot
 
 ;~ Description: Returns item by agent ID.
 Func GetItemByAgentID($aAgentID)
-;~ 	Local $lItemStruct = DllStructCreate('long Id;long AgentId;byte Unknown1[4];ptr Bag;ptr ModStruct;long ModStructSize;ptr Customized;byte unknown2[4];byte Type;byte unknown4;short ExtraId;short Value;byte unknown4[2];short Interaction;long ModelId;ptr ModString;byte unknown5[4];ptr NameString;ptr SingleItemName;byte Unknown4[10];byte IsSalvageable;byte Unknown6;byte Quantity;byte Equiped;byte Profession;byte Type2;byte Slot')
-	Local $lItemStruct = DllStructCreate('long Id;long AgentId;ptr BagEquiped;ptr Bag;ptr ModStruct;long ModStructSize;ptr Customized;long ModelFileID;byte Type;byte Dye[3];short Value;short Unknown1;long Interaction;long ModelId;ptr InfoString;ptr NameEnc;ptr CompleteNameEnc;ptr SingleItemName;long Unknown2[2];short ItemFormula;byte IsMaterialSalvageable;byte Unknown3;short Quantity;byte Equiped;byte Profession;byte Slot')
-	Local $lOffset[4] = [0, 0x18, 0x40, 0xC0]
-	Local $lItemArraySize = MemoryReadPtr($mBasePointer, $lOffset)
-	Local $lOffset[5] = [0, 0x18, 0x40, 0xB8, 0]
-	Local $lItemPtr, $lItemID
-	Local $lAgentID = ConvertID($aAgentID)
+    Local $lOffset[4] = [0, 0x18, 0x40, 0xC0]
+    Local $lItemArraySize = MemoryReadPtr($mBasePointer, $lOffset)
+    Local $lOffset[5] = [0, 0x18, 0x40, 0xB8, 0]
+    Local $lItemPtr, $lItemID
+    Local $lAgentID = ConvertID($aAgentID)
 
-	For $lItemID = 1 To $lItemArraySize[1]
-		$lOffset[4] = 0x4 * $lItemID
-		$lItemPtr = MemoryReadPtr($mBasePointer, $lOffset)
-		If $lItemPtr[1] = 0 Then ContinueLoop
+    For $lItemID = 1 To $lItemArraySize[1]
+        $lOffset[4] = 0x4 * $lItemID
+        $lItemPtr = MemoryReadPtr($mBasePointer, $lOffset)
+        If $lItemPtr[1] = 0 Then ContinueLoop
 
-		DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lItemPtr[1], 'ptr', DllStructGetPtr($lItemStruct), 'int', DllStructGetSize($lItemStruct), 'int', '')
-		If DllStructGetData($lItemStruct, 'AgentID') = $lAgentID Then Return $lItemStruct
-	Next
+        DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lItemPtr[1], 'ptr', DllStructGetPtr($g_ItemStruct), 'int', DllStructGetSize($g_ItemStruct), 'int', '')
+        If DllStructGetData($g_ItemStruct, 'AgentID') = $lAgentID Then Return $g_ItemStruct
+    Next
 EndFunc   ;==>GetItemByAgentID
 
 ;~ Description: Returns item by model ID.
 Func GetItemByModelID($aModelID)
-;~ 	Local $lItemStruct = DllStructCreate('long Id;long AgentId;byte Unknown1[4];ptr Bag;ptr ModStruct;long ModStructSize;ptr Customized;byte unknown2[4];byte Type;byte unknown4;short ExtraId;short Value;byte unknown4[2];short Interaction;long ModelId;ptr ModString;byte unknown5[4];ptr NameString;ptr SingleItemName;byte Unknown4[10];byte IsSalvageable;byte Unknown6;byte Quantity;byte Equiped;byte Profession;byte Type2;byte Slot')
-	Local $lItemStruct = DllStructCreate('long Id;long AgentId;ptr BagEquiped;ptr Bag;ptr ModStruct;long ModStructSize;ptr Customized;long ModelFileID;byte Type;byte Dye[3];short Value;short Unknown1;long Interaction;long ModelId;ptr InfoString;ptr NameEnc;ptr CompleteNameEnc;ptr SingleItemName;long Unknown2[2];short ItemFormula;byte IsMaterialSalvageable;byte Unknown3;short Quantity;byte Equiped;byte Profession;byte Slot')
-	Local $lOffset[4] = [0, 0x18, 0x40, 0xC0]
-	Local $lItemArraySize = MemoryReadPtr($mBasePointer, $lOffset)
-	Local $lOffset[5] = [0, 0x18, 0x40, 0xB8, 0]
-	Local $lItemPtr, $lItemID
+    Local $lOffset[4] = [0, 0x18, 0x40, 0xC0]
+    Local $lItemArraySize = MemoryReadPtr($mBasePointer, $lOffset)
+    Local $lOffset[5] = [0, 0x18, 0x40, 0xB8, 0]
+    Local $lItemPtr, $lItemID
 
-	For $lItemID = 1 To $lItemArraySize[1]
-		$lOffset[4] = 0x4 * $lItemID
-		$lItemPtr = MemoryReadPtr($mBasePointer, $lOffset)
-		If $lItemPtr[1] = 0 Then ContinueLoop
+    For $lItemID = 1 To $lItemArraySize[1]
+        $lOffset[4] = 0x4 * $lItemID
+        $lItemPtr = MemoryReadPtr($mBasePointer, $lOffset)
+        If $lItemPtr[1] = 0 Then ContinueLoop
 
-		DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lItemPtr[1], 'ptr', DllStructGetPtr($lItemStruct), 'int', DllStructGetSize($lItemStruct), 'int', '')
-		If DllStructGetData($lItemStruct, 'ModelID') = $aModelID Then Return $lItemStruct
-	Next
+        DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lItemPtr[1], 'ptr', DllStructGetPtr($g_ItemStruct), 'int', DllStructGetSize($g_ItemStruct), 'int', '')
+        If DllStructGetData($g_ItemStruct, 'ModelID') = $aModelID Then Return $g_ItemStruct
+    Next
 EndFunc   ;==>GetItemByModelID
 
 ;~ Description: Returns item struct.
 Func GetItemByItemID($aItemID)
-;~ 	Local $lItemStruct = DllStructCreate('long Id;long AgentId;byte Unknown1[4];ptr Bag;ptr ModStruct;long ModStructSize;ptr Customized;byte unknown2[4];byte Type;byte unknown4;short ExtraId;short Value;byte unknown4[2];short Interaction;long ModelId;ptr ModString;byte unknown5[4];ptr NameString;ptr SingleItemName;byte Unknown4[10];byte IsSalvageable;byte Unknown6;byte Quantity;byte Equiped;byte Profession;byte Type2;byte Slot')
-	Local $lItemStruct = DllStructCreate('long Id;long AgentId;ptr BagEquiped;ptr Bag;ptr ModStruct;long ModStructSize;ptr Customized;long ModelFileID;byte Type;byte Dye[3];short Value;short Unknown1;long Interaction;long ModelId;ptr InfoString;ptr NameEnc;ptr CompleteNameEnc;ptr SingleItemName;long Unknown2[2];short ItemFormula;byte IsMaterialSalvageable;byte Unknown3;short Quantity;byte Equiped;byte Profession;byte Slot')
-	Local $lOffset[5] = [0, 0x18, 0x40, 0xB8, 0x4 * $aItemID]
-	Local $lItemPtr = MemoryReadPtr($mBasePointer, $lOffset)
-	DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lItemPtr[1], 'ptr', DllStructGetPtr($lItemStruct), 'int', DllStructGetSize($lItemStruct), 'int', '')
-	Return $lItemStruct
+    Local $lOffset[5] = [0, 0x18, 0x40, 0xB8, 0x4 * $aItemID]
+    Local $lItemPtr = MemoryReadPtr($mBasePointer, $lOffset)
+    DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lItemPtr[1], 'ptr', DllStructGetPtr($g_ItemStruct), 'int', DllStructGetSize($g_ItemStruct), 'int', '')
+    Return $g_ItemStruct
 EndFunc   ;==>GetItemByItemID
 
 ;~ Description: Returns the nearest item by model ID to an agent.
@@ -3486,13 +3499,13 @@ EndFunc   ;==>GetIsHeroSkillSlotDisabled
 #Region Agent
 ;~ Description: Returns an agent struct.
 Func GetAgentByID($aAgentID = -2)
-	;returns dll struct if successful
 	Local $lAgentPtr = GetAgentPtr($aAgentID)
+
 	If $lAgentPtr = 0 Then Return 0
-;~ 	Local $lAgentStruct = DllStructCreate('ptr vtable;byte unknown1[24];byte unknown2[4];ptr NextAgent;byte unknown3[8];long Id;float Z;byte unknown4[8];float BoxHoverWidth;float BoxHoverHeight;byte unknown5[8];float Rotation;byte unknown6[8];long NameProperties;byte unknown7[24];float X;float Y;byte unknown8[8];float NameTagX;float NameTagY;float NameTagZ;byte unknown9[12];long Type;float MoveX;float MoveY;byte unknown10[28];long Owner;byte unknown30[8];long ExtraType;byte unknown11[24];float AttackSpeed;float AttackSpeedModifier;word PlayerNumber;byte unknown12[6];ptr Equip;byte unknown13[10];byte Primary;byte Secondary;byte Level;byte Team;byte unknown14[6];float EnergyPips;byte unknown[4];float EnergyPercent;long MaxEnergy;byte unknown15[4];float HPPips;byte unknown16[4];float HP;long MaxHP;long Effects;byte unknown17[4];byte Hex;byte unknown18[18];long ModelState;long TypeMap;byte unknown19[16];long InSpiritRange;byte unknown20[16];long LoginNumber;float ModelMode;byte unknown21[4];long ModelAnimation;byte unknown22[32];byte LastStrike;byte Allegiance;word WeaponType;word Skill;byte unknown23[4];word WeaponItemId;word OffhandItemId')
-	Local $lAgentStruct = DllStructCreate('ptr vtable;dword h0004[4];dword timer;dword timer2;dword h0018[4];long Id;float Z;float width1;float height1;float width2;float height2;float width3;float height3;float Rotation;float rotation_cos;float rotation_sin;dword NameProperties;dword ground;dword h0060;float terrain_normal_x;float terrain_normal_y;dword terrain_normal_z;byte h0070[4];float X;float Y;dword plane;byte h0080[4];float NameTagX;float NameTagY;float NameTagZ;short visual_effects;short h0092;dword h0094[2];long Type;float MoveX;float MoveY;dword h00A8;float rotation_cos2;float rotation_sin2;dword h00B4[4];long Owner;dword ItemID;dword ExtraType;dword GadgetID;dword h00D4[3];float animation_type;dword h00E4[2];float AttackSpeed;float AttackSpeedModifier;short PlayerNumber;short agent_model_type;dword transmog_npc_id;ptr Equip;dword h0100;ptr tags;short h0108;byte Primary;byte Secondary;byte Level;byte Team;byte h010E[2];dword h0110;float energy_regen;float overcast;float EnergyPercent;dword MaxEnergy;dword h0124;float HPPips;dword h012C;float HP;dword MaxHP;dword Effects;dword h013C;byte Hex;byte h0141[19];dword ModelState;dword TypeMap;dword h015C[4];dword InSpiritRange;dword visible_effects;dword visible_effects_ID;dword visible_effects_has_ended;dword h017C;dword LoginNumber;float animation_speed;dword animation_code;dword animation_id;byte h0190[32];byte LastStrike;byte Allegiance;short WeaponType;short Skill;short h01B6;byte weapon_item_type;byte offhand_item_type;short WeaponItemId;short OffhandItemId')
-	DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lAgentPtr, 'ptr', DllStructGetPtr($lAgentStruct), 'int', DllStructGetSize($lAgentStruct), 'int', '')
-	Return $lAgentStruct
+
+	DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lAgentPtr, 'ptr', DllStructGetPtr($g_AgentStruct), 'int', DllStructGetSize($g_AgentStruct), 'int', '')
+
+    Return $g_AgentStruct
 EndFunc   ;==>GetAgentByID
 
 ;~ Description: Internal use for GetAgentByID()
@@ -3846,34 +3859,53 @@ Func CheckIfAnyPartyMembersDead()
 	Return False
 EndFunc   ;==>CheckIfAnyPartyMembersDead
 
-;~ Description: Quickly creates an array of agents of a given type
-Func GetAgentArray($aType = 0)
-	Local $lStruct
-	Local $lCount
-	Local $lBuffer = ''
-	DllStructSetData($mMakeAgentArray, 2, $aType)
-	MemoryWrite($mAgentCopyCount, -1, 'long')
-	Enqueue($mMakeAgentArrayPtr, 8)
-	Local $lDeadlock = TimerInit()
-	Do
-		Sleep(1)
-		$lCount = MemoryRead($mAgentCopyCount, 'long')
-	Until $lCount >= 0 Or TimerDiff($lDeadlock) > 5000
-	If $lCount < 0 Then $lCount = 0
-	For $i = 1 To $lCount
-		$lBuffer &= 'Byte[448];'
-	Next
-	$lBuffer = DllStructCreate($lBuffer)
-	DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $mAgentCopyBase, 'ptr', DllStructGetPtr($lBuffer), 'int', DllStructGetSize($lBuffer), 'int', '')
-	Local $lReturnArray[$lCount + 1] = [$lCount]
-	For $i = 1 To $lCount
-;~ 		$lReturnArray[$i] = DllStructCreate('ptr vtable;byte unknown1[24];byte unknown2[4];ptr NextAgent;byte unknown3[8];long Id;float Z;byte unknown4[8];float BoxHoverWidth;float BoxHoverHeight;byte unknown5[8];float Rotation;byte unknown6[8];long NameProperties;byte unknown7[24];float X;float Y;byte unknown8[8];float NameTagX;float NameTagY;float NameTagZ;byte unknown9[12];long Type;float MoveX;float MoveY;byte unknown10[28];long Owner;byte unknown30[8];long ExtraType;byte unknown11[24];float AttackSpeed;float AttackSpeedModifier;word PlayerNumber;byte unknown12[6];ptr Equip;byte unknown13[10];byte Primary;byte Secondary;byte Level;byte Team;byte unknown14[6];float EnergyPips;byte unknown[4];float EnergyPercent;long MaxEnergy;byte unknown15[4];float HPPips;byte unknown16[4];float HP;long MaxHP;long Effects;byte unknown17[4];byte Hex;byte unknown18[18];long ModelState;long TypeMap;byte unknown19[16];long InSpiritRange;byte unknown20[16];long LoginNumber;float ModelMode;byte unknown21[4];long ModelAnimation;byte unknown22[32];byte LastStrike;byte Allegiance;word WeaponType;word Skill;byte unknown23[4];word WeaponItemId;word OffhandItemId')
-		$lReturnArray[$i] = DllStructCreate('ptr vtable;dword h0004[4];dword timer;dword timer2;dword h0018[4];long Id;float Z;float width1;float height1;float width2;float height2;float width3;float height3;float Rotation;float rotation_cos;float rotation_sin;dword NameProperties;dword ground;dword h0060;float terrain_normal_x;float terrain_normal_y;dword terrain_normal_z;byte h0070[4];float X;float Y;dword plane;byte h0080[4];float NameTagX;float NameTagY;float NameTagZ;short visual_effects;short h0092;dword h0094[2];long Type;float MoveX;float MoveY;dword h00A8;float rotation_cos2;float rotation_sin2;dword h00B4[4];long Owner;dword ItemID;dword ExtraType;dword GadgetID;dword h00D4[3];float animation_type;dword h00E4[2];float AttackSpeed;float AttackSpeedModifier;short PlayerNumber;short agent_model_type;dword transmog_npc_id;ptr Equip;dword h0100;ptr tags;short h0108;byte Primary;byte Secondary;byte Level;byte Team;byte h010E[2];dword h0110;float energy_regen;float overcast;float EnergyPercent;dword MaxEnergy;dword h0124;float HPPips;dword h012C;float HP;dword MaxHP;dword Effects;dword h013C;byte Hex;byte h0141[19];dword ModelState;dword TypeMap;dword h015C[4];dword InSpiritRange;dword visible_effects;dword visible_effects_ID;dword visible_effects_has_ended;dword h017C;dword LoginNumber;float animation_speed;dword animation_code;dword animation_id;byte h0190[32];byte LastStrike;byte Allegiance;short WeaponType;short Skill;short h01B6;byte weapon_item_type;byte offhand_item_type;short WeaponItemId;short OffhandItemId')
-		$lStruct = DllStructCreate('byte[448]', DllStructGetPtr($lReturnArray[$i]))
-		DllStructSetData($lStruct, 1, DllStructGetData($lBuffer, $i))
-	Next
-	Return $lReturnArray
-EndFunc   ;==>GetAgentArray
+;~ Description: Quickly creates an array of agents of a given type and allegiance.
+Func GetAgentArray($aType = 0xDB, $aAllegiance = 0)
+    If $mAgentArray = 0 Then Return 0
+
+    Local $lArrayBuffer = MemoryRead($mAgentArray)    ; m_buffer
+    Local $lArraySize = MemoryRead($mAgentArray + 8)  ; m_size
+
+    Local $lAgentCount = 0
+    Local $lTempIDs[$lArraySize]
+
+    For $i = 0 To $lArraySize - 1
+        Local $lAgentID = $i + 1
+        Local $lAgentPtr = GetAgentPtr($lAgentID)
+
+        If $lAgentPtr <> 0 Then
+            Local $lAdd = True
+
+            If $aType <> 0 Then
+                Local $lAgent = GetAgentByID($lAgentID)
+                If DllStructGetData($lAgent, 'Type') <> $aType Then
+                    $lAdd = False
+                EndIf
+            EndIf
+
+            If $aAllegiance <> 0 And $lAdd Then
+                Local $lAgent = GetAgentByID($lAgentID)
+                If DllStructGetData($lAgent, 'Allegiance') <> $aAllegiance Then
+                    $lAdd = False
+                EndIf
+            EndIf
+
+            If $lAdd Then
+                $lTempIDs[$lAgentCount] = $lAgentID
+                $lAgentCount += 1
+            EndIf
+        EndIf
+    Next
+
+    Local $lReturnArray[$lAgentCount + 1]
+    $lReturnArray[0] = $lAgentCount
+
+    For $i = 1 To $lAgentCount
+        $lReturnArray[$i] = GetAgentByID($lTempIDs[$i-1])
+    Next
+
+    Return $lReturnArray
+EndFunc
 
 Func GetIsHardMode()
 	Return GetPartyState(0x10)
@@ -4130,81 +4162,87 @@ EndFunc   ;==>GetBuffCount
 
 ;~ Description: Tests if you are currently maintaining buff on target.
 Func GetIsTargetBuffed($aSkillID, $aAgentID, $aHeroNumber = 0)
-	Local $lBuffStruct = DllStructCreate('long SkillId;long unknown1;long BuffId;long TargetId')
-	Local $lBuffCount = GetBuffCount($aHeroNumber)
-	Local $lBuffStructAddress
-	Local $lOffset[4]
-	$lOffset[0] = 0
-	$lOffset[1] = 0x18
-	$lOffset[2] = 0x2C
-	$lOffset[3] = 0x510
-	Local $lCount = MemoryReadPtr($mBasePointer, $lOffset)
-	ReDim $lOffset[5]
-	$lOffset[3] = 0x508
-	Local $lBuffer
-	For $i = 0 To $lCount[1] - 1
-		$lOffset[4] = 0x24 * $i
-		$lBuffer = MemoryReadPtr($mBasePointer, $lOffset)
-		If $lBuffer[1] == GetHeroID($aHeroNumber) Then
-			$lOffset[4] = 0x4 + 0x24 * $i
-			ReDim $lOffset[6]
-			For $j = 0 To $lBuffCount - 1
-				$lOffset[5] = 0 + 0x10 * $j
-				$lBuffStructAddress = MemoryReadPtr($mBasePointer, $lOffset)
-				DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lBuffStructAddress[0], 'ptr', DllStructGetPtr($lBuffStruct), 'int', DllStructGetSize($lBuffStruct), 'int', '')
-				If (DllStructGetData($lBuffStruct, 'SkillID') == $aSkillID) And (DllStructGetData($lBuffStruct, 'TargetId') == ConvertID($aAgentID)) Then
-					Return $j + 1
-				EndIf
-			Next
-		EndIf
-	Next
-	Return 0
+    Local $lBuffCount = GetBuffCount($aHeroNumber)
+    Local $lBuffStructAddress
+    Local $lOffset[4]
+    $lOffset[0] = 0
+    $lOffset[1] = 0x18
+    $lOffset[2] = 0x2C
+    $lOffset[3] = 0x510
+    Local $lCount = MemoryReadPtr($mBasePointer, $lOffset)
+    ReDim $lOffset[5]
+    $lOffset[3] = 0x508
+    Local $lBuffer
+
+    For $i = 0 To $lCount[1] - 1
+        $lOffset[4] = 0x24 * $i
+        $lBuffer = MemoryReadPtr($mBasePointer, $lOffset)
+        If $lBuffer[1] == GetHeroID($aHeroNumber) Then
+            $lOffset[4] = 0x4 + 0x24 * $i
+            ReDim $lOffset[6]
+            For $j = 0 To $lBuffCount - 1
+                $lOffset[5] = 0 + 0x10 * $j
+                $lBuffStructAddress = MemoryReadPtr($mBasePointer, $lOffset)
+                DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lBuffStructAddress[0], 'ptr', DllStructGetPtr($g_BuffStruct), 'int', DllStructGetSize($g_BuffStruct), 'int', '')
+
+                If (DllStructGetData($g_BuffStruct, 'SkillID') == $aSkillID) And (DllStructGetData($g_BuffStruct, 'TargetId') == ConvertID($aAgentID)) Then
+                    Return $j + 1
+                EndIf
+            Next
+        EndIf
+    Next
+
+    Return 0
 EndFunc   ;==>GetIsTargetBuffed
 
 ;~ Description: Returns buff struct.
 Func GetBuffByIndex($aBuffNumber, $aHeroNumber = 0)
-	Local $lBuffStruct = DllStructCreate('long SkillId;long unknown1;long BuffId;long TargetId')
-	Local $lOffset[4]
-	$lOffset[0] = 0
-	$lOffset[1] = 0x18
-	$lOffset[2] = 0x2C
-	$lOffset[3] = 0x510
-	Local $lCount = MemoryReadPtr($mBasePointer, $lOffset)
-	ReDim $lOffset[5]
-	$lOffset[3] = 0x508
-	Local $lBuffer
-	For $i = 0 To $lCount[1] - 1
-		$lOffset[4] = 0x24 * $i
-		$lBuffer = MemoryReadPtr($mBasePointer, $lOffset)
-		If $lBuffer[1] == GetHeroID($aHeroNumber) Then
-			$lOffset[4] = 0x4 + 0x24 * $i
-			ReDim $lOffset[6]
-			$lOffset[5] = 0 + 0x10 * ($aBuffNumber - 1)
-			$lBuffStructAddress = MemoryReadPtr($mBasePointer, $lOffset)
-			DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lBuffStructAddress[0], 'ptr', DllStructGetPtr($lBuffStruct), 'int', DllStructGetSize($lBuffStruct), 'int', '')
-			Return $lBuffStruct
-		EndIf
-	Next
-	Return 0
+    Local $lOffset[4]
+    $lOffset[0] = 0
+    $lOffset[1] = 0x18
+    $lOffset[2] = 0x2C
+    $lOffset[3] = 0x510
+    Local $lCount = MemoryReadPtr($mBasePointer, $lOffset)
+    ReDim $lOffset[5]
+    $lOffset[3] = 0x508
+    Local $lBuffer
+
+    For $i = 0 To $lCount[1] - 1
+        $lOffset[4] = 0x24 * $i
+        $lBuffer = MemoryReadPtr($mBasePointer, $lOffset)
+        If $lBuffer[1] == GetHeroID($aHeroNumber) Then
+            $lOffset[4] = 0x4 + 0x24 * $i
+            ReDim $lOffset[6]
+            $lOffset[5] = 0 + 0x10 * ($aBuffNumber - 1)
+            $lBuffStructAddress = MemoryReadPtr($mBasePointer, $lOffset)
+            DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lBuffStructAddress[0], 'ptr', DllStructGetPtr($g_BuffStruct), 'int', DllStructGetSize($g_BuffStruct), 'int', '')
+
+            Return $g_BuffStruct
+        EndIf
+    Next
+
+    Return 0
 EndFunc   ;==>GetBuffByIndex
 #EndRegion Buff
 
 #Region Misc
 ;~ Description: Returns skillbar struct.
 Func GetSkillbar($aHeroNumber = 0)
-;~ 	Local $lSkillbarStruct = DllStructCreate('long AgentId;long AdrenalineA1;long AdrenalineB1;dword Recharge1;dword Id1;dword Event1;long AdrenalineA2;long AdrenalineB2;dword Recharge2;dword Id2;dword Event2;long AdrenalineA3;long AdrenalineB3;dword Recharge3;dword Id3;dword Event3;long AdrenalineA4;long AdrenalineB4;dword Recharge4;dword Id4;dword Event4;long AdrenalineA5;long AdrenalineB5;dword Recharge5;dword Id5;dword Event5;long AdrenalineA6;long AdrenalineB6;dword Recharge6;dword Id6;dword Event6;long AdrenalineA7;long AdrenalineB7;dword Recharge7;dword Id7;dword Event7;long AdrenalineA8;long AdrenalineB8;dword Recharge8;dword Id8;dword Event8;dword disabled;byte unknown[8];dword Casting')
-	Local $lSkillbarStruct = DllStructCreate('long AgentId;long AdrenalineA1;long AdrenalineB1;dword Recharge1;dword Id1;dword Event1;long AdrenalineA2;long AdrenalineB2;dword Recharge2;dword Id2;dword Event2;long AdrenalineA3;long AdrenalineB3;dword Recharge3;dword Id3;dword Event3;long AdrenalineA4;long AdrenalineB4;dword Recharge4;dword Id4;dword Event4;long AdrenalineA5;long AdrenalineB5;dword Recharge5;dword Id5;dword Event5;long AdrenalineA6;long AdrenalineB6;dword Recharge6;dword Id6;dword Event6;long AdrenalineA7;long AdrenalineB7;dword Recharge7;dword Id7;dword Event7;long AdrenalineA8;long AdrenalineB8;dword Recharge8;dword Id8;dword Event8;dword disabled;long unknown1[2];dword Casting;long unknown2[2]')
-	Local $lOffset[5]
-	$lOffset[0] = 0
-	$lOffset[1] = 0x18
-	$lOffset[2] = 0x2C
-	$lOffset[3] = 0x6F0
-	For $i = 0 To GetHeroCount()
-		$lOffset[4] = $i * 0xBC
-		Local $lSkillbarStructAddress = MemoryReadPtr($mBasePointer, $lOffset)
-		DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lSkillbarStructAddress[0], 'ptr', DllStructGetPtr($lSkillbarStruct), 'int', DllStructGetSize($lSkillbarStruct), 'int', '')
-		If DllStructGetData($lSkillbarStruct, 'AgentId') == GetHeroID($aHeroNumber) Then Return $lSkillbarStruct
-	Next
+    Local $lOffset[5]
+    $lOffset[0] = 0
+    $lOffset[1] = 0x18
+    $lOffset[2] = 0x2C
+    $lOffset[3] = 0x6F0
+
+    For $i = 0 To GetHeroCount()
+        $lOffset[4] = $i * 0xBC
+        Local $lSkillbarStructAddress = MemoryReadPtr($mBasePointer, $lOffset)
+        DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lSkillbarStructAddress[0], 'ptr', DllStructGetPtr($g_SkillbarStruct), 'int', DllStructGetSize($g_SkillbarStruct), 'int', '')
+
+        If DllStructGetData($g_SkillbarStruct, 'AgentId') == GetHeroID($aHeroNumber) Then
+            Return $g_SkillbarStruct
+        EndIf
+    Next
 EndFunc   ;==>GetSkillbar
 
 ;~ Description: Returns the skill ID of an equipped skill.
@@ -4226,11 +4264,11 @@ EndFunc   ;==>GetSkillbarSkillRecharge
 
 ;~ Description: Returns skill struct.
 Func GetSkillByID($aSkillID)
-;~ 	Local $lSkillStruct = DllStructCreate('long ID;byte Unknown1[4];long campaign;long Type;long Special;long ComboReq;long Effect1;long Condition;long Effect2;long WeaponReq;byte Profession;byte Attribute;byte Unknown2[2];long PvPID;byte Combo;byte Target;byte unknown3;byte EquipType;byte Unknown4[4];dword Adrenaline;float Activation;float Aftercast;long Duration0;long Duration15;long Recharge;byte Unknown5[12];long Scale0;long Scale15;long BonusScale0;long BonusScale15;float AoERange;float ConstEffect;byte unknown6[44]')
-	Local $lSkillStruct = DllStructCreate('long ID;long Unknown1;long campaign;long Type;long Special;long ComboReq;long Effect1;long Condition;long Effect2;long WeaponReq;byte Profession;byte Attribute;short Title;long PvPID;byte Combo;byte Target;byte unknown3;byte EquipType;byte Overcast;byte EnergyCost;byte HealthCost;byte unknown4;dword Adrenaline;float Activation;float Aftercast;long Duration0;long Duration15;long Recharge;long Unknown5[4];dword SkillArguments;long Scale0;long Scale15;long BonusScale0;long BonusScale15;float AoERange;float ConstEffect;dword caster_overhead_animation_id;dword caster_body_animation_id;dword target_body_animation_id;dword target_overhead_animation_id;dword projectile_animation_1_id;dword projectile_animation_2_id;dword icon_file_id;dword icon_file_id_2;dword name;dword concise;dword description')
-	Local $lSkillStructAddress = $mSkillBase + 160 * $aSkillID
-	DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lSkillStructAddress, 'ptr', DllStructGetPtr($lSkillStruct), 'int', DllStructGetSize($lSkillStruct), 'int', '')
-	Return $lSkillStruct
+    Local $lSkillStructAddress = $mSkillBase + (160 * $aSkillID)
+
+    DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lSkillStructAddress, 'ptr', DllStructGetPtr($g_SkillStruct), 'int', DllStructGetSize($g_SkillStruct), 'int', '')
+
+	Return $g_SkillStruct
 EndFunc   ;==>GetSkillByID
 
 ;~ Description: Returns current morale.
@@ -4255,10 +4293,9 @@ EndFunc   ;==>GetMorale
 
 ;~ Description: Returns Attribute struct.
 Func GetAttributeInfoByID($aAttributeID)
-    Local $lAttributeStruct = DllStructCreate('dword profession_id;dword attribute_id;dword name_id;dword desc_id;dword is_pve')
     Local $lAttributeStructAddress = $mAttributeInfo + (0x14 * $aAttributeID)
-    DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lAttributeStructAddress, 'ptr', DllStructGetPtr($lAttributeStruct), 'int', DllStructGetSize($lAttributeStruct), 'int', '')
-    Return $lAttributeStruct
+    DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lAttributeStructAddress, 'ptr', DllStructGetPtr($g_AttributeStruct), 'int', DllStructGetSize($g_AttributeStruct), 'int', '')
+    Return $g_AttributeStruct
 EndFunc   ;==>GetAttributeInfoByID
 
 Func GetAttributeProfession($aAttributeID)
@@ -4279,51 +4316,54 @@ EndFunc
 #Region Effects
 ;~ Description: Returns effect struct or array of effects.
 Func GetEffect($aSkillID = 0, $aHeroNumber = 0)
-	Local $lEffectCount, $lEffectStructAddress
-	Local $lReturnArray[1] = [0]
+    Local $lEffectCount, $lEffectStructAddress
+    Local $lReturnArray[1] = [0]
 
-	Local $lOffset[4]
-	$lOffset[0] = 0
-	$lOffset[1] = 0x18
-	$lOffset[2] = 0x2C
-	$lOffset[3] = 0x510
-	Local $lCount = MemoryReadPtr($mBasePointer, $lOffset)
-	ReDim $lOffset[5]
-	$lOffset[3] = 0x508
-	Local $lBuffer
-	For $i = 0 To $lCount[1] - 1
-		$lOffset[4] = 0x24 * $i
-		$lBuffer = MemoryReadPtr($mBasePointer, $lOffset)
-		If $lBuffer[1] == GetHeroID($aHeroNumber) Then
-			$lOffset[4] = 0x1C + 0x24 * $i
-			$lEffectCount = MemoryReadPtr($mBasePointer, $lOffset)
-			ReDim $lOffset[6]
-			$lOffset[4] = 0x14 + 0x24 * $i
-			$lOffset[5] = 0
-			$lEffectStructAddress = MemoryReadPtr($mBasePointer, $lOffset)
+    Local $lOffset[4]
+    $lOffset[0] = 0
+    $lOffset[1] = 0x18
+    $lOffset[2] = 0x2C
+    $lOffset[3] = 0x510
+    Local $lCount = MemoryReadPtr($mBasePointer, $lOffset)
+    ReDim $lOffset[5]
+    $lOffset[3] = 0x508
+    Local $lBuffer
 
-			If $aSkillID = 0 Then
-				ReDim $lReturnArray[$lEffectCount[1] + 1]
-				$lReturnArray[0] = $lEffectCount[1]
+    For $i = 0 To $lCount[1] - 1
+        $lOffset[4] = 0x24 * $i
+        $lBuffer = MemoryReadPtr($mBasePointer, $lOffset)
+        If $lBuffer[1] == GetHeroID($aHeroNumber) Then
+            $lOffset[4] = 0x1C + 0x24 * $i
+            $lEffectCount = MemoryReadPtr($mBasePointer, $lOffset)
+            ReDim $lOffset[6]
+            $lOffset[4] = 0x14 + 0x24 * $i
+            $lOffset[5] = 0
+            $lEffectStructAddress = MemoryReadPtr($mBasePointer, $lOffset)
 
-				For $i = 0 To $lEffectCount[1] - 1
-					$lReturnArray[$i + 1] = DllStructCreate('long SkillId;long AttributeLevel;long EffectId;long AgentId;float Duration;long TimeStamp')
-					$lEffectStructAddress[1] = $lEffectStructAddress[0] + 24 * $i
-					DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lEffectStructAddress[1], 'ptr', DllStructGetPtr($lReturnArray[$i + 1]), 'int', 24, 'int', '')
-				Next
+            If $aSkillID = 0 Then
+                ReDim $lReturnArray[$lEffectCount[1] + 1]
+                $lReturnArray[0] = $lEffectCount[1]
 
-				ExitLoop
-			Else
-				Local $lReturn = DllStructCreate('long SkillId;long AttributeLevel;long EffectId;long AgentId;float Duration;long TimeStamp')
+                For $i = 0 To $lEffectCount[1] - 1
+                    $lReturnArray[$i + 1] = DllStructCreate('long SkillId;long AttributeLevel;long EffectId;long AgentId;float Duration;long TimeStamp')
+                    $lEffectStructAddress[1] = $lEffectStructAddress[0] + 24 * $i
+                    DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lEffectStructAddress[1], 'ptr', DllStructGetPtr($lReturnArray[$i + 1]), 'int', 24, 'int', '')
+                Next
 
-				For $i = 0 To $lEffectCount[1] - 1
-					DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lEffectStructAddress[0] + 24 * $i, 'ptr', DllStructGetPtr($lReturn), 'int', 24, 'int', '')
-					If DllStructGetData($lReturn, 'SkillID') = $aSkillID Then Return $lReturn
-				Next
-			EndIf
-		EndIf
-	Next
-	Return $lReturnArray
+                ExitLoop
+            Else
+                For $i = 0 To $lEffectCount[1] - 1
+                    DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lEffectStructAddress[0] + 24 * $i, 'ptr', DllStructGetPtr($g_EffectStruct), 'int', 24, 'int', '')
+
+                    If DllStructGetData($g_EffectStruct, 'SkillID') = $aSkillID Then
+                        Return $g_EffectStruct
+                    EndIf
+                Next
+            EndIf
+        EndIf
+    Next
+
+    Return $lReturnArray
 EndFunc   ;==>GetEffect
 
 ;~ Description: Returns time remaining before an effect expires, in milliseconds.
@@ -4442,16 +4482,12 @@ Func GetInstanceType()
 EndFunc
 
 Func GetAreaInfoByID($aMapID = 0)
-	If $aMapID = 0 Then $aMapID = GetMapID()
-    Local $lAreaInfo = DllStructCreate("dword campaign;dword continent;dword region;dword regiontype;dword flags;dword thumbnail_id;dword min_party_size;dword max_party_size;dword min_player_size;dword max_player_size;" & _
-    "dword controlled_outpost_id;dword fraction_mission;dword min_level;dword max_level;dword needed_pq;dword mission_maps_to;dword x;dword y;dword icon_start_x;dword icon_start_y;" & _
-    "dword icon_end_x;dword icon_end_y;dword icon_start_x_dupe;dword icon_start_y_dupe;dword icon_end_x_dupe;dword icon_end_y_dupe;dword file_id;dword mission_chronology;dword ha_map_chronology;" & _
-    "dword name_id;dword description_id")
+    If $aMapID = 0 Then $aMapID = GetMapID()
 
     Local $lAreaInfoAddress = $mAreaInfo + (0x7C * $aMapID)
-    DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lAreaInfoAddress, 'ptr', DllStructGetPtr($lAreaInfo), 'int', DllStructGetSize($lAreaInfo), 'int', '')
+    DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lAreaInfoAddress, 'ptr', DllStructGetPtr($g_AreaInfoStruct), 'int', DllStructGetSize($g_AreaInfoStruct), 'int', '')
 
-    Return $lAreaInfo
+    Return $g_AreaInfoStruct
 EndFunc
 
 Func GetMapCampaign($aMapID = 0)
@@ -4497,8 +4533,6 @@ EndFunc   ;==>GetLanguage
 
 ;~ Description: Returns quest struct.
 Func GetQuestByID($aQuestID = 0)
-;~ 	Local $lQuestStruct = DllStructCreate('long id;long LogState;byte unknown1[12];long MapFrom;float X;float Y;byte unknown2[8];long MapTo;long Reward;long Objective')
-	Local $lQuestStruct = DllStructCreate('long id;long LogState;ptr Location;ptr Name;ptr NPC;long MapFrom;float X;float Y;long Z;long unlnown1;long MapTo;ptr Description;ptr Objective')
 	Local $lQuestPtr, $lQuestLogSize, $lQuestID
 	Local $lOffset[4] = [0, 0x18, 0x2C, 0x534]
 
@@ -4518,8 +4552,8 @@ Func GetQuestByID($aQuestID = 0)
 	For $i = 0 To $lQuestLogSize[1]
 		$lOffset[4] = 0x34 * $i
 		$lQuestPtr = MemoryReadPtr($mBasePointer, $lOffset)
-		DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lQuestPtr[0], 'ptr', DllStructGetPtr($lQuestStruct), 'int', DllStructGetSize($lQuestStruct), 'int', '')
-		If DllStructGetData($lQuestStruct, 'ID') = $lQuestID Then Return $lQuestStruct
+		DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lQuestPtr[0], 'ptr', DllStructGetPtr($g_QuestStruct), 'int', DllStructGetSize($g_QuestStruct), 'int', '')
+		If DllStructGetData($g_QuestStruct, 'ID') = $lQuestID Then Return $g_QuestStruct
 	Next
 EndFunc   ;==>GetQuestByID
 
@@ -7284,19 +7318,9 @@ EndFunc   ;==>PlayerAttrSet
 
 ;~ Description: Returns World struct. (from 0 to 8)
 Func GetWorldInfoByID($aWorldID)
-    Local $lWorldStruct = DllStructCreate(	'long MinGridWidth;' & _      ; +0x00 Grid minimum width limit
-											'long MinGridHeight;' & _     ; +0x04 Grid minimum height limit
-											'long MaxGridWidth;' & _      ; +0x08 Grid maximum width limit
-											'long MaxGridHeight;' & _     ; +0x0C Grid maximum height limit
-											'long Flags;' & _            ; +0x10 Flags (probably zone options)
-											'long Type;' & _             ; +0x14 Zone type (0x200 is often seen)
-											'long SubGridWidth;' & _     ; +0x18 Subgrid width
-											'long SubGridHeight;' & _    ; +0x1C Subgrid height
-											'long StartPosX;' & _        ; +0x20 Start position X
-											'long StartPosY;' & _        ; +0x24 Starting position Y
-											'long MapWidth;' & _         ; +0x28 Total width of the map
-											'long MapHeight')            ; +0x2C Total height of the map
     Local $lWorldStructAddress = $mWorldConst + (0x30 * $aWorldID)
-    DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lWorldStructAddress, 'ptr', DllStructGetPtr($lWorldStruct), 'int', DllStructGetSize($lWorldStruct), 'int', '')
-    Return $lWorldStruct
+
+    DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lWorldStructAddress, 'ptr', DllStructGetPtr($g_WorldStruct), 'int', DllStructGetSize($g_WorldStruct), 'int', '')
+
+    Return $g_WorldStruct
 EndFunc   ;==>GetWorldInfoByID
