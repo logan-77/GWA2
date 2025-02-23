@@ -2048,7 +2048,7 @@ EndFunc   ;==>ChangeTarget
 
 ;~ Description: Call target.
 Func CallTarget($aTarget)
-	Return SendPacket(0xC, $HEADER_CALL_TARGET, 0xA, ConvertID($lTargetID))
+	Return SendPacket(0xC, $HEADER_CALL_TARGET, 0xA, ConvertID($aTarget))
 EndFunc   ;==>CallTarget
 
 ;~ Description: Clear current target.
