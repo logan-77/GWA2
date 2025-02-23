@@ -3622,10 +3622,7 @@ Func GetNearestEnemyToAgent($aAgent = -2)
 	Return $lNearestAgent
 EndFunc   ;==>GetNearestEnemyToAgent
 
-
-
 ;~ Description: Returns the nearest agent to a set of coordinates.
-
 Func GoToNearestNPC($aX, $aY)
    Local $lNearestAgent = 0  ;  variable $lNearestAgent is always 0, so the function will always return immediately
    If Not IsDllStruct($lNearestAgent) Then
@@ -3664,7 +3661,7 @@ EndFunc  ;==>GoToNearestNPC
 
 
 Func GoToNearestNPC2($aX, $aY)
-   Local $lNearestAgent = GetNearestAgentToCoords($aX, $aY)  ;to get the nearest agent to the specified coordinates.
+   Local $lNearestAgent = GetNearestNPCToCoords($aX, $aY)  ;to get the nearest agent to the specified coordinates.
    If Not IsDllStruct($lNearestAgent) Then
       Return
    EndIf
