@@ -3508,8 +3508,220 @@ Func GetAgentByID($aAgentID = -2)
     Return $g_AgentStruct
 EndFunc   ;==>GetAgentByID
 
+Func GetAgentInfo($aAgentID, $aInfo = "")
+    Local $lAgentPtr = GetAgentPtr($aAgentID)
+    If $lAgentPtr = 0 Or $aInfo = "" Then Return 0
+
+    Switch $aInfo
+        Case "vtable"
+            Return MemoryRead($lAgentPtr, "ptr")
+        Case "h0004"
+            Return MemoryRead($lAgentPtr + 0x4, "dword")
+        Case "h0008"
+            Return MemoryRead($lAgentPtr + 0x8, "dword")
+        Case "h000C"
+            Return MemoryRead($lAgentPtr + 0xC, "dword")
+        Case "h0010"
+            Return MemoryRead($lAgentPtr + 0x10, "dword")
+        Case "Timer"
+            Return MemoryRead($lAgentPtr + 0x14, "dword")
+        Case "Timer2"
+            Return MemoryRead($lAgentPtr + 0x18, "dword")
+        Case "h0018"
+            Return MemoryRead($lAgentPtr + 0x1C, "dword[4]")
+        Case "ID"
+            Return MemoryRead($lAgentPtr + 0x2C, "long")
+        Case "Z"
+            Return MemoryRead($lAgentPtr + 0x30, "float")
+        Case "Width1"
+            Return MemoryRead($lAgentPtr + 0x34, "float")
+        Case "Height1"
+            Return MemoryRead($lAgentPtr + 0x38, "float")
+        Case "Width2"
+            Return MemoryRead($lAgentPtr + 0x3C, "float")
+        Case "Height2"
+            Return MemoryRead($lAgentPtr + 0x40, "float")
+        Case "Width3"
+            Return MemoryRead($lAgentPtr + 0x44, "float")
+        Case "Height3"
+            Return MemoryRead($lAgentPtr + 0x48, "float")
+        Case "Rotation"
+            Return MemoryRead($lAgentPtr + 0x4C, "float")
+        Case "RotationCos"
+            Return MemoryRead($lAgentPtr + 0x50, "float")
+        Case "RotationSin"
+            Return MemoryRead($lAgentPtr + 0x54, "float")
+        Case "NameProperties"
+            Return MemoryRead($lAgentPtr + 0x58, "dword")
+        Case "Ground"
+            Return MemoryRead($lAgentPtr + 0x5C, "dword")
+        Case "h0060"
+            Return MemoryRead($lAgentPtr + 0x60, "dword")
+        Case "TerrainNormalX"
+            Return MemoryRead($lAgentPtr + 0x64, "float")
+        Case "TerrainNormalY"
+            Return MemoryRead($lAgentPtr + 0x68, "float")
+        Case "TerrainNormalZ"
+            Return MemoryRead($lAgentPtr + 0x6C, "dword")
+        Case "h0070"
+            Return MemoryRead($lAgentPtr + 0x70, "byte[4]")
+        Case "X"
+            Return MemoryRead($lAgentPtr + 0x74, "float")
+        Case "Y"
+            Return MemoryRead($lAgentPtr + 0x78, "float")
+        Case "Plane"
+            Return MemoryRead($lAgentPtr + 0x7C, "dword")
+        Case "h0080"
+            Return MemoryRead($lAgentPtr + 0x80, "byte[4]")
+        Case "NameTagX"
+            Return MemoryRead($lAgentPtr + 0x84, "float")
+        Case "NameTagY"
+            Return MemoryRead($lAgentPtr + 0x88, "float")
+        Case "NameTagZ"
+            Return MemoryRead($lAgentPtr + 0x8C, "float")
+        Case "VisualEffects"
+            Return MemoryRead($lAgentPtr + 0x90, "short")
+        Case "h0092"
+            Return MemoryRead($lAgentPtr + 0x92, "short")
+        Case "h0094"
+            Return MemoryRead($lAgentPtr + 0x94, "dword[2]")
+        Case "Type"
+            Return MemoryRead($lAgentPtr + 0x98, "long")
+        Case "MoveX"
+            Return MemoryRead($lAgentPtr + 0x9C, "float")
+        Case "MoveY"
+            Return MemoryRead($lAgentPtr + 0xA0, "float")
+        Case "h00A8"
+            Return MemoryRead($lAgentPtr + 0xA8, "dword")
+        Case "RotationCos2"
+            Return MemoryRead($lAgentPtr + 0xAC, "float")
+        Case "RotationSin2"
+            Return MemoryRead($lAgentPtr + 0xB0, "float")
+        Case "h00B4"
+            Return MemoryRead($lAgentPtr + 0xB4, "dword[4]")
+        Case "Owner"
+            Return MemoryRead($lAgentPtr + 0xC4, "long")
+        Case "ItemID"
+            Return MemoryRead($lAgentPtr + 0xC8, "dword")
+        Case "ExtraType"
+            Return MemoryRead($lAgentPtr + 0xCC, "dword")
+        Case "GadgetID"
+            Return MemoryRead($lAgentPtr + 0xD0, "dword")
+        Case "h00D4"
+            Return MemoryRead($lAgentPtr + 0xD4, "dword[3]")
+        Case "AnimationType"
+            Return MemoryRead($lAgentPtr + 0xE0, "float")
+        Case "h00E4"
+            Return MemoryRead($lAgentPtr + 0xE4, "dword[2]")
+        Case "AttackSpeed"
+            Return MemoryRead($lAgentPtr + 0xEC, "float")
+        Case "AttackSpeedModifier"
+            Return MemoryRead($lAgentPtr + 0xF0, "float")
+        Case "PlayerNumber"
+            Return MemoryRead($lAgentPtr + 0xF4, "short")
+        Case "AgentModelType"
+            Return MemoryRead($lAgentPtr + 0xF6, "short")
+		Case "TransmogNpcId"
+            Return MemoryRead($lAgentPtr + 0xF8, "dword")
+        Case "Equip"
+            Return MemoryRead($lAgentPtr + 0xFC, "ptr")
+        Case "h0100"
+            Return MemoryRead($lAgentPtr + 0x100, "dword")
+        Case "Tags"
+            Return MemoryRead($lAgentPtr + 0x104, "ptr")
+        Case "h0108"
+            Return MemoryRead($lAgentPtr + 0x108, "short")
+        Case "Primary"
+            Return MemoryRead($lAgentPtr + 0x10A, "byte")
+        Case "Secondary"
+            Return MemoryRead($lAgentPtr + 0x10B, "byte")
+        Case "Level"
+            Return MemoryRead($lAgentPtr + 0x10C, "byte")
+        Case "Team"
+            Return MemoryRead($lAgentPtr + 0x10D, "byte")
+        Case "h010E"
+            Return MemoryRead($lAgentPtr + 0x10E, "byte[2]")
+        Case "h0110"
+            Return MemoryRead($lAgentPtr + 0x110, "dword")
+        Case "EnergyRegen"
+            Return MemoryRead($lAgentPtr + 0x114, "float")
+        Case "Overcast"
+            Return MemoryRead($lAgentPtr + 0x118, "float")
+        Case "EnergyPercent"
+            Return MemoryRead($lAgentPtr + 0x11C, "float")
+        Case "MaxEnergy"
+            Return MemoryRead($lAgentPtr + 0x120, "dword")
+        Case "h0124"
+            Return MemoryRead($lAgentPtr + 0x124, "dword")
+        Case "HPPips"
+            Return MemoryRead($lAgentPtr + 0x128, "float")
+        Case "h012C"
+            Return MemoryRead($lAgentPtr + 0x12C, "dword")
+        Case "HP"
+            Return MemoryRead($lAgentPtr + 0x130, "float")
+        Case "MaxHP"
+            Return MemoryRead($lAgentPtr + 0x134, "dword")
+        Case "Effects"
+            Return MemoryRead($lAgentPtr + 0x138, "dword")
+        Case "h013C"
+            Return MemoryRead($lAgentPtr + 0x13C, "dword")
+        Case "Hex"
+            Return MemoryRead($lAgentPtr + 0x140, "byte")
+        Case "h0141"
+            Return MemoryRead($lAgentPtr + 0x141, "byte[19]")
+        Case "ModelState"
+            Return MemoryRead($lAgentPtr + 0x154, "dword")
+        Case "TypeMap"
+            Return MemoryRead($lAgentPtr + 0x158, "dword")
+        Case "h015C"
+            Return MemoryRead($lAgentPtr + 0x15C, "dword[4]")
+        Case "InSpiritRange"
+            Return MemoryRead($lAgentPtr + 0x16C, "dword")
+        Case "VisibleEffects"
+            Return MemoryRead($lAgentPtr + 0x170, "dword")
+        Case "VisibleEffectsID"
+            Return MemoryRead($lAgentPtr + 0x174, "dword")
+        Case "VisibleEffectsHasEnded"
+            Return MemoryRead($lAgentPtr + 0x178, "dword")
+        Case "h017C"
+            Return MemoryRead($lAgentPtr + 0x17C, "dword")
+        Case "LoginNumber"
+            Return MemoryRead($lAgentPtr + 0x180, "dword")
+        Case "AnimationSpeed"
+            Return MemoryRead($lAgentPtr + 0x184, "float")
+        Case "AnimationCode"
+            Return MemoryRead($lAgentPtr + 0x188, "dword")
+        Case "AnimationId"
+            Return MemoryRead($lAgentPtr + 0x18C, "dword")
+        Case "h0190"
+            Return MemoryRead($lAgentPtr + 0x190, "byte[32]")
+        Case "LastStrike"
+            Return MemoryRead($lAgentPtr + 0x1B0, "byte")
+        Case "Allegiance"
+            Return MemoryRead($lAgentPtr + 0x1B1, "byte")
+        Case "WeaponType"
+            Return MemoryRead($lAgentPtr + 0x1B2, "short")
+        Case "Skill"
+            Return MemoryRead($lAgentPtr + 0x1B4, "short")
+        Case "h01B6"
+            Return MemoryRead($lAgentPtr + 0x1B6, "short")
+        Case "WeaponItemType"
+            Return MemoryRead($lAgentPtr + 0x1B8, "byte")
+        Case "OffhandItemType"
+            Return MemoryRead($lAgentPtr + 0x1B9, "byte")
+        Case "WeaponItemId"
+            Return MemoryRead($lAgentPtr + 0x1BA, "short")
+        Case "OffhandItemId"
+            Return MemoryRead($lAgentPtr + 0x1BC, "short")
+		Case Else
+			Return 0
+	EndSwitch
+
+    Return 0
+EndFunc
+
 ;~ Description: Internal use for GetAgentByID()
-Func GetAgentPtr($aAgentID)
+Func GetAgentPtr($aAgentID = -2)
 	Local $lOffset[3] = [0, 4 * ConvertID($aAgentID), 0]
 	Local $lAgentStructAddress = MemoryReadPtr($mAgentBase, $lOffset)
 	Return $lAgentStructAddress[0]
@@ -4686,6 +4898,8 @@ Func ConvertID($aID)
 		Return GetMyID()
 	ElseIf $aID = -1 Then
 		Return GetCurrentTargetID()
+	ElseIf IsPtr($aID) <> 0 Then
+		Return MemoryRead($aID + 0x2C, 'long')
 	Else
 		Return $aID
 	EndIf
