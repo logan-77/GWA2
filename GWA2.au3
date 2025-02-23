@@ -1449,22 +1449,6 @@ Func KickAllHeroes()
 	Return SendPacket(0x8, $HEADER_HERO_KICK, 0x26)
 EndFunc
 
-;~ Description: Kicks all heroes from the party.
-Func KickAllHeroes1()
-	; Array of all hero IDs
-	Local $aHeroIds[] = [$HERO_Norgu, $HERO_Goren, $HERO_Tahlkora, $HERO_MasterOfWhispers, $HERO_AcolyteJin, $HERO_Koss, $HERO_Dunkoro, $HERO_AcolyteSousuke, $HERO_Melonni, _
-			$HERO_ZhedShadowhoof, $HERO_GeneralMorgahn, $HERO_Olias, $HERO_Razah, $HERO_MOX, $HERO_Jora, $HERO_PyreFierceshot, _
-			$HERO_Livia, $HERO_Hayda, $HERO_Kahmu, $HERO_Gwen, $HERO_Xandra, $HERO_Vekk, $HERO_Ogden]
-	;HERO_MargridTheSly
-	; $HERO_MercenaryHero1, $HERO_MercenaryHero2, $HERO_MercenaryHero3, $HERO_MercenaryHero4, $HERO_MercenaryHero5, $HERO_MercenaryHero6, $HERO_MercenaryHero7, ////$HERO_MercenaryHero8]
-
-	; Loop through all hero IDs and call KickHero for each, with a delay
-	For $i = 0 To UBound($aHeroIds) - 1
-		KickHero($aHeroIds[$i])
-		Sleep(100) ; Add a delay of 100 milliseconds
-	Next
-EndFunc   ;==>KickAllHeroes
-
 ;~ Description: Add a henchman to the party.
 Func AddNpc($aNpcId)
 	Return SendPacket(0x8, $HEADER_PARTY_INVITE_NPC, $aNpcId)
@@ -1524,17 +1508,9 @@ Func ChangeHeroSkillSlotState($aHeroNumber, $aSkillSlot)
 EndFunc   ;==>ChangeHeroSkillSlotState
 
 ;~ Description: Order a hero to use a skill.
-Func UseHeroSkill($aHero, $aSkillSlot, $aTarget = 0)
-;~ 	Local $lTargetID
-
-;~ 	If IsDllStruct($aTarget) = 0 Then
-;~ 		$lTargetID = ConvertID($aTarget)
-;~ 	Else
-;~ 		$lTargetID = DllStructGetData($aTarget, 'ID')
-;~ 	EndIf
-
+Func UseHeroSkill($aHero, $aSkillSlot, $aTarget = -2)
 	DllStructSetData($mUseHeroSkill, 2, GetHeroID($aHero))
-	DllStructSetData($mUseHeroSkill, 3, ConvertID($lTargetID))
+	DllStructSetData($mUseHeroSkill, 3, ConvertID($aTarget))
 	DllStructSetData($mUseHeroSkill, 4, $aSkillSlot - 1)
 	Enqueue($mUseHeroSkillPtr, 16)
 EndFunc   ;==>UseHeroSkill
@@ -1742,15 +1718,7 @@ EndFunc   ;==>GoPlayer
 
 ;~ Description: Talk to an NPC
 Func GoNPC($aAgent)
-	Return SendPacket(0x8, $HEADER_AGENT_FOLLOW, ConvertID($aAgent))
-EndFunc   ;==>GoPlayer
-
-;~ Description: Talk to an NPC
-Func GoNPC($aAgent)
 	Return SendPacket(0xC, $HEADER_INTERACT_LIVING, ConvertID($aAgent))
-;~ 	ChangeTarget($aAgent)
-;~ 	sleep(16) ;not sure if needed
-;~     ActionInteract()
 EndFunc   ;==>GoNPC
 
 ;~ Description: Talks to NPC and waits until you reach them.
@@ -2080,7 +2048,7 @@ EndFunc   ;==>ChangeTarget
 
 ;~ Description: Call target.
 Func CallTarget($aTarget)
-	Return SendPacket(0xC, $HEADER_CALL_TARGET, 0xA, ConvertID($lTargetID))
+	Return SendPacket(0xC, $HEADER_CALL_TARGET, 0xA, ConvertID($aTarget))
 EndFunc   ;==>CallTarget
 
 ;~ Description: Clear current target.
