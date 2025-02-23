@@ -1508,17 +1508,9 @@ Func ChangeHeroSkillSlotState($aHeroNumber, $aSkillSlot)
 EndFunc   ;==>ChangeHeroSkillSlotState
 
 ;~ Description: Order a hero to use a skill.
-Func UseHeroSkill($aHero, $aSkillSlot, $aTarget = 0)
-;~ 	Local $lTargetID
-
-;~ 	If IsDllStruct($aTarget) = 0 Then
-;~ 		$lTargetID = ConvertID($aTarget)
-;~ 	Else
-;~ 		$lTargetID = DllStructGetData($aTarget, 'ID')
-;~ 	EndIf
-
+Func UseHeroSkill($aHero, $aSkillSlot, $aTarget = -2)
 	DllStructSetData($mUseHeroSkill, 2, GetHeroID($aHero))
-	DllStructSetData($mUseHeroSkill, 3, ConvertID($lTargetID))
+	DllStructSetData($mUseHeroSkill, 3, ConvertID($aTarget))
 	DllStructSetData($mUseHeroSkill, 4, $aSkillSlot - 1)
 	Enqueue($mUseHeroSkillPtr, 16)
 EndFunc   ;==>UseHeroSkill
