@@ -1930,7 +1930,7 @@ Func TravelToEx($aMapID, $aDis = 0)
 	;returns true if successful
 	If GetMapID() = $aMapID And $aDis = 0 And GetInstanceType() = 0 Then Return True
 	ZoneMap($aMapID, $aDis)
-	Return WaitMapLoadingEx($aMapID)
+	Return WaitMapLoading($aMapID)
 EndFunc   ;==>TravelToEx
 
 ;~ Description: Internal use for map travel.
