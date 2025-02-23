@@ -1613,7 +1613,7 @@ Func AggroMoveTo($x, $y, $s = "", $z = 1450)
                 $iBlocked += 1
                 If $DeadOnTheRun = 0 Then
                     Move($coordsX, $coordsY, 500)
-                    RndSlp(350)
+                    RndSleep(350)
                     Move($x, $y, $random)
                 EndIf
             EndIf
