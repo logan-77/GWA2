@@ -1617,7 +1617,7 @@ Func AggroMoveTo($x, $y, $s = "", $z = 1450)
                     Move($x, $y, $random)
                 EndIf
             EndIf
-        Until ComputeDistanceEx($coordsX, $coordsY, $x, $y) < 250 OR $iBlocked > 20 OR $DeadOnTheRun = 1
+        Until ComputeDistance($coordsX, $coordsY, $x, $y) < 250 OR $iBlocked > 20 OR $DeadOnTheRun = 1
     EndIf
     $TimerToKillDiff = TimerDiff($TimerToKill)
 EndFunc
