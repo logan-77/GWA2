@@ -1742,15 +1742,7 @@ EndFunc   ;==>GoPlayer
 
 ;~ Description: Talk to an NPC
 Func GoNPC($aAgent)
-	Return SendPacket(0x8, $HEADER_AGENT_FOLLOW, ConvertID($aAgent))
-EndFunc   ;==>GoPlayer
-
-;~ Description: Talk to an NPC
-Func GoNPC($aAgent)
 	Return SendPacket(0xC, $HEADER_INTERACT_LIVING, ConvertID($aAgent))
-;~ 	ChangeTarget($aAgent)
-;~ 	sleep(16) ;not sure if needed
-;~     ActionInteract()
 EndFunc   ;==>GoNPC
 
 ;~ Description: Talks to NPC and waits until you reach them.
