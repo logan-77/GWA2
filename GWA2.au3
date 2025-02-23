@@ -1613,11 +1613,11 @@ Func AggroMoveTo($x, $y, $s = "", $z = 1450)
                 $iBlocked += 1
                 If $DeadOnTheRun = 0 Then
                     Move($coordsX, $coordsY, 500)
-                    RndSlp(350)
+                    RndSleep(350)
                     Move($x, $y, $random)
                 EndIf
             EndIf
-        Until ComputeDistanceEx($coordsX, $coordsY, $x, $y) < 250 OR $iBlocked > 20 OR $DeadOnTheRun = 1
+        Until ComputeDistance($coordsX, $coordsY, $x, $y) < 250 OR $iBlocked > 20 OR $DeadOnTheRun = 1
     EndIf
     $TimerToKillDiff = TimerDiff($TimerToKill)
 EndFunc
@@ -1930,7 +1930,7 @@ Func TravelToEx($aMapID, $aDis = 0)
 	;returns true if successful
 	If GetMapID() = $aMapID And $aDis = 0 And GetInstanceType() = 0 Then Return True
 	ZoneMap($aMapID, $aDis)
-	Return WaitMapLoadingEx($aMapID)
+	Return WaitMapLoading($aMapID)
 EndFunc   ;==>TravelToEx
 
 ;~ Description: Internal use for map travel.
@@ -3622,10 +3622,7 @@ Func GetNearestEnemyToAgent($aAgent = -2)
 	Return $lNearestAgent
 EndFunc   ;==>GetNearestEnemyToAgent
 
-
-
 ;~ Description: Returns the nearest agent to a set of coordinates.
-
 Func GoToNearestNPC($aX, $aY)
    Local $lNearestAgent = 0  ;  variable $lNearestAgent is always 0, so the function will always return immediately
    If Not IsDllStruct($lNearestAgent) Then
@@ -3664,7 +3661,7 @@ EndFunc  ;==>GoToNearestNPC
 
 
 Func GoToNearestNPC2($aX, $aY)
-   Local $lNearestAgent = GetNearestAgentToCoords($aX, $aY)  ;to get the nearest agent to the specified coordinates.
+   Local $lNearestAgent = GetNearestNPCToCoords($aX, $aY)  ;to get the nearest agent to the specified coordinates.
    If Not IsDllStruct($lNearestAgent) Then
       Return
    EndIf
