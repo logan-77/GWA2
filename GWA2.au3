@@ -140,7 +140,6 @@ Global $mLabels[1][2] = [[0]]
 
 #Region Gwa2 Structs
 Global $g_AgentStruct = DllStructCreate('ptr vtable;dword h0004[4];dword timer;dword timer2;dword h0018[4];long Id;float Z;float width1;float height1;float width2;float height2;float width3;float height3;float Rotation;float rotation_cos;float rotation_sin;dword NameProperties;dword ground;dword h0060;float terrain_normal_x;float terrain_normal_y;dword terrain_normal_z;byte h0070[4];float X;float Y;dword plane;byte h0080[4];float NameTagX;float NameTagY;float NameTagZ;short visual_effects;short h0092;dword h0094[2];long Type;float MoveX;float MoveY;dword h00A8;float rotation_cos2;float rotation_sin2;dword h00B4[4];long Owner;dword ItemID;dword ExtraType;dword GadgetID;dword h00D4[3];float animation_type;dword h00E4[2];float AttackSpeed;float AttackSpeedModifier;short PlayerNumber;short agent_model_type;dword transmog_npc_id;ptr Equip;dword h0100;ptr tags;short h0108;byte Primary;byte Secondary;byte Level;byte Team;byte h010E[2];dword h0110;float energy_regen;float overcast;float EnergyPercent;dword MaxEnergy;dword h0124;float HPPips;dword h012C;float HP;dword MaxHP;dword Effects;dword h013C;byte Hex;byte h0141[19];dword ModelState;dword TypeMap;dword h015C[4];dword InSpiritRange;dword visible_effects;dword visible_effects_ID;dword visible_effects_has_ended;dword h017C;dword LoginNumber;float animation_speed;dword animation_code;dword animation_id;byte h0190[32];byte LastStrike;byte Allegiance;short WeaponType;short Skill;short h01B6;byte weapon_item_type;byte offhand_item_type;short WeaponItemId;short OffhandItemId')
-;~ Global $g_ItemStruct = DllStructCreate('long Id;long AgentId;byte Unknown1[4];ptr Bag;ptr ModStruct;long ModStructSize;ptr Customized;byte unknown2[4];byte Type;byte unknown4;short ExtraId;short Value;byte unknown4[2];short Interaction;long ModelId;ptr ModString;byte unknown5[4];ptr NameString;ptr SingleItemName;byte Unknown4[10];byte IsSalvageable;byte Unknown6;byte Quantity;byte Equiped;byte Profession;byte Type2;byte Slot')
 Global $g_ItemStruct = DllStructCreate('long Id;long AgentId;ptr BagEquiped;ptr Bag;ptr ModStruct;long ModStructSize;ptr Customized;long ModelFileID;byte Type;byte unknown4;short ExtraId;short Value;short Unknown1;short Interaction;long ModelId;ptr InfoString;ptr NameEnc;ptr CompleteNameEnc;ptr SingleItemName;long Unknown2[2];short ItemFormula;byte IsMaterialSalvageable;byte Unknown3;short Quantity;byte Equiped;byte Profession;byte Slot')
 Global $g_BuffStruct = DllStructCreate('long SkillId;long unknown1;long BuffId;long TargetId')
 Global $g_EffectStruct = DllStructCreate('long SkillId;long AttributeLevel;long EffectId;long AgentId;float Duration;long TimeStamp')
@@ -1526,16 +1525,16 @@ EndFunc   ;==>ChangeHeroSkillSlotState
 
 ;~ Description: Order a hero to use a skill.
 Func UseHeroSkill($aHero, $aSkillSlot, $aTarget = 0)
-	Local $lTargetID
+;~ 	Local $lTargetID
 
-	If IsDllStruct($aTarget) = 0 Then
-		$lTargetID = ConvertID($aTarget)
-	Else
-		$lTargetID = DllStructGetData($aTarget, 'ID')
-	EndIf
+;~ 	If IsDllStruct($aTarget) = 0 Then
+;~ 		$lTargetID = ConvertID($aTarget)
+;~ 	Else
+;~ 		$lTargetID = DllStructGetData($aTarget, 'ID')
+;~ 	EndIf
 
 	DllStructSetData($mUseHeroSkill, 2, GetHeroID($aHero))
-	DllStructSetData($mUseHeroSkill, 3, $lTargetID)
+	DllStructSetData($mUseHeroSkill, 3, ConvertID($lTargetID))
 	DllStructSetData($mUseHeroSkill, 4, $aSkillSlot - 1)
 	Enqueue($mUseHeroSkillPtr, 16)
 EndFunc   ;==>UseHeroSkill
@@ -1738,29 +1737,20 @@ EndFunc   ;==>CustomMoveTo
 
 ;~ Description: Run to or follow a player.
 Func GoPlayer($aAgent)
-	Local $lAgentID
-
-	If IsDllStruct($aAgent) = 0 Then
-		$lAgentID = ConvertID($aAgent)
-	Else
-		$lAgentID = DllStructGetData($aAgent, 'ID')
-	EndIf
-
-	Return SendPacket(0x8, $HEADER_INTERACT_PLAYER, $lAgentID)
+	Return SendPacket(0x8, $HEADER_INTERACT_PLAYER, ConvertID($aAgent))
 EndFunc   ;==>GoPlayer
 
 ;~ Description: Talk to an NPC
 Func GoNPC($aAgent)
-;~ 	Local $lAgentID
-;~ 	If IsDllStruct($aAgent) = 0 Then
-;~ 		$lAgentID = ConvertID($aAgent)
-;~ 	Else
-;~ 		$lAgentID = DllStructGetData($aAgent, 'ID')
-;~ 	EndIf
-;~ 	Return SendPacket(0xC, $HEADER_INTERACT_LIVING, $lAgentID)
-	ChangeTarget($aAgent)
-	sleep(16) ;not sure if needed
-    ActionInteract()
+	Return SendPacket(0x8, $HEADER_AGENT_FOLLOW, ConvertID($aAgent))
+EndFunc   ;==>GoPlayer
+
+;~ Description: Talk to an NPC
+Func GoNPC($aAgent)
+	Return SendPacket(0xC, $HEADER_INTERACT_LIVING, ConvertID($aAgent))
+;~ 	ChangeTarget($aAgent)
+;~ 	sleep(16) ;not sure if needed
+;~     ActionInteract()
 EndFunc   ;==>GoNPC
 
 ;~ Description: Talks to NPC and waits until you reach them.
@@ -1796,16 +1786,10 @@ EndFunc   ;==>GoToNPC
 
 ;~ Description: Run to a signpost.
 Func GoSignpost($aAgent)
-;~ 	Local $lAgentID
-;~ 	If IsDllStruct($aAgent) = 0 Then
-;~ 		$lAgentID = ConvertID($aAgent)
-;~ 	Else
-;~ 		$lAgentID = DllStructGetData($aAgent, 'ID')
-;~ 	EndIf
-;~ 	Return SendPacket(0xC, $HEADER_GADGET_INTERACT, $lAgentID, 0)
-	ChangeTarget($aAgent)
-	sleep(16) ;not sure if needed
-    ActionInteract()
+	Return SendPacket(0xC, $HEADER_GADGET_INTERACT, ConvertID($aAgent), 0)
+;~ 	ChangeTarget($aAgent)
+;~ 	sleep(16) ;not sure if needed
+;~     ActionInteract()
 EndFunc   ;==>GoSignpost
 
 ;~ Description: Go to signpost and waits until you reach it.
@@ -1841,15 +1825,7 @@ EndFunc   ;==>GoToSignpost
 
 ;~ Description: Attack an agent.
 Func Attack($aAgent, $aCallTarget = False)
-	Local $lAgentID
-
-	If IsDllStruct($aAgent) = 0 Then
-		$lAgentID = ConvertID($aAgent)
-	Else
-		$lAgentID = DllStructGetData($aAgent, 'ID')
-	EndIf
-
-	Return SendPacket(0xC, $HEADER_ACTION_ATTACK, $lAgentID, $aCallTarget)
+	Return SendPacket(0xC, $HEADER_ACTION_ATTACK, ConvertID($aAgent), $aCallTarget)
 EndFunc   ;==>Attack
 
 ;~ Description: Turn character to the left.
@@ -2098,29 +2074,13 @@ EndFunc   ;==>ToggleHelpWindow
 #Region Targeting
 ;~ Description: Target an agent.
 Func ChangeTarget($aAgent)
-	Local $lAgentID
-
-	If IsDllStruct($aAgent) = 0 Then
-		$lAgentID = ConvertID($aAgent)
-	Else
-		$lAgentID = DllStructGetData($aAgent, 'ID')
-	EndIf
-
-	DllStructSetData($mChangeTarget, 2, $lAgentID)
+	DllStructSetData($mChangeTarget, 2, ConvertID($aAgent))
 	Enqueue($mChangeTargetPtr, 8)
 EndFunc   ;==>ChangeTarget
 
 ;~ Description: Call target.
 Func CallTarget($aTarget)
-	Local $lTargetID
-
-	If IsDllStruct($aTarget) = 0 Then
-		$lTargetID = ConvertID($aTarget)
-	Else
-		$lTargetID = DllStructGetData($aTarget, 'ID')
-	EndIf
-
-	Return SendPacket(0xC, $HEADER_CALL_TARGET, 0xA, $lTargetID)
+	Return SendPacket(0xC, $HEADER_CALL_TARGET, 0xA, ConvertID($lTargetID))
 EndFunc   ;==>CallTarget
 
 ;~ Description: Clear current target.
@@ -2345,16 +2305,8 @@ EndFunc   ;==>ChangeWeaponSet
 
 ;~ Description: Use a skill.
 Func UseSkill($aSkillSlot, $aTarget, $aCallTarget = False)
-	Local $lTargetID
-
-	If IsDllStruct($aTarget) = 0 Then
-		$lTargetID = ConvertID($aTarget)
-	Else
-		$lTargetID = DllStructGetData($aTarget, 'ID')
-	EndIf
-
 	DllStructSetData($mUseSkill, 2, $aSkillSlot)
-	DllStructSetData($mUseSkill, 3, $lTargetID)
+	DllStructSetData($mUseSkill, 3, ConvertID($aTarget))
 	DllStructSetData($mUseSkill, 4, $aCallTarget)
 	Enqueue($mUseSkillPtr, 16)
 EndFunc   ;==>UseSkill
@@ -3734,15 +3686,7 @@ EndFunc   ;==>GetAgentExists
 
 ;~ Description: Returns the target of an agent.
 Func GetTarget($aAgent)
-	Local $lAgentID
-
-	If IsDllStruct($aAgent) = 0 Then
-		$lAgentID = ConvertID($aAgent)
-	Else
-		$lAgentID = DllStructGetData($aAgent, 'ID')
-	EndIf
-
-	Return MemoryRead(GetValue('TargetLogBase') + 4 * $lAgentID)
+	Return MemoryRead(GetValue('TargetLogBase') + 4 * ConvertID($aAgent))
 EndFunc   ;==>GetTarget
 
 ;~ Description: Returns agent by player name.
@@ -4323,16 +4267,7 @@ EndFunc   ;==>GetPlayerName
 
 ;~ Description: Returns the name of an agent.
 Func GetAgentName($aAgent)
-	If $mUseStringLog = False Then Return ""
-
-	If IsDllStruct($aAgent) = 0 Then
-		Local $lAgentID = ConvertID($aAgent)
-		If $lAgentID = 0 Then Return ''
-	Else
-		Local $lAgentID = DllStructGetData($aAgent, 'ID')
-	EndIf
-
-	Local $lAddress = $mStringLogBase + 256 * $lAgentID
+	Local $lAddress = $mStringLogBase + 256 * ConvertID($aAgent)
 	Local $lName = MemoryRead($lAddress, 'wchar [128]')
 
 	If $lName = '' Then
@@ -4894,15 +4829,18 @@ EndFunc   ;==>GetIsPointInPolygon
 
 ;~ Description: Internal use for handing -1 and -2 agent IDs.
 Func ConvertID($aID)
-	If $aID = -2 Then
-		Return GetMyID()
-	ElseIf $aID = -1 Then
-		Return GetCurrentTargetID()
-	ElseIf IsPtr($aID) <> 0 Then
-		Return MemoryRead($aID + 0x2C, 'long')
-	Else
-		Return $aID
-	EndIf
+	Select
+		Case $aID = -2
+			Return GetMyID()
+		Case $aID = -1
+			Return GetCurrentTargetID()
+		Case IsPtr($aID) <> 0
+			Return MemoryRead($aID + 0x2C, 'long')
+		Case IsDllStruct($aID) <> 0
+			Return DllStructGetData($aID, 'ID')
+		Case Else
+			Return $aID
+	EndSelect
 EndFunc   ;==>ConvertID
 
 Func InviteGuild($charName)
@@ -7133,14 +7071,7 @@ Func WaitMapLoading($aMapID = -1, $aInstanceType = -1)
 EndFunc
 
 Func TradePlayer($aAgent)
-	Local $lAgentID
-
-	If IsDllStruct($aAgent) = 0 Then
-		$lAgentID = ConvertID($aAgent)
-	Else
-		$lAgentID = DllStructGetData($aAgent, 'ID')
-	EndIf
-	SendPacket(0x08, $HEADER_TRADE_INITIATE, $lAgentID)
+	Return SendPacket(0x08, $HEADER_TRADE_INITIATE, ConvertID($aAgent))
 EndFunc   ;==>TradePlayer
 
 Func AcceptTrade()
