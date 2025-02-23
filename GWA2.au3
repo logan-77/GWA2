@@ -1468,12 +1468,12 @@ EndFunc   ;==>KickAllHeroes
 
 ;~ Description: Add a henchman to the party.
 Func AddNpc($aNpcId)
-	Return SendPacket(0x8, $HEADER_HENCHMAN_ADD, $aNpcId)
+	Return SendPacket(0x8, $HEADER_PARTY_INVITE_NPC, $aNpcId)
 EndFunc   ;==>AddNpc
 
 ;~ Description: Kick a henchman from the party.
 Func KickNpc($aNpcId)
-	Return SendPacket(0x8, $HEADER_HENCHMAN_KICK, $aNpcId)
+	Return SendPacket(0x8, $HEADER_PARTY_KICK_NPC, $aNpcId)
 EndFunc   ;==>KickNpc
 
 ;~ Description: Clear the position flag from a hero.
@@ -1746,7 +1746,7 @@ Func GoPlayer($aAgent)
 		$lAgentID = DllStructGetData($aAgent, 'ID')
 	EndIf
 
-	Return SendPacket(0x8, $HEADER_AGENT_FOLLOW, $lAgentID)
+	Return SendPacket(0x8, $HEADER_INTERACT_PLAYER, $lAgentID)
 EndFunc   ;==>GoPlayer
 
 ;~ Description: Talk to an NPC
@@ -1954,15 +1954,15 @@ Func EnterChallenge()
 EndFunc   ;==>EnterChallenge
 
 ;~ Description: Enter a foreign challenge mission/pvp.
-Func EnterChallengeForeign()
-	Return SendPacket(0x8, $HEADER_MISSION_FOREIGN_ENTER, 0)
-EndFunc   ;==>EnterChallengeForeign
+; Func EnterChallengeForeign()
+	; Return SendPacket(0x8, $HEADER_PARTY_ENTER_FOREIGN_CHALLENGE, 0)
+; EndFunc   ;==>EnterChallengeForeign
 
 ;~ Description: Travel to your guild hall.
 Func TravelGH()
 	Local $lOffset[3] = [0, 0x18, 0x3C]
 	Local $lGH = MemoryReadPtr($mBasePointer, $lOffset)
-	SendPacket(0x18, $HEADER_GUILDHALL_TRAVEL, MemoryRead($lGH[1] + 0x64), MemoryRead($lGH[1] + 0x68), MemoryRead($lGH[1] + 0x6C), MemoryRead($lGH[1] + 0x70), 1)
+	SendPacket(0x18, $HEADER_PARTY_ENTER_GUILD_HALL, MemoryRead($lGH[1] + 0x64), MemoryRead($lGH[1] + 0x68), MemoryRead($lGH[1] + 0x6C), MemoryRead($lGH[1] + 0x70), 1)
 	Return WaitMapLoading()
 EndFunc   ;==>TravelGH
 
@@ -7159,7 +7159,7 @@ EndFunc   ;==>CancelTrade
 
 ;~ Description: Like pressing the "Change Offer" button.
 Func ChangeOffer()
-	Return SendPacket(0x4, $HEADER_TRADE_CHANGE_OFFER)
+	Return SendPacket(0x4, $HEADER_TRADE_CANCEL_OFFER)
 EndFunc   ;==>ChangeOffer
 
 ;~ $aItemID = ID of the item or item agent, $aQuantity = Quantity
