@@ -3008,27 +3008,6 @@ Func GetItemByItemID($aItemID)
 	Return $g_ItemStruct
 EndFunc   ;==>GetItemByItemID
 
-;~ Description: Returns the nearest item by model ID to an agent.
-Func GetNearestItemByModelIDToAgent($aModelID, $aAgent = -2, $aCanPickUp = True)
-	Local $lNearestAgent, $lNearestDistance = 100000000
-	Local $lDistance
-	If GetMaxAgents() > 0 Then
-		For $i = 1 To GetMaxAgents()
-			Local $a = GetAgentPtr($i)
-			If Not GetIsMovable($a) Then ContinueLoop
-			Local $aMID = DllStructGetData(GetItemByAgentID($i), "ModelID")
-			If $aMID = $aModelID Then    ;Item matches
-				$lDistance = (GetAgentInfo($aAgent, 'X') - GetAgentInfo($a, 'X')) ^ 2 + (GetAgentInfo($aAgent, 'Y') - GetAgentInfo($a, 'Y')) ^ 2
-				If $lDistance < $lNearestDistance Then
-					$lNearestAgent = $a
-					$lNearestDistance = $lDistance
-				EndIf
-			EndIf
-		Next
-		Return $lNearestAgent
-	EndIf
-EndFunc   ;==>GetNearestItemByModelIDToAgent
-
 ;~ Description: Returns amount of gold in storage.
 Func GetGoldStorage()
 	Local $lOffset[5] = [0, 0x18, 0x40, 0xF8, 0x94]
@@ -3615,54 +3594,6 @@ Func GetAgentByName($aName)
 	Next
 EndFunc   ;==>GetAgentByName
 
-;~ Description: Returns the nearest agent to an agent.
-Func GetNearestAgentToAgent($aAgent = -2)
-	Local $lNearestAgent, $lNearestDistance = 100000000
-	Local $lDistance
-	Local $lAgentArray = GetAgentArray()
-
-	Local $lID = GetAgentInfo($aAgent, 'ID')
-
-	For $i = 1 To $lAgentArray[0]
-		$lDistance = (GetAgentInfo($aAgent, 'X') - GetAgentInfo($lAgentArray[$i], 'X')) ^ 2 + (GetAgentInfo($aAgent, 'Y') - GetAgentInfo($lAgentArray[$i], 'Y')) ^ 2
-
-		If $lDistance < $lNearestDistance Then
-			If GetAgentInfo($lAgentArray[$i], 'ID') == $lID Then ContinueLoop
-			$lNearestAgent = $lAgentArray[$i]
-			$lNearestDistance = $lDistance
-		EndIf
-	Next
-
-	SetExtended(Sqrt($lNearestDistance))
-	Return $lNearestAgent
-EndFunc   ;==>GetNearestAgentToAgent
-
-;~ Description: Returns the nearest enemy to an agent.
-Func GetNearestEnemyToAgent($aAgent = -2)
-	Local $lNearestAgent, $lNearestDistance = 10000000 ;10000000
-	Local $lDistance
-	Local $lAgentArray = GetAgentArray(0xDB)
-
-	Local $lID = GetAgentInfo($aAgent, 'ID')
-
-	For $i = 1 To $lAgentArray[0]
-		$lDistance = (GetAgentInfo($aAgent, 'X') - GetAgentInfo($lAgentArray[$i], 'X')) ^ 2 + (GetAgentInfo($aAgent, 'Y') - GetAgentInfo($lAgentArray[$i], 'Y')) ^ 2
-		If GetAgentInfo($lAgentArray[$i], 'Allegiance') <> 3 Then ContinueLoop
-		If GetAgentInfo($lAgentArray[$i], 'HP') <= 0 Then ContinueLoop
-		If BitAND(GetAgentInfo($lAgentArray[$i], 'Effects'), 0x0010) > 0 Then ContinueLoop
-
-		$lDistance = (GetAgentInfo($aAgent, 'X') - GetAgentInfo($lAgentArray[$i], 'X')) ^ 2 + (GetAgentInfo($aAgent, 'Y') - GetAgentInfo($lAgentArray[$i], 'Y')) ^ 2
-		If $lDistance < $lNearestDistance Then
-			If GetAgentInfo($lAgentArray[$i], 'ID') == $lID Then ContinueLoop
-			$lNearestAgent = $lAgentArray[$i]
-			$lNearestDistance = $lDistance
-		EndIf
-	Next
-
-	SetExtended(Sqrt($lNearestDistance))
-	Return $lNearestAgent
-EndFunc   ;==>GetNearestEnemyToAgent
-
 Func GetAgentByPlayerNumber($aPlayerNumber)
 	Local $lAgentArray = GetAgentArray()
 
@@ -3670,120 +3601,6 @@ Func GetAgentByPlayerNumber($aPlayerNumber)
 		If GetAgentInfo($lAgentArray[$i], "PlayerNumber") == $aPlayerNumber Then Return $lAgentArray[$i]
 	Next
 EndFunc   ;==>GetAgentByPlayerNumber
-
-
-;~ Description: Returns the nearest signpost to an agent.
-Func GetNearestSignpostToAgent($aAgent = -2)
-	Local $lNearestAgent, $lNearestDistance = 100000000
-	Local $lDistance
-	Local $lAgentArray = GetAgentArray(0x200)
-
-	Local $lID = GetAgentInfo($aAgent, 'ID')
-
-	For $i = 1 To $lAgentArray[0]
-		$lDistance = (GetAgentInfo($lAgentArray[$i], 'Y') - GetAgentInfo($aAgent, 'Y')) ^ 2 + (GetAgentInfo($lAgentArray[$i], 'X') - GetAgentInfo($aAgent, 'X')) ^ 2
-		If $lDistance < $lNearestDistance Then
-			If GetAgentInfo($lAgentArray[$i], 'ID') == $lID Then ContinueLoop
-			$lNearestAgent = $lAgentArray[$i]
-			$lNearestDistance = $lDistance
-		EndIf
-	Next
-
-	SetExtended(Sqrt($lNearestDistance))
-	Return $lNearestAgent
-EndFunc   ;==>GetNearestSignpostToAgent
-
-;~ Description: Returns the nearest signpost to a set of coordinates.
-Func GetNearestSignpostToCoords($aX, $aY)
-	Local $lNearestAgent, $lNearestDistance = 100000000
-	Local $lDistance
-	Local $lAgentArray = GetAgentArray(0x200)
-
-	For $i = 1 To $lAgentArray[0]
-		$lDistance = ($aX - GetAgentInfo($lAgentArray[$i], 'X')) ^ 2 + ($aY - GetAgentInfo($lAgentArray[$i], 'Y')) ^ 2
-
-		If $lDistance < $lNearestDistance Then
-			$lNearestAgent = $lAgentArray[$i]
-			$lNearestDistance = $lDistance
-		EndIf
-	Next
-
-	SetExtended(Sqrt($lNearestDistance))
-	Return $lNearestAgent
-EndFunc   ;==>GetNearestSignpostToCoords
-
-;~ Description: Returns the nearest NPC to an agent.
-Func GetNearestNPCToAgent($aAgent)
-	Local $lNearestAgent, $lNearestDistance = 100000000
-	Local $lDistance
-	Local $lAgentArray = GetAgentArray(0xDB)
-
-	Local $lID = GetAgentInfo($aAgent, 'ID')
-
-	For $i = 1 To $lAgentArray[0]
-		If GetAgentInfo($lAgentArray[$i], 'Allegiance') <> 6 Then ContinueLoop
-		If GetAgentInfo($lAgentArray[$i], 'HP') <= 0 Then ContinueLoop
-		If BitAND(GetAgentInfo($lAgentArray[$i], 'Effects'), 0x0010) > 0 Then ContinueLoop
-
-		$lDistance = (GetAgentInfo($aAgent, 'X') - GetAgentInfo($lAgentArray[$i], 'X')) ^ 2 + (GetAgentInfo($aAgent, 'Y') - GetAgentInfo($lAgentArray[$i], 'Y')) ^ 2
-		If $lDistance < $lNearestDistance Then
-			If GetAgentInfo($lAgentArray[$i], 'ID') == $lID Then ContinueLoop
-			$lNearestAgent = $lAgentArray[$i]
-			$lNearestDistance = $lDistance
-		EndIf
-	Next
-
-	SetExtended(Sqrt($lNearestDistance))
-	Return $lNearestAgent
-EndFunc   ;==>GetNearestNPCToAgent
-
-;~ Description: Returns the nearest NPC to a set of coordinates.
-Func GetNearestNPCToCoords($aX, $aY)
-	Local $lNearestAgent, $lNearestDistance = 100000
-	Local $lDistance
-	Local $lAgentArray = GetAgentArray(0xDB)
-
-	For $i = 1 To $lAgentArray[0]
-		If GetAgentInfo($lAgentArray[$i], 'Allegiance') <> 6 Then ContinueLoop
-		If GetAgentInfo($lAgentArray[$i], 'HP') <= 0 Then ContinueLoop
-		If BitAND(GetAgentInfo($lAgentArray[$i], 'Effects'), 0x0010) > 0 Then ContinueLoop
-
-		$lDistance = ($aX - GetAgentInfo($lAgentArray[$i], 'X')) ^ 2 + ($aY - GetAgentInfo($lAgentArray[$i], 'Y')) ^ 2
-		;$lDistance = (($aX - GetAgentInfo($lAgentArray[$i], 'X')) * ($aX - GetAgentInfo($lAgentArray[$i], 'X'))) + (($aY - GetAgentInfo($lAgentArray[$i], 'Y')) * ($aY - GetAgentInfo($lAgentArray[$i], 'Y')))
-
-
-		If $lDistance < $lNearestDistance Then
-			$lNearestAgent = $lAgentArray[$i]
-			$lNearestDistance = $lDistance
-		EndIf
-	Next
-
-	SetExtended(Sqrt($lNearestDistance))
-	Return $lNearestAgent
-EndFunc   ;==>GetNearestNPCToCoords
-
-;~ Description: Returns the nearest item to an agent.
-Func GetNearestItemToAgent($aAgent = -2, $aCanPickUp = True)
-	Local $lNearestAgent, $lNearestDistance = 10000
-	Local $lDistance
-	Local $lAgentArray = GetAgentArray(0x400)
-
-	Local $lID = GetAgentInfo($aAgent, 'ID')
-
-	For $i = 1 To $lAgentArray[0]
-
-		If $aCanPickUp And Not GetCanPickUp($lAgentArray[$i]) Then ContinueLoop
-		$lDistance = (GetAgentInfo($aAgent, 'X') - GetAgentInfo($lAgentArray[$i], 'X')) ^ 2 + (GetAgentInfo($aAgent, 'Y') - GetAgentInfo($lAgentArray[$i], 'Y')) ^ 2
-		If $lDistance < $lNearestDistance Then
-			If GetAgentInfo($lAgentArray[$i], 'ID') == $lID Then ContinueLoop
-			$lNearestAgent = $lAgentArray[$i]
-			$lNearestDistance = $lDistance
-		EndIf
-	Next
-
-	SetExtended(Sqrt($lNearestDistance))
-	Return $lNearestAgent
-EndFunc   ;==>GetNearestItemToAgent
 
 ;~ Description: Returns array of party members
 ;~ Param: an array returned by GetAgentArray. This is totally optional, but can greatly improve script speed.
@@ -3907,6 +3724,109 @@ Func GetNumberOfItemsInRangeOfAgent($aAgent = -2, $aRange = 1250)
 	Next
 	Return $lCount
 EndFunc ;==>GetNumberOfItemsInRangeOfAgent
+
+#Region GetNearestAgent
+;~ Description: Returns Pointer to nearest agent to an agent or XY. optional: PlayerNumber
+;~ GetNearestAgentPtr: Agent, Type, Allegiance, PlayerNumber, X, Y
+Func GetNearestAgentPtr($aAgent = -2, $aType = 0xDB, $aAllegiance = 0, $aPlayerNumber = 0, $aX = X($aAgent), $aY = Y($aAgent))
+	Local $lAgent = GetAgentPtr($aAgent), $lNearestAgentPtr = 0, $lNearestDistance = 25000000
+	Local $lAgentPtrArray, $lDistance
+	Switch $aType
+		Case 0xDB
+			$lAgentPtrArray = GetAgentPtrArray(2, $aType, $aAllegiance)
+		Case 0x200, 0x400
+			$lAgentPtrArray = GetAgentPtrArray(1, $aType)
+	EndSwitch
+
+	For $i = 1 To $lAgentPtrArray[0]
+		If $lAgentPtrArray[$i] = $lAgent Then ContinueLoop
+		If GetIsDead($lAgentPtrArray[$i]) Then ContinueLoop
+		If $aPlayerNumber <> 0 And MemoryRead($lAgentPtrArray[$i] + 244, "word") <> $aPlayerNumber Then ContinueLoop
+		$lDistance = GetPseudoDistanceToXY($aX, $aY, $lAgentPtrArray[$i])
+		If $lDistance < $lNearestDistance Then
+			$lNearestAgentPtr = $lAgentPtrArray[$i]
+			$lNearestDistance = $lDistance
+		EndIf
+	Next
+	Return $lNearestAgentPtr
+EndFunc ;==>GetNearestAgentPtr
+
+;~ Description: Returns pointer variable for the nearest enemy to an agent.
+Func GetNearestEnemyPtrToAgent($aAgent = -2, $aPlayerNumber = 0)
+	Return GetNearestAgentPtr($aAgent, 0xDB, 3, $aPlayerNumber)
+EndFunc ;==>GetNearestEnemyPtrToAgent
+
+;(backwards compatibility)
+;~ Description: Returns the nearest enemy to an agent. (AgentStruct)
+Func GetNearestEnemyToAgent($aAgent = -2, $aPlayerNumber = 0)
+	Local $lAgent = GetNearestEnemyPtrToAgent($aAgent, $aPlayerNumber)
+	Return GetAgentByID($lAgent)
+EndFunc ;==>GetNearestEnemyToAgent
+
+Func GetNearestEnemyPtrToXY($aX = X(-2), $aY = Y(-2), $aPlayerNumber = 0)
+	Return GetNearestAgentPtr(-2, 0xDB, 3, $aPlayerNumber, $aX, $aY)
+EndFunc ;==>GetNearestEnemyPtrToXY
+
+;(backwards compatibility)
+;~ Description: Returns the nearest enemy to a set of coordinates. (AgentStruct)
+Func GetNearestEnemyToCoords($aX, $aY, $aPlayerNumber = 0)
+	Local $lAgent = GetNearestEnemyPtrToXY($aX, $aY, $aPlayerNumber)
+	Return GetAgentByID($lAgent)
+EndFunc   ;==>GetNearestAgentToCoords
+
+;~ Description: Returns pointer to the nearest NPC to an agent. optional: PlayerNumber
+Func GetNearestNPCPtrToAgent($aAgent = -2, $aPlayerNumber = 0)
+	Return GetNearestAgentPtr($aAgent, 0xDB, 6, $aPlayerNumber)
+EndFunc   ;==>GetNearestNPCPtrToAgent
+
+;(backwards compatibility)
+;~ Description: Returns the nearest NPC to an agent. (AgentStruct)
+Func GetNearestNPCToAgent($aAgent = -2)
+	Local $lAgent = GetNearestNPCPtrToAgent($aAgent)
+	Return GetAgentByID($lAgent)
+EndFunc ;==>GetNearestNPCToAgent
+
+;~ Description: Returns pointer to the nearest NPC to XY. optional: PlayerNumber
+Func GetNearestNPCPtrToXY($aX = X(-2), $aY = Y(-2), $aPlayerNumber = 0)
+	Return GetNearestAgentPtr(-2, 0xDB, 6, $aPlayerNumber, $aX, $aY)
+EndFunc   ;==>GetNearestNPCPtrToXY
+
+;(backwards compatibility)
+;~ Description: Returns the nearest NPC to a set of coordinates. (AgentStruct)
+Func GetNearestNPCToCoords($aX, $aY)
+	Local $lAgent = GetNearestNPCPtrToXY($aX, $aY)
+	Return GetAgentByID($lAgent)
+EndFunc   ;==>GetNearestNPCToCoords
+
+;~ Description: Returns the pointer variable for the nearest signpost to an agent.
+Func GetNearestSignpostPtrToAgent($aAgent = -2)
+	Return GetNearestAgentPtr($aAgent, 0x200)
+EndFunc   ;==>GetNearestSignpostPtrToAgent
+
+;(backwards compatibility)
+;~ Description: Returns the nearest signpost to an agent. (AgentStruct)
+Func GetNearestSignpostToAgent($aAgent = -2)
+	Local $lAgent = GetNearestSignpostPtrToAgent($aAgent)
+	Return GetAgentByID($lAgent)
+EndFunc ;==>GetNearestSignpostToAgent
+
+;~ Description: Returns the pointer variable for the nearest signpost to a set of coordinates.
+Func GetNearestSignpostPtrToXY($aX, $aY)
+	Return GetNearestAgentPtr(-2, 0x200, 0, 0, $aX, $aY) ; look up allegiance=2
+EndFunc   ;==>GetNearestSignpostPtrToXY
+
+;(backwards compatibility)
+;~ Description: Returns the nearest signpost to a set of coordinates. (AgentStruct)
+Func GetNearestSignpostToCoords($aX, $aY)
+	Local $lAgent = GetNearestSignpostPtrToXY($aX, $aY)
+	Return GetAgentByID($lAgent)
+EndFunc ;==>GetNearestSignpostToCoords
+
+;~ Description: Returns pointer variable for the nearest ally to an agent.
+Func GetNearestAllyPtrToAgent($aAgent = -2)
+	Return GetNearestAgentPtr($aAgent, 0xDB, 1)
+EndFunc   ;==>GetNearestAllyPtrToAgent
+#EndRegion GetNearestAgent
 
 ;~ Description Returns the "danger level" of each party member
 ;~ Param1: an array returned by GetAgentArray(). This is totally optional, but can greatly improve script speed.
