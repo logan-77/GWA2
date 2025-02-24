@@ -71,16 +71,6 @@ Func OpenChestByExtraType($ExtraType)
 		OpenChest()
 EndFunc   ;==>OpenChestByExtraType
 
-;~ Description: Open a chest with key.
-Func OpenChestNoLockpick()
-	Return SendPacket(0x8, $HEADER_CHEST_OPEN, 1)
-EndFunc   ;==>OpenChestNoLockpick
-
-;~ Description: Open a chest with lockpick.
-Func OpenChest()
-	Return SendPacket(0x8, $HEADER_CHEST_OPEN, 2)
-EndFunc   ;==>OpenChest
-
 Func GetAgentArraySorted($lAgentType)     ;returns a 2-dimensional array([agentID, [distance]) sorted by distance
 	Local $lDistance
 	Local $lAgentArray = GetAgentArray($lAgentType)

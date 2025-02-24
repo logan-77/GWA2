@@ -1516,6 +1516,43 @@ Func UseHeroSkill($aHero, $aSkillSlot, $aTarget = -2)
 EndFunc   ;==>UseHeroSkill
 #EndRegion H&H
 
+#Region Interaction
+;~ Description: Cancel current action.
+Func CancelAction()
+	Return SendPacket(0x4, $HEADER_ACTION_CANCEL)
+EndFunc   ;==>CancelAction
+
+;~ Description: Attack an agent.
+Func Attack($aAgent, $aCallTarget = False)
+	Return SendPacket(0xC, $HEADER_ACTION_ATTACK, ConvertID($aAgent), $aCallTarget)
+EndFunc   ;==>Attack
+
+;~ Description: Run to or follow a player.
+Func GoPlayer($aAgent)
+	Return SendPacket(0x8, $HEADER_INTERACT_PLAYER, ConvertID($aAgent))
+EndFunc   ;==>GoPlayer
+
+;~ Description: Talk to an NPC
+Func GoNPC($aAgent)
+	Return SendPacket(0xC, $HEADER_INTERACT_LIVING, ConvertID($aAgent))
+EndFunc   ;==>GoNPC
+
+;~ Description: Run to a signpost.
+Func GoSignpost($aAgent)
+	Return SendPacket(0xC, $HEADER_GADGET_INTERACT, ConvertID($aAgent), 0)
+EndFunc   ;==>GoSignpost
+
+;~ Description: Open a chest with key.
+Func OpenChestNoLockpick()
+	Return SendPacket(0x8, $HEADER_CHEST_OPEN, 1)
+EndFunc   ;==>OpenChestNoLockpick
+
+;~ Description: Open a chest with lockpick.
+Func OpenChest()
+	Return SendPacket(0x8, $HEADER_CHEST_OPEN, 2)
+EndFunc   ;==>OpenChest
+#EndRegion Interaction
+
 #Region Movement
 ;~ Description: Move to a location.
 Func Move($aX, $aY, $aRandom = 50)
@@ -1552,88 +1589,53 @@ Func MoveTo($aX, $aY, $aRandom = 50)
 	Return 1
 EndFunc   ;==>MoveTo
 
-;~ Description: Run to or follow a player.
-Func GoPlayer($aAgent)
-	Return SendPacket(0x8, $HEADER_INTERACT_PLAYER, ConvertID($aAgent))
-EndFunc   ;==>GoPlayer
-
-;~ Description: Talk to an NPC
-Func GoNPC($aAgent)
-	Return SendPacket(0xC, $HEADER_INTERACT_LIVING, ConvertID($aAgent))
-EndFunc   ;==>GoNPC
-
 ;~ Description: Talks to NPC and waits until you reach them.
 Func GoToNPC($aAgent)
-	Local $lMe
+	Local $lMe = GetAgentPtr(-2)
 	Local $lBlocked = 0
 	Local $lMapLoading = GetInstanceType(), $lMapLoadingOld
 
-	Move(GetAgentInfo($aAgent, 'X'), GetAgentInfo($aAgent, 'Y'), 100)
-	Sleep(100)
-	GoNPC($aAgent)
-
+	Move(X($aAgent), Y($aAgent), 100)
 	Do
 		Sleep(100)
-		$lMe = GetAgentPtr(-2)
-
-		If GetAgentInfo($lMe, 'HP') <= 0 Then ExitLoop
+		If GetIsDead($lMe) Then Return 0
 
 		$lMapLoadingOld = $lMapLoading
 		$lMapLoading = GetInstanceType()
-		If $lMapLoading <> $lMapLoadingOld Then ExitLoop
+		If $lMapLoading <> $lMapLoadingOld Then Return 0
 
-		If GetAgentInfo($lMe, 'MoveX') == 0 And GetAgentInfo($lMe, 'MoveY') == 0 Then
+		If Not GetIsMoving($lMe) Then
 			$lBlocked += 1
-			Move(GetAgentInfo($aAgent, 'X'), GetAgentInfo($aAgent, 'Y'), 100)
-			Sleep(100)
-			GoNPC($aAgent)
+			Move(X($aAgent), Y($aAgent), 100)
 		EndIf
-	Until ComputeDistance(GetAgentInfo($lMe, 'X'), GetAgentInfo($lMe, 'Y'), GetAgentInfo($aAgent, 'X'), GetAgentInfo($aAgent, 'Y')) < 250 Or $lBlocked > 14
-	Sleep(GetPing() + Random(1500, 2000, 1))
+	Until GetDistance($aAgent, $lMe) < 200 Or $lBlocked > 14
+	GoNPC($aAgent)
+	PingSleep(1000)
 EndFunc   ;==>GoToNPC
-
-;~ Description: Run to a signpost.
-Func GoSignpost($aAgent)
-	Return SendPacket(0xC, $HEADER_GADGET_INTERACT, ConvertID($aAgent), 0)
-;~ 	ChangeTarget($aAgent)
-;~ 	sleep(16) ;not sure if needed
-;~     ActionInteract()
-EndFunc   ;==>GoSignpost
 
 ;~ Description: Go to signpost and waits until you reach it.
 Func GoToSignpost($aAgent)
-	Local $lMe
+	Local $lMe = GetAgentPtr(-2)
 	Local $lBlocked = 0
 	Local $lMapLoading = GetInstanceType(), $lMapLoadingOld
 
-	Move(GetAgentInfo($aAgent, 'X'), GetAgentInfo($aAgent, 'Y'), 100)
-	Sleep(100)
-	GoSignpost($aAgent)
-
+	Move(X($aAgent), Y($aAgent), 100)
 	Do
 		Sleep(100)
-		$lMe = GetAgentPtr(-2)
-
-		If GetAgentInfo($lMe, 'HP') <= 0 Then ExitLoop
+		If GetIsDead($lMe) Then Return 0
 
 		$lMapLoadingOld = $lMapLoading
 		$lMapLoading = GetInstanceType()
-		If $lMapLoading <> $lMapLoadingOld Then ExitLoop
+		If $lMapLoading <> $lMapLoadingOld Then Return 0
 
-		If GetAgentInfo($lMe, 'MoveX') == 0 And GetAgentInfo($lMe, 'MoveY') == 0 Then
+		If Not GetIsMoving($lMe) Then
 			$lBlocked += 1
-			Move(GetAgentInfo($aAgent, 'X'), GetAgentInfo($aAgent, 'Y'), 100)
-			Sleep(100)
-			GoSignpost($aAgent)
+			Move(X($aAgent), Y($aAgent), 100)
 		EndIf
-	Until ComputeDistance(GetAgentInfo($lMe, 'X'), GetAgentInfo($lMe, 'Y'), GetAgentInfo($aAgent, 'X'), GetAgentInfo($aAgent, 'Y')) < 250 Or $lBlocked > 14
-	Sleep(GetPing() + Random(1500, 2000, 1))
+	Until GetDistance($aAgent, $lMe) < 200 Or $lBlocked > 14
+	GoSignpost($aAgent)
+	Pingsleep(1000)
 EndFunc   ;==>GoToSignpost
-
-;~ Description: Attack an agent.
-Func Attack($aAgent, $aCallTarget = False)
-	Return SendPacket(0xC, $HEADER_ACTION_ATTACK, ConvertID($aAgent), $aCallTarget)
-EndFunc   ;==>Attack
 
 ;~ Description: Turn character to the left.
 Func TurnLeft($aTurn)
@@ -2134,31 +2136,9 @@ Func UseSkillEx($lSkill, $lTgt = -2, $aTimeout = 3000)
 	Sleep($lAftercast * 1000)
 EndFunc   ;==>UseSkillEx
 
-Func CustomUseSkillEx($lSkill, $lTgt = -2, $aTimeout = 3000)
-	If GetIsDead(-2) Then Return
-	If GetIsDead($lTgt) Then Return
-;~ 	If Not IsRecharged($lSkill) Then Return
-	Local $Skill = GetSkillByID(GetSkillbarSkillID($lSkill, 0))
-	Local $Energy = StringReplace(StringReplace(StringReplace(StringMid(DllStructGetData($Skill, 'Unknown4'), 6, 1), 'C', '25'), 'B', '15'), 'A', '10')
-	If GetEnergy(-2) < $Energy Then Return
-;~ 	Local $lAftercast = DllStructGetData($Skill, 'Aftercast')
-;~ 	Local $lDeadlock = TimerInit()
-	UseSkill($lSkill, $lTgt)
-;~ 	Do
-	Sleep(50)
-;~ 		If GetIsDead(-2) = 1 Then Return
-;~ 	Until (Not IsRecharged($lSkill)) Or (TimerDiff($lDeadlock) > $aTimeout)
-;~ 	Sleep($lAftercast * 1000)
-EndFunc   ;==>CustomUseSkillEx
-
 Func IsRecharged($lSkill)
 	Return GetSkillbarSkillRecharge($lSkill) == 0
 EndFunc   ;==>IsRecharged
-
-;~ Description: Cancel current action.
-Func CancelAction()
-	Return SendPacket(0x4, $HEADER_ACTION_CANCEL)
-EndFunc   ;==>CancelAction
 
 ;~ Description: Same as hitting spacebar.
 Func ActionInteract()
@@ -4584,6 +4564,10 @@ EndFunc   ;==>RndSleep
 Func TolSleep($aAmount = 150, $aTolerance = 50)
 	Sleep(Random($aAmount - $aTolerance, $aAmount + $aTolerance))
 EndFunc   ;==>TolSleep
+
+Func Pingsleep($msextra = 0)
+	Sleep(GetPing() + $msextra)
+EndFunc   ;==>Pingsleep
 
 ;~ Description: Returns window handle of Guild Wars.
 Func GetWindowHandle()
