@@ -12,6 +12,7 @@
 #Au3Stripper_Parameters=/pe /sf /tl
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 #include-once
+#include "GWA2_Headers.au3"
 
 If @AutoItX64 Then
 	MsgBox(16, "Error!", "Please run all bots in 32-bit (x86) mode.")
