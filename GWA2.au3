@@ -1520,44 +1520,37 @@ EndFunc   ;==>UseHeroSkill
 #Region Movement
 ;~ Description: Move to a location.
 Func Move($aX, $aY, $aRandom = 50)
-	;returns true if successful
-	If GetAgentExists(-2) Then
-		DllStructSetData($mMove, 2, $aX + Random(-$aRandom, $aRandom))
-		DllStructSetData($mMove, 3, $aY + Random(-$aRandom, $aRandom))
-		Enqueue($mMovePtr, 16)
-		Return True
-	Else
-		Return False
-	EndIf
+	If Not GetAgentExists(-2) Then Return 0
+	DllStructSetData($mMove, 2, $aX + Random(-$aRandom, $aRandom))
+	DllStructSetData($mMove, 3, $aY + Random(-$aRandom, $aRandom))
+	Enqueue($mMovePtr, 16)
+	Return 1
 EndFunc   ;==>Move
 
 ;~ Description: Move to a location and wait until you reach it.
 Func MoveTo($aX, $aY, $aRandom = 50)
-	Local $lBlocked = 0
-	Local $lMe
+	Local $lBlocked = 0, $lMe = GetAgentPtr(-2)
 	Local $lMapLoading = GetInstanceType(), $lMapLoadingOld
 	Local $lDestX = $aX + Random(-$aRandom, $aRandom)
 	Local $lDestY = $aY + Random(-$aRandom, $aRandom)
 
 	Move($lDestX, $lDestY, 0)
-
 	Do
 		Sleep(100)
-		$lMe = GetAgentPtr(-2)
-
-		If GetAgentInfo($lMe, 'HP') <= 0 Then ExitLoop
+		If GetIsDead($lMe) Then Return 0
 
 		$lMapLoadingOld = $lMapLoading
 		$lMapLoading = GetInstanceType()
-		If $lMapLoading <> $lMapLoadingOld Then ExitLoop
+		If $lMapLoading <> $lMapLoadingOld Then Return 0
 
-		If GetAgentInfo($lMe, 'MoveX') == 0 And GetAgentInfo($lMe, 'MoveY') == 0 Then
+		If MoveX($lMe) = 0 And MoveY($lMe) = 0 Then
 			$lBlocked += 1
 			$lDestX = $aX + Random(-$aRandom, $aRandom)
 			$lDestY = $aY + Random(-$aRandom, $aRandom)
 			Move($lDestX, $lDestY, 0)
 		EndIf
-	Until ComputeDistance(GetAgentInfo($lMe, 'X'), GetAgentInfo($lMe, 'Y'), $lDestX, $lDestY) < 25 Or $lBlocked > 14
+	Until GetDistanceToXY($lDestX, $lDestY, $lMe) < 25 Or $lBlocked > 14
+	Return 1
 EndFunc   ;==>MoveTo
 
 ;~ Description: Run to or follow a player.
@@ -3261,17 +3254,6 @@ EndFunc   ;==>GetIsHeroSkillSlotDisabled
 #EndRegion H&H
 
 #Region Agent
-;~ Description: Returns an agent struct.
-Func GetAgentByID($aAgentID = -2)
-	Local $lAgentPtr = GetAgentPtr($aAgentID)
-
-	If $lAgentPtr = 0 Then Return 0
-
-	DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lAgentPtr, 'ptr', DllStructGetPtr($g_AgentStruct), 'int', DllStructGetSize($g_AgentStruct), 'int', '')
-
-    Return $g_AgentStruct
-EndFunc   ;==>GetAgentByID
-
 Func GetAgentInfo($aAgentID, $aInfo = "")
     Local $lAgentPtr = GetAgentPtr($aAgentID)
     If $lAgentPtr = 0 Or $aInfo = "" Then Return 0
@@ -3482,7 +3464,23 @@ Func GetAgentInfo($aAgentID, $aInfo = "")
 	EndSwitch
 
     Return 0
-EndFunc
+EndFunc ;==>GetAgentInfo
+
+;~ Description: Internal use for handing -1, -2, AgentStruct and AgentPtr.
+Func ConvertID($aID)
+	Select
+		Case $aID = -2
+			Return GetMyID()
+		Case $aID = -1
+			Return GetCurrentTargetID()
+		Case IsPtr($aID) <> 0
+			Return MemoryRead($aID + 0x2C, 'long')
+		Case IsDllStruct($aID) <> 0
+			Return DllStructGetData($aID, 'ID')
+		Case Else
+			Return $aID
+	EndSelect
+EndFunc   ;==>ConvertID
 
 ;~ Description: Internal use for GetAgentByID/GetAgentInfo()
 Func GetAgentPtr($aAgent = -2)
@@ -3490,12 +3488,111 @@ Func GetAgentPtr($aAgent = -2)
 	Local $lOffset[3] = [0, 4 * ConvertID($aAgent), 0]
 	Local $lAgentStructAddress = MemoryReadPtr($mAgentBase, $lOffset)
 	Return $lAgentStructAddress[0]
-EndFunc   ;==>GetAgentPtr
+EndFunc ;==>GetAgentPtr
+
+;~ Description: Returns an agent struct.
+Func GetAgentByID($aAgent = -2)
+	Local $lAgentPtr = GetAgentPtr($aAgent)
+	If $lAgentPtr = 0 Then Return 0
+
+	DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lAgentPtr, 'ptr', DllStructGetPtr($g_AgentStruct), 'int', DllStructGetSize($g_AgentStruct), 'int', '')
+
+    Return $g_AgentStruct
+EndFunc ;==>GetAgentByID
+
+;~ Description: Returns number of agents currently loaded.
+Func GetMaxAgents()
+	Return MemoryRead($mMaxAgents)
+EndFunc   ;==>GetMaxAgents
+
+;~ Description: Returns your agent ID.
+Func GetMyID()
+	Local $lOffset[5] = [0, 0x18, 0x2C, 0x680, 0x14]
+	Local $lReturn = MemoryReadPtr($mBasePointer, $lOffset)
+	Return $lReturn[1]
+;~ 	Return MemoryRead($mMyID)
+EndFunc   ;==>GetMyID
+
+;~ Description: Returns current target AgentStruct.
+Func GetCurrentTarget()
+	Local $lCurrentTargetID = MemoryRead($mCurrentTarget)
+	If $lCurrentTargetID = 0 Then Return 0
+	Return GetAgentByID(GetCurrentTargetID())
+EndFunc   ;==>GetCurrentTarget
+
+;~ Description: Returns current target AgentPtr.
+Func GetCurrentTargetPtr()
+	Local $lCurrentTargetID = MemoryRead($mCurrentTarget)
+	If $lCurrentTargetID = 0 Then Return 0
+	Return GetAgentPtr($lCurrentTargetID)
+EndFunc   ;==>GetCurrentTargetPtr
+
+;~ Description: Returns current target ID.
+Func GetCurrentTargetID()
+	Return MemoryRead($mCurrentTarget)
+EndFunc   ;==>GetCurrentTargetID
 
 ;~ Description: Test if an agent exists.
 Func GetAgentExists($aAgent)
 	Return GetAgentPtr($aAgent) <> 0
 EndFunc   ;==>GetAgentExists
+
+;~ Description: Agents X Location
+Func X($aAgent = -2)
+	Return MemoryRead(GetAgentPtr($aAgent) + 116, 'float')
+EndFunc   ;==>X
+
+;~ Description: Agents Movevement on the X axis
+Func MoveX($aAgent = -2)
+	Return MemoryRead(GetAgentPtr($aAgent) + 160, 'float')
+EndFunc   ;==>MoveX
+
+;~ Description: Agents Y Location
+Func Y($aAgent = -2)
+	Return MemoryRead(GetAgentPtr($aAgent) + 120, 'float')
+EndFunc   ;==>Y
+
+;~ Description: Agents Movevement on the Y axis
+Func MoveY($aAgent = -2)
+	Return MemoryRead(GetAgentPtr($aAgent) + 164, 'float')
+EndFunc   ;==>MoveY
+
+;~ Description: Agents PlayerNumber
+Func GetPlayerNumber($aAgent = -2)
+	Return MemoryRead(GetAgentPtr($aAgent) + 244, "word")
+EndFunc	;==>GetPlayerNumber
+
+;~ Description: Returns energy of an agent. (Only self/heroes)
+Func GetEnergy($aAgent = -2)
+	Local $lPtr = GetAgentPtr($aAgent)
+	Return MemoryRead($lPtr + 284, 'float') * MemoryRead($lPtr + 288, "long")
+EndFunc   ;==>GetEnergy
+
+;~ Description: Returns health of an agent. Returns 0 for NPC's
+Func GetHealth($aAgent = -2)
+	Local $lPtr = GetAgentPtr($aAgent)
+	Return MemoryRead($lPtr + 304, 'float') * MemoryRead($lPtr + 308, "long")
+EndFunc   ;==>GetHealth
+
+;~ Description: Returns health of an agent as % of max HP
+Func GetHP($aAgent = -2)
+	Return MemoryRead(GetAgentPtr($aAgent) + 304, 'float')
+EndFunc   ;==>GetHP
+
+;~ Description: Returns the allegiance of an agent.
+Func GetAllegiance($aAgent = -2)
+	Return MemoryRead(GetAgentPtr($aAgent) + 433, 'byte')
+EndFunc   ;==>GetSkillID
+
+;~ Description: Returns the skill currently being cast by an agent.
+Func GetSkillID($aAgent = -2)
+	Return MemoryRead(GetAgentPtr($aAgent) + 436, "word")
+EndFunc   ;==>GetSkillID
+
+;~ Description: Returns the Type of the Agent. 0xDB/0x200/0x400
+Func GetAgentType($aAgent = -2)
+	Return MemoryRead(GetAgentPtr($aAgent) + 156, 'long')
+EndFunc   ;==>GetAgentType
 
 ;~ Description: Returns the target of an agent.
 Func GetTarget($aAgent)
@@ -4279,29 +4376,6 @@ Func GetFoesToKill()
 	Return $lReturn[1]
 EndFunc   ;==>GetFoesToKill
 
-;~ Description: Returns number of agents currently loaded.
-Func GetMaxAgents()
-	Return MemoryRead($mMaxAgents)
-EndFunc   ;==>GetMaxAgents
-
-;~ Description: Returns your agent ID.
-Func GetMyID()
-	Local $lOffset[5] = [0, 0x18, 0x2C, 0x680, 0x14]
-	Local $lReturn = MemoryReadPtr($mBasePointer, $lOffset)
-	Return $lReturn[1]
-;~ 	Return MemoryRead($mMyID)
-EndFunc   ;==>GetMyID
-
-;~ Description: Returns current target.
-Func GetCurrentTarget()
-	Return GetAgentPtr(GetCurrentTargetID())
-EndFunc   ;==>GetCurrentTarget
-
-;~ Description: Returns current target ID.
-Func GetCurrentTargetID()
-	Return MemoryRead($mCurrentTarget)
-EndFunc   ;==>GetCurrentTargetID
-
 ;~ Description: Returns current ping.
 Func GetPing()
 	Return MemoryRead($mPing)
@@ -4485,62 +4559,6 @@ EndFunc   ;==>TolSleep
 Func GetWindowHandle()
 	Return $mGWWindowHandle
 EndFunc   ;==>GetWindowHandle
-
-;~ Description: Returns the distance between two coordinate pairs.
-Func ComputeDistance($aX1, $aY1, $aX2, $aY2)
-	Return Sqrt(($aX1 - $aX2) ^ 2 + ($aY1 - $aY2) ^ 2)
-EndFunc   ;==>ComputeDistance
-
-;~ Description: Returns the distance between two agents.
-Func GetDistance($aAgent1 = -1, $aAgent2 = -2)
-	Return Sqrt((GetAgentInfo($aAgent1, 'X') - GetAgentInfo($aAgent2, 'X')) ^ 2 + (GetAgentInfo($aAgent1, 'Y') - GetAgentInfo($aAgent2, 'Y')) ^ 2)
-EndFunc   ;==>GetDistance
-
-;~ Description: Return the square of the distance between two agents.
-Func GetPseudoDistance($aAgent1, $aAgent2)
-	Return (GetAgentInfo($aAgent1, 'X') - GetAgentInfo($aAgent2, 'X')) ^ 2 + (GetAgentInfo($aAgent1, 'Y') - GetAgentInfo($aAgent2, 'Y')) ^ 2
-EndFunc   ;==>GetPseudoDistance
-
-;~ Description: Checks if a point is within a polygon defined by an array
-Func GetIsPointInPolygon($aAreaCoords, $aPosX = 0, $aPosY = 0)
-	Local $lPosition
-	Local $lEdges = UBound($aAreaCoords)
-	Local $lOddNodes = False
-	If $lEdges < 3 Then Return False
-	If $aPosX = 0 Then
-		Local $lAgent = GetAgentPtr(-2)
-		$aPosX = GetAgentInfo($lAgent, 'X')
-		$aPosY = GetAgentInfo($lAgent, 'Y')
-	EndIf
-	$j = $lEdges - 1
-	For $i = 0 To $lEdges - 1
-		If (($aAreaCoords[$i][1] < $aPosY And $aAreaCoords[$j][1] >= $aPosY) _
-				Or ($aAreaCoords[$j][1] < $aPosY And $aAreaCoords[$i][1] >= $aPosY)) _
-				And ($aAreaCoords[$i][0] <= $aPosX Or $aAreaCoords[$j][0] <= $aPosX) Then
-			If ($aAreaCoords[$i][0] + ($aPosY - $aAreaCoords[$i][1]) / ($aAreaCoords[$j][1] - $aAreaCoords[$i][1]) * ($aAreaCoords[$j][0] - $aAreaCoords[$i][0]) < $aPosX) Then
-				$lOddNodes = Not $lOddNodes
-			EndIf
-		EndIf
-		$j = $i
-	Next
-	Return $lOddNodes
-EndFunc   ;==>GetIsPointInPolygon
-
-;~ Description: Internal use for handing -1 and -2 agent IDs.
-Func ConvertID($aID)
-	Select
-		Case $aID = -2
-			Return GetMyID()
-		Case $aID = -1
-			Return GetCurrentTargetID()
-		Case IsPtr($aID) <> 0
-			Return MemoryRead($aID + 0x2C, 'long')
-		Case IsDllStruct($aID) <> 0
-			Return DllStructGetData($aID, 'ID')
-		Case Else
-			Return $aID
-	EndSelect
-EndFunc   ;==>ConvertID
 
 Func InviteGuild($charName)
 	If GetAgentExists(-2) Then
@@ -7145,3 +7163,67 @@ Func GetWorldInfoByID($aWorldID)
 
     Return $g_WorldStruct
 EndFunc   ;==>GetWorldInfoByID
+
+#Region Distance
+;~ Description: Returns the distance between two coordinate pairs.
+Func ComputeDistance($aX1, $aY1, $aX2, $aY2)
+	Return Sqrt(($aX1 - $aX2) ^ 2 + ($aY1 - $aY2) ^ 2)
+EndFunc   ;==>ComputeDistance
+
+;~ Description: Returns the square of the distance between two coordinate pairs.
+Func ComputePseudoDistance($aX1, $aY1, $aX2, $aY2)
+	Return ($aX1 - $aX2) ^ 2 + ($aY1 - $aY2) ^ 2
+EndFunc   ;==>ComputePseudoDistance
+
+;~ Description: Returns the distance between two agents.
+Func GetDistance($aAgent1 = -1, $aAgent2 = -2)
+	Return Sqrt((X($aAgent1) - X($aAgent2)) ^ 2 + (Y($aAgent1) - Y($aAgent2)) ^ 2)
+EndFunc   ;==>GetDistance
+
+;~ Description: Return the square of the distance between two agents.
+Func GetPseudoDistance($aAgent1 = -1, $aAgent2 = -2)
+	Return (X($aAgent1) - X($aAgent2)) ^ 2 + (Y($aAgent1) - Y($aAgent2)) ^ 2
+EndFunc   ;==>GetPseudoDistance
+
+;~ Description: Returns the distance of agent from a waypoint.
+Func GetDistanceToXY($aX, $aY, $aAgent = GetAgentPtr(-2))
+	Return Sqrt(($aX - X($aAgent)) ^ 2 + ($aY - Y($aAgent)) ^ 2)
+EndFunc   ;==>GetDistanceToXY
+
+;~ Description: Returns the square of the distance of agent from a waypoint.
+Func GetPseudoDistanceToXY($aX, $aY, $aAgent = GetAgentPtr(-2))
+	Return ($aX - X($aAgent)) ^ 2 + ($aY - Y($aAgent)) ^ 2
+EndFunc   ;==>GetPseudoDistanceToXY
+
+; Description: returns whether an Agent is moving away from a waypoint
+Func GetIsMovingAwayFromXY($aX, $aY, $aAgent)
+	$Distance = GetDistanceToXY($aX, $aY, $aAgent)
+	Sleep(50)
+	If GetDistanceToXY($aX, $aY, $aAgent) > $Distance Then Return True
+	Return False
+EndFunc   ;==>GetIsMovingAwayFromXY
+
+;~ Description: Checks if a point is within a polygon defined by an array
+Func GetIsPointInPolygon($aAreaCoords, $aPosX = 0, $aPosY = 0)
+	Local $lPosition
+	Local $lEdges = UBound($aAreaCoords)
+	Local $lOddNodes = False
+	If $lEdges < 3 Then Return False
+	If $aPosX = 0 Then
+		$aPosX = X(-2)
+		$aPosY = Y(-2)
+	EndIf
+	$J = $lEdges - 1
+	For $i = 0 To $lEdges - 1
+		If (($aAreaCoords[$i][1] < $aPosY And $aAreaCoords[$J][1] >= $aPosY) _
+				Or ($aAreaCoords[$J][1] < $aPosY And $aAreaCoords[$i][1] >= $aPosY)) _
+				And ($aAreaCoords[$i][0] <= $aPosX Or $aAreaCoords[$J][0] <= $aPosX) Then
+			If ($aAreaCoords[$i][0] + ($aPosY - $aAreaCoords[$i][1]) / ($aAreaCoords[$J][1] - $aAreaCoords[$i][1]) * ($aAreaCoords[$J][0] - $aAreaCoords[$i][0]) < $aPosX) Then
+				$lOddNodes = Not $lOddNodes
+			EndIf
+		EndIf
+		$J = $i
+	Next
+	Return $lOddNodes
+EndFunc   ;==>GetIsPointInPolygon
+#EndRegion Distance
