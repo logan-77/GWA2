@@ -3965,16 +3965,6 @@ Func GetIsMovable($aAgent)
 	Return GetAgentInfo($aAgent, 'Type') = 0x400
 EndFunc   ;==>GetIsMovable
 
-;~ Description: Returns energy of an agent. (Only self/heroes)
-Func GetEnergy($aAgent = -2)
-	Return GetAgentInfo($aAgent, 'EnergyPercent') * GetAgentInfo($aAgent, 'MaxEnergy')
-EndFunc   ;==>GetEnergy
-
-;~ Description: Returns health of an agent. (Must have caused numerical change in health)
-Func GetHealth($aAgent = -2)
-	Return GetAgentInfo($aAgent, 'HP') * GetAgentInfo($aAgent, 'MaxHP')
-EndFunc   ;==>GetHealth
-
 ;~ Description: Tests if an agent is moving.
 Func GetIsMoving($aAgent)
 	If GetAgentInfo($aAgent, 'MoveX') <> 0 Or GetAgentInfo($aAgent, 'MoveY') <> 0 Then Return True
