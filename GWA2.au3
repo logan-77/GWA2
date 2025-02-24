@@ -3485,15 +3485,16 @@ Func GetAgentInfo($aAgentID, $aInfo = "")
 EndFunc
 
 ;~ Description: Internal use for GetAgentByID/GetAgentInfo()
-Func GetAgentPtr($aAgentID = -2)
-	Local $lOffset[3] = [0, 4 * ConvertID($aAgentID), 0]
+Func GetAgentPtr($aAgent = -2)
+	If IsPtr($aAgent) Then Return $aAgent
+	Local $lOffset[3] = [0, 4 * ConvertID($aAgent), 0]
 	Local $lAgentStructAddress = MemoryReadPtr($mAgentBase, $lOffset)
 	Return $lAgentStructAddress[0]
 EndFunc   ;==>GetAgentPtr
 
 ;~ Description: Test if an agent exists.
-Func GetAgentExists($aAgentID)
-	Return GetAgentPtr($aAgentID) <> 0
+Func GetAgentExists($aAgent)
+	Return GetAgentPtr($aAgent) <> 0
 EndFunc   ;==>GetAgentExists
 
 ;~ Description: Returns the target of an agent.
