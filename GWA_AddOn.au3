@@ -306,60 +306,6 @@ Local $lNearestAgent, $lNearestDistance = 100000000
 	Return $lNearestAgent; return struct of Agent not item!
 EndFunc   ;==>GetNearestItemByModelId
 
-
-;Func GetNumberOfFoesInRangeOfAgent($aAgent = -2, $fMaxDistance = 1012)
-;	Local $lDistance, $lCount = 0
-;
-;	If IsDllStruct($aAgent) = 0 Then $aAgent = GetAgentByID($aAgent)
-;	For $i = 1 To GetMaxAgents()
-;		$lAgentToCompare = GetAgentByID($i)
-;		If GetIsDead($lAgentToCompare) <> 0 Then ContinueLoop
-;		If DllStructGetData($lAgentToCompare, 'Allegiance') = 0x3 Then
-;			$lDistance = GetDistance($lAgentToCompare, $aAgent)
-;			If $lDistance < $fMaxDistance Then
-;				$lCount += 1
-;				;ConsoleWrite("Counts: " &$lCount & @CRLF)
-;			EndIf
-;		EndIf
-;	Next
-;	Return $lCount
-;EndFunc   ;==>GetNumberOfFoesInRangeOfAgent
-
-Func GetNumberOfAlliesInRangeOfAgent($aAgent = -2, $fMaxDistance = 506)
-	Local $lDistance, $lCount = 0
-
-	If IsDllStruct($aAgent) = 0 Then $aAgent = GetAgentByID($aAgent)
-	For $i = 1 To GetMaxAgents()
-		$lAgentToCompare = GetAgentByID($i)
-		If GetIsDead($lAgentToCompare) <> 0 Then ContinueLoop
-		If DllStructGetData($lAgentToCompare, 'Allegiance') = 0x1 Then
-			$lDistance = GetDistance($lAgentToCompare, $aAgent)
-			If $lDistance < $fMaxDistance Then
-				$lCount += 1
-				;ConsoleWrite("Counts: " &$lCount & @CRLF)
-			EndIf
-		EndIf
-	Next
-	Return $lCount
-EndFunc   ;==>GetNumberOfAlliesInRangeOfAgent
-
-Func GetNumberOfItemsInRangeOfAgent($aAgent = -2, $fMaxDistance = 506)
-	Local $lDistance, $lCount = 0
-
-	If IsDllStruct($aAgent) = 0 Then $aAgent = GetAgentByID($aAgent)
-	For $i = 1 To GetMaxAgents()
-		$lAgentToCompare = GetAgentByID($i)
-		If DllStructGetData($lAgentToCompare, 'Type') = 0x400 Then
-			$lDistance = GetDistance($lAgentToCompare, $aAgent)
-			If $lDistance < $fMaxDistance Then
-				$lCount += 1
-				;ConsoleWrite("Counts: " &$lCount & @CRLF)
-			EndIf
-		EndIf
-	Next
-	Return $lCount
-EndFunc   ;==>GetNumberOfItemsInRangeOfAgent
-
 Func GetNearestEnemyToCoords($aX, $aY)
 	Local $lNearestAgent, $lNearestDistance = 100000000
 	Local $lDistance, $lAgentToCompare
