@@ -940,6 +940,24 @@ Func GetItemByItemID($aItemID)
 	Return $g_ItemStruct
 EndFunc   ;==>GetItemByItemID
 
+;~ Description: Returns item by agent ID.
+Func GetItemByAgentID($aAgentID)
+	Local $lOffset[4] = [0, 0x18, 0x40, 0xC0]
+	Local $lItemArraySize = MemoryReadPtr($mBasePointer, $lOffset)
+	Local $lOffset[5] = [0, 0x18, 0x40, 0xB8, 0]
+	Local $lItemPtr, $lItemID
+	Local $lAgentID = ConvertID($aAgentID)
+
+	For $lItemID = 1 To $lItemArraySize[1]
+		$lOffset[4] = 0x4 * $lItemID
+		$lItemPtr = MemoryReadPtr($mBasePointer, $lOffset)
+		If $lItemPtr[1] = 0 Then ContinueLoop
+
+		DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lItemPtr[1], 'ptr', DllStructGetPtr($g_ItemStruct), 'int', DllStructGetSize($g_ItemStruct), 'int', '')
+		If DllStructGetData($g_ItemStruct, 'AgentID') = $lAgentID Then Return $g_ItemStruct
+	Next
+EndFunc   ;==>GetItemByAgentID
+
 Func GetItemExists($aItemID)
 	Return GetItemPtr($aItemID) <> 0
 EndFunc   ;==>GetItemExists
@@ -1944,24 +1962,6 @@ Func GetCanPickUp($aAgent)
 		Return False
 	EndIf
 EndFunc   ;==>GetCanPickUp
-
-;~ Description: Returns item by agent ID.
-Func GetItemByAgentID($aAgentID)
-	Local $lOffset[4] = [0, 0x18, 0x40, 0xC0]
-	Local $lItemArraySize = MemoryReadPtr($mBasePointer, $lOffset)
-	Local $lOffset[5] = [0, 0x18, 0x40, 0xB8, 0]
-	Local $lItemPtr, $lItemID
-	Local $lAgentID = ConvertID($aAgentID)
-
-	For $lItemID = 1 To $lItemArraySize[1]
-		$lOffset[4] = 0x4 * $lItemID
-		$lItemPtr = MemoryReadPtr($mBasePointer, $lOffset)
-		If $lItemPtr[1] = 0 Then ContinueLoop
-
-		DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lItemPtr[1], 'ptr', DllStructGetPtr($g_ItemStruct), 'int', DllStructGetSize($g_ItemStruct), 'int', '')
-		If DllStructGetData($g_ItemStruct, 'AgentID') = $lAgentID Then Return $g_ItemStruct
-	Next
-EndFunc   ;==>GetItemByAgentID
 
 ;~ Description: Returns the item ID of the quoted item.
 Func GetTraderCostID()
