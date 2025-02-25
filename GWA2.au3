@@ -1700,15 +1700,6 @@ Func GetCraftMatsString($aModelID, $aAmount)
 	Next
 EndFunc   ;==>GetCraftMatsString
 
-Func GetItemIDfromMobelID($aModelID)
-	For $i = 1 To 4
-		For $j = 1 To DllStructGetData(GetBag($i), 'slots')
-			Local $item = GetItemBySlot($i, $j)
-			If DllStructGetData($item, 'ModelId') == $aModelID Then Return DllStructGetData($item, 'Id')
-		Next
-	Next
-EndFunc   ;==>GetItemIDfromMobelID
-
 Func GetMerchantItemPtrByModelId($nModelId)
 	Local $aOffsets[5] = [0, 0x18, 0x40, 0xB8]
 	Local $pMerchantBase = GetMerchantItemsBase()
