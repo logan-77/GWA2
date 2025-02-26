@@ -296,27 +296,6 @@ Local $lNearestAgent, $lNearestDistance = 100000000
 	Return $lNearestAgent; return struct of Agent not item!
 EndFunc   ;==>GetNearestItemByModelId
 
-;~ Description: Returns the nearest item by model ID to an agent.
-Func GetNearestItemByModelIDToAgent($aModelID, $aAgent = -2, $aCanPickUp = True)
-	Local $lNearestAgent, $lNearestDistance = 100000000
-	Local $lDistance
-	If GetMaxAgents() > 0 Then
-		For $i = 1 To GetMaxAgents()
-			Local $a = GetAgentPtr($i)
-			If Not GetIsMovable($a) Then ContinueLoop
-			Local $aMID = DllStructGetData(GetItemByAgentID($i), "ModelID")
-			If $aMID = $aModelID Then    ;Item matches
-				$lDistance = (GetAgentInfo($aAgent, 'X') - GetAgentInfo($a, 'X')) ^ 2 + (GetAgentInfo($aAgent, 'Y') - GetAgentInfo($a, 'Y')) ^ 2
-				If $lDistance < $lNearestDistance Then
-					$lNearestAgent = $a
-					$lNearestDistance = $lDistance
-				EndIf
-			EndIf
-		Next
-		Return $lNearestAgent
-	EndIf
-EndFunc   ;==>GetNearestItemByModelIDToAgent
-
 ;~ Description: Returns the nearest item to an agent.
 Func GetNearestItemToAgent($aAgent = -2, $aCanPickUp = True)
 	Local $lNearestAgent, $lNearestDistance = 10000

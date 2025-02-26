@@ -206,7 +206,7 @@ Func MemoryReadPtr($aAddress, $aOffset, $aType = 'dword')
 	$aAddress += $aOffset[$lPointerCount + 1]
 	$lBuffer = DllStructCreate($aType)
 	DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $aAddress, 'ptr', DllStructGetPtr($lBuffer), 'int', DllStructGetSize($lBuffer), 'int', '')
-	Local $lData[2] = [$aAddress, DllStructGetData($lBuffer, 1)]
+	Local $lData[2] = [Ptr($aAddress), DllStructGetData($lBuffer, 1)]
 	Return $lData
 EndFunc   ;==>MemoryReadPtr
 
@@ -932,6 +932,11 @@ Func GetItemPtr($aItem)
 	Return $lItemStructAddress[1]
 EndFunc   ;==>GetItemPtr
 
+;~ Description: Returns Itemptr by agentid.
+Func GetItemPtrByAgentID($aAgentID)
+	Return GetItemPtr(MemoryRead(GetAgentPtr($aAgentID) + 200))
+EndFunc   ;==>GetItemPtrByAgentID
+
 ;~ Description: Returns item struct.
 Func GetItemByItemID($aItemID)
 	Local $lOffset[5] = [0, 0x18, 0x40, 0xB8, 0x4 * ItemID($aItemID)]
@@ -1297,7 +1302,7 @@ EndFunc ;==>MoveItemEx
 ;~ If $aStackItem=True, it will try to stack Items with same ModelID
 Func MoveItemToChest($aItem, $aStackItem = False)
 	Local $lItemPtr, $lBagPtr
-	Local $lQuantity = 0, $lModelID = 0, $lMoveItem = False
+	Local $lMoveItem = False
 	For $bag = 8 To 12
 		$lBagPtr = GetBagPtr($bag)
 		If $lBagPtr = 0 Then ContinueLoop
@@ -3790,13 +3795,14 @@ Func ConvertID($aID)
 		Case Else
 			Return $aID
 	EndSelect
-EndFunc   ;==>ConvertID
+EndFunc ;==>ConvertID
 
-;~ Description: Internal use for GetAgentByID/GetAgentInfo()
+; ~ Description: Internal use for GetAgentByID/GetAgentInfo()
 Func GetAgentPtr($aAgent = -2)
 	If IsPtr($aAgent) Then Return $aAgent
+	; Return MemoryRead(MemoryRead($mAgentBase, 'ptr') + 4 * ConvertID($aAgent), 'ptr')
 	Local $lOffset[3] = [0, 4 * ConvertID($aAgent), 0]
-	Local $lAgentStructAddress = MemoryReadPtr($mAgentBase, $lOffset)
+	Local $lAgentStructAddress = MemoryReadPtr($mAgentBase, $lOffset, 'ptr')
 	Return $lAgentStructAddress[0]
 EndFunc   ;==>GetAgentPtr
 
@@ -3818,7 +3824,7 @@ EndFunc   ;==>GetMaxAgents
 ;~ Description: Returns your agent ID.
 Func GetMyID()
 	Local $lOffset[5] = [0, 0x18, 0x2C, 0x680, 0x14]
-	Local $lReturn = MemoryReadPtr($mBasePointer, $lOffset)
+	Local $lReturn = MemoryReadPtr($mBasePointer, $lOffset, 'dword')
 	Return $lReturn[1]
 ;~ 	Return MemoryRead($mMyID)
 EndFunc   ;==>GetMyID
@@ -4092,7 +4098,7 @@ Func GetNearestAgentPtr($aAgent = -2, $aType = 0xDB, $aAllegiance = 0, $aPlayerN
 
 	For $i = 1 To $lAgentPtrArray[0]
 		If $lAgentPtrArray[$i] = $lAgent Then ContinueLoop
-		If GetIsDead($lAgentPtrArray[$i]) Then ContinueLoop
+		If $aType = 0xDB And GetIsDead($lAgentPtrArray[$i]) Then ContinueLoop
 		If $aPlayerNumber <> 0 And MemoryRead($lAgentPtrArray[$i] + 244, "word") <> $aPlayerNumber Then ContinueLoop
 		$lDistance = GetPseudoDistanceToXY($aX, $aY, $lAgentPtrArray[$i])
 		If $lDistance < $lNearestDistance Then
@@ -4102,6 +4108,18 @@ Func GetNearestAgentPtr($aAgent = -2, $aType = 0xDB, $aAllegiance = 0, $aPlayerN
 	Next
 	Return $lNearestAgentPtr
 EndFunc ;==>GetNearestAgentPtr
+
+;~ Desription: Returns nearest Item AgentPtr to agent. optional: PlayerNumber/ModelID IS IT THE SAME?
+; GetCanPickUp?
+Func GetNearestItemPtrToAgent($aAgent = -2, $aPlayerNumber = 0)
+	Return GetNearestAgentPtr($aAgent, 0x400, 0, $aPlayerNumber)
+EndFunc ;==>GetNearestItemPtrToAgent
+
+;~ Desription: Returns nearest Item AgentStruct to agent. optional: PlayerNumber/ModelID IS IT THE SAME?
+Func GetNearestItemToAgent($aAgent = -2, $aPlayerNumber = 0)
+	Local $lAgentPtr = GetNearestAgentPtr($aAgent, 0x400, 0, $aPlayerNumber)
+	Return GetAgentByID($lAgentPtr)
+EndFunc ;==>GetNearestItemToAgent
 
 ;~ Description: Returns pointer variable for the nearest enemy to an agent.
 Func GetNearestEnemyPtrToAgent($aAgent = -2, $aPlayerNumber = 0)
@@ -4370,13 +4388,13 @@ Func GetBuffCount($aHeroNumber = 0)
 	$lOffset[1] = 0x18
 	$lOffset[2] = 0x2C
 	$lOffset[3] = 0x510
-	Local $lCount = MemoryReadPtr($mBasePointer, $lOffset)
+	Local $lCount = MemoryReadPtr($mBasePointer, $lOffset, 'long')
 	ReDim $lOffset[5]
 	$lOffset[3] = 0x508
 	Local $lBuffer
 	For $i = 0 To $lCount[1] - 1
 		$lOffset[4] = 0x24 * $i
-		$lBuffer = MemoryReadPtr($mBasePointer, $lOffset)
+		$lBuffer = MemoryReadPtr($mBasePointer, $lOffset, 'long')
 		If $lBuffer[1] == GetHeroID($aHeroNumber) Then
 			Return MemoryRead($lBuffer[0] + 0xC)
 		EndIf
@@ -4449,18 +4467,15 @@ Func GetBuffByIndex($aBuffNumber, $aHeroNumber = 0)
 EndFunc   ;==>GetBuffByIndex
 #EndRegion Buff
 
-#Region Misc
+#Region Skills
 ;~ Description: Returns skillbar struct.
 Func GetSkillbar($aHeroNumber = 0)
-	Local $lOffset[5]
-	$lOffset[0] = 0
-	$lOffset[1] = 0x18
-	$lOffset[2] = 0x2C
-	$lOffset[3] = 0x6F0
+	Local $lOffset[5] = [0, 0x18, 0x2C, 0x6F0]
+	Local $lSkillbarStructAddress
 
 	For $i = 0 To GetHeroCount()
 		$lOffset[4] = $i * 0xBC
-		Local $lSkillbarStructAddress = MemoryReadPtr($mBasePointer, $lOffset)
+		$lSkillbarStructAddress = MemoryReadPtr($mBasePointer, $lOffset)
 		DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lSkillbarStructAddress[0], 'ptr', DllStructGetPtr($g_SkillbarStruct), 'int', DllStructGetSize($g_SkillbarStruct), 'int', '')
 
 		If DllStructGetData($g_SkillbarStruct, 'AgentId') == GetHeroID($aHeroNumber) Then
@@ -4821,7 +4836,6 @@ Func GetProfPrimaryAttribute($aProfession)
 			Return 44
 	EndSwitch
 EndFunc   ;==>GetProfPrimaryAttribute
-#EndRegion Misc
 #EndRegion Queries
 
 #Region Other Functions
