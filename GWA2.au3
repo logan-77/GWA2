@@ -2740,34 +2740,6 @@ Func ChangeWeaponSet($aSet)
 	Return PerformAction(0x80 + $aSet, 0x1E) ;Return PerformAction(0x80 + $aSet, 0x1E) 0x14A
 EndFunc   ;==>ChangeWeaponSet
 
-;~ Description: Use a skill.
-Func UseSkill($aSkillSlot, $aTarget, $aCallTarget = False)
-	DllStructSetData($mUseSkill, 2, $aSkillSlot)
-	DllStructSetData($mUseSkill, 3, ConvertID($aTarget))
-	DllStructSetData($mUseSkill, 4, $aCallTarget)
-	Enqueue($mUseSkillPtr, 16)
-EndFunc   ;==>UseSkill
-
-Func UseSkillEx($lSkill, $lTgt = -2, $aTimeout = 3000)
-	If GetIsDead(-2) Then Return
-	If Not IsRecharged($lSkill) Then Return
-	Local $Skill = GetSkillByID(GetSkillbarSkillID($lSkill, 0))
-	Local $Energy = StringReplace(StringReplace(StringReplace(StringMid(DllStructGetData($Skill, 'Unknown4'), 6, 1), 'C', '25'), 'B', '15'), 'A', '10')
-	If GetEnergy(-2) < $Energy Then Return
-	Local $lAftercast = DllStructGetData($Skill, 'Aftercast')
-	Local $lDeadlock = TimerInit()
-	UseSkill($lSkill, $lTgt)
-	Do
-		Sleep(50)
-		If GetIsDead(-2) = 1 Then Return
-	Until (Not IsRecharged($lSkill)) Or (TimerDiff($lDeadlock) > $aTimeout)
-	Sleep($lAftercast * 1000)
-EndFunc   ;==>UseSkillEx
-
-Func IsRecharged($lSkill)
-	Return GetSkillbarSkillRecharge($lSkill) == 0
-EndFunc   ;==>IsRecharged
-
 ;~ Description: Same as hitting spacebar.
 Func ActionInteract()
 	Return PerformAction(0x80, 0x1E)
@@ -4511,6 +4483,144 @@ EndFunc   ;==>GetBuffByIndex
 #EndRegion Buff
 
 #Region Skills
+Func GetSkillInfo($aSkillID, $aInfo = "")
+    Local $lPtr = GetSkillPtr($aSkillID)
+    If $lPtr = 0 Or $aInfo = "" Then Return 0
+
+    Switch $aInfo
+        Case "SkillID"
+            Return MemoryRead($lPtr, "long")
+        Case "h0004"
+            Return MemoryRead($lPtr + 0x4, "long")
+        Case "Campaign"
+            Return MemoryRead($lPtr + 0x8, "long")
+        Case "SkillType"
+            Return MemoryRead($lPtr + 0xC, "long")
+        Case "Special"
+            Return MemoryRead($lPtr + 0x10, "long")
+        Case "ComboReq"
+            Return MemoryRead($lPtr + 0x14, "long")
+        Case "Effect1"
+            Return MemoryRead($lPtr + 0x18, "long")
+        Case "Condition"
+            Return MemoryRead($lPtr + 0x1C, "long")
+        Case "Effect2"
+            Return MemoryRead($lPtr + 0x20, "long")
+        Case "WeaponReq"
+            Return MemoryRead($lPtr + 0x24, "long")
+        Case "Profession"
+            Return MemoryRead($lPtr + 0x28, "byte")
+        Case "Attribute"
+            Return MemoryRead($lPtr + 0x29, "byte")
+        Case "Title"
+            Return MemoryRead($lPtr + 0x2A, "word")
+        Case "SkillIDPvP"
+            Return MemoryRead($lPtr + 0x2C, "long")
+        Case "Combo"
+            Return MemoryRead($lPtr + 0x30, "byte")
+        Case "Target"
+            Return MemoryRead($lPtr + 0x31, "byte")
+        Case "h0032"
+            Return MemoryRead($lPtr + 0x32, "byte")
+        Case "SkillEquipType"
+            Return MemoryRead($lPtr + 0x33, "byte")
+        Case "Overcast"
+            Return MemoryRead($lPtr + 0x34, "byte")
+        Case "EnergyCost"
+            Return MemoryRead($lPtr + 0x35, "byte")
+        Case "HealthCost"
+            Return MemoryRead($lPtr + 0x36, "byte")
+        Case "h0037"
+            Return MemoryRead($lPtr + 0x37, "byte")
+        Case "Adrenaline"
+            Return MemoryRead($lPtr + 0x38, "dword")
+        Case "Activation"
+            Return MemoryRead($lPtr + 0x3C, "float")
+        Case "Aftercast"
+            Return MemoryRead($lPtr + 0x40, "float")
+        Case "Duration0"
+            Return MemoryRead($lPtr + 0x44, "dword")
+        Case "Duration15"
+            Return MemoryRead($lPtr + 0x48, "dword")
+        Case "Recharge"
+            Return MemoryRead($lPtr + 0x4C, "dword")
+        Case "h0050"
+            Return MemoryRead($lPtr + 0x50, "word")
+        Case "h0052"
+            Return MemoryRead($lPtr + 0x52, "word")
+        Case "h0054"
+            Return MemoryRead($lPtr + 0x54, "word")
+        Case "h0056"
+            Return MemoryRead($lPtr + 0x56, "word")
+        Case "SkillArguments"
+            Return MemoryRead($lPtr + 0x58, "dword")
+        Case "Scale0"
+            Return MemoryRead($lPtr + 0x5C, "dword")
+        Case "Scale15"
+            Return MemoryRead($lPtr + 0x60, "dword")
+        Case "BonusScale0"
+            Return MemoryRead($lPtr + 0x64, "dword")
+        Case "BonusScale15"
+            Return MemoryRead($lPtr + 0x68, "dword")
+        Case "AoeRange"
+            Return MemoryRead($lPtr + 0x6C, "float")
+        Case "ConstEffect"
+            Return MemoryRead($lPtr + 0x70, "float")
+        Case "CasterOverheadAnimationID"
+            Return MemoryRead($lPtr + 0x74, "dword")
+        Case "CasterBodyAnimationID"
+            Return MemoryRead($lPtr + 0x78, "dword")
+        Case "TargetBodyAnimationID"
+            Return MemoryRead($lPtr + 0x7C, "dword")
+        Case "TargetOverheadAnimationID"
+            Return MemoryRead($lPtr + 0x80, "dword")
+        Case "ProjectileAnimation1ID"
+            Return MemoryRead($lPtr + 0x84, "dword")
+        Case "ProjectileAnimation2ID"
+            Return MemoryRead($lPtr + 0x88, "dword")
+        Case "IconFileID"
+            Return MemoryRead($lPtr + 0x8C, "dword")
+        Case "IconFileID2"
+            Return MemoryRead($lPtr + 0x90, "dword")
+        Case "Name"
+            Return MemoryRead($lPtr + 0x94, "dword")
+        Case "Concise"
+            Return MemoryRead($lPtr + 0x98, "dword")
+        Case "Description"
+            Return MemoryRead($lPtr + 0x9C, "dword")
+    EndSwitch
+
+    Return 0
+EndFunc ;==>GetSkillInfo
+
+;~ Description: Returns the pointer variable to a skillbar for specified hero number.
+; #FUNCTION# ====================================================================================================================
+; Name ..........: GetSkillbarPtr
+; Description ...: Returns Pointer to Skillbar struct.
+; Syntax ........: GetSkillbarPtr([$aHeroNumber = 0])
+; Parameters ....: $aHeroNumber         - [optional] default is 0/self.
+; Return values .: Pointer to Skillbar.
+; Author ........: 
+; Modified ......:
+; Remarks .......:
+; Related .......:
+; Link ..........:
+; Example .......: No
+; ===============================================================================================================================
+Func GetSkillbarPtr($aHeroNumber = 0)
+	; Local $lOffset[5] = [0, 24, 76, 84, 44]
+	Local $lOffset[5] = [0, 0x18, 0x4C, 0x54, 0x2C]
+	Local $lHeroCount = MemoryReadPtr($mBasePointer, $lOffset)
+	Local $lOffset[5] = [0, 0x18, 0x2C, 0x6F0]
+	Local $lSkillbarStructAddress
+	
+	For $i = 0 To $lHeroCount[1]
+		$lOffset[4] = $i * 188
+		$lSkillbarStructAddress = MemoryReadPtr($mBasePointer, $lOffset)
+		If $lSkillbarStructAddress[1] = GetHeroID($aHeroNumber) Then Return $lSkillbarStructAddress[0]
+	Next
+EndFunc   ;==>GetSkillbarPtr
+
 ;~ Description: Returns skillbar struct.
 Func GetSkillbar($aHeroNumber = 0)
 	Local $lOffset[5] = [0, 0x18, 0x2C, 0x6F0]
@@ -4521,11 +4631,91 @@ Func GetSkillbar($aHeroNumber = 0)
 		$lSkillbarStructAddress = MemoryReadPtr($mBasePointer, $lOffset)
 		DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lSkillbarStructAddress[0], 'ptr', DllStructGetPtr($g_SkillbarStruct), 'int', DllStructGetSize($g_SkillbarStruct), 'int', '')
 
-		If DllStructGetData($g_SkillbarStruct, 'AgentId') == GetHeroID($aHeroNumber) Then
+		If DllStructGetData($g_SkillbarStruct, 'AgentId') = GetHeroID($aHeroNumber) Then
 			Return $g_SkillbarStruct
 		EndIf
 	Next
 EndFunc   ;==>GetSkillbar
+
+; #FUNCTION# ====================================================================================================================
+; Name ..........: UseSkill
+; Description ...: Use a skill.
+; Syntax ........: UseSkill($aSkillSlot[, $aTarget = -2[, $aCallTarget = False]])
+; Parameters ....: $aSkillSlot          - 1 to 8
+;                  $aTarget             - [optional] can be AgentID/AgentPtr/AgentStruct (default is -2/self)
+;                  $aCallTarget         - [optional] Call Target (default is False)
+; ===============================================================================================================================
+Func UseSkill($aSkillSlot, $aTarget = -2, $aCallTarget = False)
+	DllStructSetData($mUseSkill, 2, $aSkillSlot)
+	DllStructSetData($mUseSkill, 3, ConvertID($aTarget))
+	DllStructSetData($mUseSkill, 4, $aCallTarget)
+	Enqueue($mUseSkillPtr, 16)
+EndFunc ;==>UseSkill
+
+; #FUNCTION# ====================================================================================================================
+; Name ..........: UseSkillEx
+; Description ...: Use a skill with more checks.
+; Syntax ........: UseSkillEx($aSkillSlot[, $aTarget = -2[, $aTimeout = 3000[, $aCallTarget = False[, $aSkillbarPtr = GetSkillbarPtr()]]]])
+; Parameters ....: $aSkillSlot          - 
+;                  $aTarget             - [optional] Default is -2.
+;                  $aTimeout            - [optional] Default is 3000.
+;                  $aCallTarget         - [optional] Default is False.
+;                  $aSkillbarPtr        - [optional] Default is GetSkillbarPtr(0).
+; ===============================================================================================================================
+Func UseSkillEx($aSkillSlot, $aTarget = -2, $aTimeout = 3000, $aCallTarget = False, $aSkillbarPtr = GetSkillbarPtr(0))
+	Local $lDeadlock = TimerInit(), $lAgentID = ID($aTarget), $lMe = GetAgentPtr(-2)
+	Local $lSkill = GetSkillPtr(GetSkillbarSkillID($aSkillSlot, 0, $aSkillbarPtr))
+	If $lAgentID = 0 Or GetIsDead($lMe) Or Not IsRecharged($aSkillSlot, $aSkillbarPtr) Then Return
+	If GetEnergy($lMe) < GetEnergyReq($lSkill) Then Return
+	
+	If $lAgentID <> GetMyID() Then ChangeTarget($lAgentID)
+	UseSkill($aSkillSlot, $lAgentID, $aCallTarget)
+	Do
+		Sleep(50)
+		If GetIsDead($lAgentID) Or GetIsDead($lMe) Then Return		
+	Until Not IsRecharged($aSkillSlot, $aSkillbarPtr) Or TimerDiff($lDeadlock) > $aTimeout
+	Sleep(MemoryRead($lSkill + 64, "float") * 1000) ; Aftercast
+	Return True
+EndFunc ;==>UseskillEx
+
+;~ Description: Returns energy cost of a skill.
+Func GetEnergyReq($aSkillID)
+	Local $lEnergycost = MemoryRead(GetSkillPtr($aSkillID) + 53, "byte")
+	If $lEnergycost = 11 Then Return 15
+	If $lEnergycost = 12 Then Return 25
+	Return $lEnergycost
+EndFunc ;==>GetEnergyReq
+
+; #FUNCTION# ====================================================================================================================
+; Name ..........: IsRecharged
+; Description ...: Returns if a Skill is recharged.
+; Syntax ........: IsRecharged($aSkillSlot[, $aSkillbarPtr = GetSkillbarPtr()])
+; Parameters ....: $aSkillSlot          - 
+;                  $aSkillbarPtr        - [optional] Default is GetSkillbarPtr(0).
+; ===============================================================================================================================
+Func IsRecharged($aSkillSlot, $aSkillbarPtr = GetSkillbarPtr(0))
+	Return GetSkillbarSkillRecharge($aSkillSlot, 0, $aSkillbarPtr) = 0
+EndFunc ;==>IsRecharged
+
+;~ Description: Checks SkillRecharge by SkillSlot; True=Recharged
+Func IsRechargedHero($aSkillSlot, $aHeroNumber = 0, $aSkillbarPtr = GetSkillbarPtr($aHeroNumber))
+	Return GetSkillbarSkillRecharge($aSkillSlot, $aHeroNumber, $aSkillbarPtr) = 0
+EndFunc ;==>IsRechargedHero
+
+; #FUNCTION# ====================================================================================================================
+; Name ..........: GetSkillbarSkillRecharge
+; Description ...: Returns the recharge time remaining of an equipped skill in milliseconds.
+; Syntax ........: GetSkillbarSkillRecharge($aSkillSlot[, $aHeroNumber = 0[, $aSkillbarPtr = GetSkillbarPtr($aHeroNumber)]])
+; Parameters ....: $aSkillSlot          - 
+;                  $aHeroNumber         - [optional] Default is 0.
+;                  $aSkillbarPtr        - [optional] Default is GetSkillbarPtr($aHeroNumber).
+; ===============================================================================================================================
+Func GetSkillbarSkillRecharge($aSkillSlot, $aHeroNumber = 0, $aSkillbarPtr = GetSkillbarPtr($aHeroNumber))
+	$aSkillSlot -= 1
+	Local $lTimestamp = MemoryRead($aSkillbarPtr + 12 + $aSkillSlot * 20, "dword")
+	If $lTimestamp = 0 Then Return 0
+	Return $lTimestamp - GetSkillTimer()
+EndFunc   ;==>GetSkillbarSkillRecharge
 
 ;~ Description: Returns the skill ID of an equipped skill.
 Func GetSkillbarSkillID($aSkillSlot, $aHeroNumber = 0)
@@ -4536,13 +4726,6 @@ EndFunc   ;==>GetSkillbarSkillID
 Func GetSkillbarSkillAdrenaline($aSkillSlot, $aHeroNumber = 0)
 	Return DllStructGetData(GetSkillbar($aHeroNumber), 'AdrenalineA' & $aSkillSlot)
 EndFunc   ;==>GetSkillbarSkillAdrenaline
-
-;~ Description: Returns the recharge time remaining of an equipped skill in milliseconds.
-Func GetSkillbarSkillRecharge($aSkillSlot, $aHeroNumber = 0)
-	Local $lTimestamp = DllStructGetData(GetSkillbar($aHeroNumber), 'Recharge' & $aSkillSlot)
-	If $lTimestamp == 0 Then Return 0
-	Return $lTimestamp - GetSkillTimer()
-EndFunc   ;==>GetSkillbarSkillRecharge
 
 ;~ Description: Returns skill struct.
 Func GetSkillByID($aSkillID)
