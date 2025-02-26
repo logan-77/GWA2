@@ -72,24 +72,27 @@ Func OpenChestByExtraType($ExtraType)
 		OpenChest()
 EndFunc   ;==>OpenChestByExtraType
 
-Func GetAgentArraySorted($$aAgentArray = 0)
-	Local $lDistance
-	Local $lAgentArray = GetAgentArray($lAgentType)
-	Local $lReturnArray[1][2]
-	Local $lMe = GetAgentByID(-2)
-	Local $AgentID
-	For $i = 1 To $lAgentArray[0]
-		$lDistance = (DllStructGetData($lMe, 'X') - DllStructGetData($lAgentArray[$i], 'X')) ^ 2 + (DllStructGetData($lMe, 'Y') - DllStructGetData($lAgentArray[$i], 'Y')) ^ 2
-		$AgentID = DllStructGetData($lAgentArray[$i], 'ID')
-		ReDim $lReturnArray[$i][2]
-		$lReturnArray[$i - 1][0] = $AgentID
-		$lReturnArray[$i - 1][1] = Sqrt($lDistance)
-	Next
-	_ArraySort($lReturnArray, 0, 0, 0, 1)
-	Return $lReturnArray
- EndFunc   ;==>GetAgentArraySorted
 
- Func GetAgentArraySorted($aAgentArray = GetAgentPtrArray(2))
+; #FUNCTION# ====================================================================================================================
+; Name ..........: GetAgentArraySorted
+; Description ...: Sorts an AgentPtrArray by Distance.
+; Syntax ........: GetAgentArraySorted([$aAgentArray = GetAgentPtrArray(2, 0xDB, 3)])
+; Parameters ....: $aAgentArray         - [optional] Array of AgentPtr (default all enemies in compass range)
+; Return values .: None
+; Author ........: Blake
+; ===============================================================================================================================
+Func GetAgentArraySorted($aAgentArray = GetAgentPtrArray(2, 0xDB, 3))
+	Local $lReturnArray[UBound($aAgentArray)][2]
+	Local $lDistance, $lMe = GetAgentPtr(-2)
+
+	For $i = 1 To UBound($aAgentArray) - 1
+		$lReturnArray[$i][0] = $aAgentArray[$i]
+		$lReturnArray[$i][1] = GetDistance($aAgentArray[$i], $lMe)
+	Next
+	$lReturnArray[0][0] = $aAgentArray[0]
+	_ArraySort($lReturnArray, 0, 1, 0, 1) ; test this someday
+	Return $lReturnArray
+EndFunc ;==>GetAgentArraySorted
 
   ; Function to check for chests and interact with them  
 Func CheckForChest($chestRun = False)  

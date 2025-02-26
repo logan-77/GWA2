@@ -3955,20 +3955,16 @@ EndFunc   ;==>GetParty
 ; #FUNCTION# ====================================================================================================================
 ; Name ..........: GetAgentPtrArray
 ; Description ...: 	very fast method to get an array of agents in compass range
-;					Mode 0: all agents
-;					Mode 1: agents by: $aType (use only this for 0x200/0x400)
-;					Mode 2: agents by: $aType + $aAllegiance
-;					Mode 3: agents by $aType + $aAllegiance + optional: PlayerNumber, Effect, $aRange ($aAgent or $aX/$aY)
 ; Syntax ........: GetAgentPtrArray([$aMode = 0[, $aType = 0xDB[, $aAllegiance = 3[, $aRange = 1320[, $aAgent = GetAgentPtr(-2)[, $aPlayerNumber = 0[, $aEffect = 0[, $aX = X($aAgent)[, $aY = Y($aAgent)]]]]]]]]])
-; Parameters ....: $aMode               - [optional] Default is 0.
-;                  $aType               - [optional] Default is 0xDB.
-;                  $aAllegiance         - [optional] Default is 3.
-;                  $aRange              - [optional] Default is 1320.
-;                  $aAgent              - [optional] Default is GetAgentPtr(-2).
-;                  $aPlayerNumber       - [optional] Default is 0.
-;                  $aEffect             - [optional] Default is 0.
-;                  $aX                  - [optional] Default is X($aAgent).
-;                  $aY                  - [optional] Default is Y($aAgent).
+; Parameters ....: $aMode               - [optional] 0=all agents; 1=Type; 2=Type+Allegiance; 3=Type+Allegiance+Range+Agent+PlayerNumber+Effect+Xy
+;                  $aType               - [optional] Type: 0xDB/0x200/0x400 (default 0xDB=living)
+;                  $aAllegiance         - [optional] Allegiance (default 3=enemy)
+;                  $aRange              - [optional] Range (default 1320)
+;                  $aAgent              - [optional] Agent (default is GetAgentPtr(-2))
+;                  $aPlayerNumber       - [optional] PlayerNumber (default is 0)
+;                  $aEffect             - [optional] Effect: dead, bleeding, etc (default is 0)
+;                  $aX                  - [optional] X Position (default is X($aAgent))
+;                  $aY                  - [optional] Y Position (default is Y($aAgent))
 ; Return values .: None
 ; Author ........: Blake
 ; ===============================================================================================================================
@@ -4003,7 +3999,20 @@ Func GetAgentPtrArray($aMode = 0, $aType = 0xDB, $aAllegiance = 3, $aRange = 132
 	Return $lAgentArray
 EndFunc ;==>GetAgentPtrArray
 
-; Returns Array of Agent Structs (backwards compatibility)
+; #FUNCTION# ====================================================================================================================
+; Name ..........: GetAgentArray
+; Description ...: Returns Array of AgentStructs (backwards compatibility)
+; Syntax ........: GetAgentArray([$aType = 0xDB[, $aAllegiance = 0]])
+; Parameters ....: $aType               - [optional] Agent Type (default is 0xDB)
+;                  $aAllegiance         - [optional] Agent Allegiance (default is 0)
+; Return values .: None
+; Author ........: Blake
+; Modified ......: 26.02.2025
+; Remarks .......:
+; Related .......:
+; Link ..........:
+; Example .......: No
+; ===============================================================================================================================
 Func GetAgentArray($aType = 0xDB, $aAllegiance = 0)
 	Local $lAgentArray = GetAgentPtrArray(1, $aType)
 	If $lAgentArray = 0 Then Return 0
@@ -4031,6 +4040,27 @@ Func GetAgentArray($aType = 0xDB, $aAllegiance = 0)
 		Return $lReturnArray
 	EndIf
 EndFunc	;==>GetAgentArray
+
+; #FUNCTION# ====================================================================================================================
+; Name ..........: GetAgentArraySorted
+; Description ...: Sorts an AgentPtrArray by Distance.
+; Syntax ........: GetAgentArraySorted([$aAgentArray = GetAgentPtrArray(2, 0xDB, 3)])
+; Parameters ....: $aAgentArray         - [optional] Array of AgentPtr (default all enemies in compass range)
+; Return values .: None
+; Author ........: Blake
+; ===============================================================================================================================
+Func GetSortedAgentArray($aAgentArray = GetAgentPtrArray(2, 0xDB, 3))
+	Local $lReturnArray[UBound($aAgentArray)][2]
+	Local $lDistance, $lMe = GetAgentPtr(-2)
+
+	For $i = 1 To UBound($aAgentArray) - 1
+		$lReturnArray[$i][0] = $aAgentArray[$i]
+		$lReturnArray[$i][1] = GetDistance($aAgentArray[$i], $lMe)
+	Next
+	$lReturnArray[0][0] = $aAgentArray[0]
+	_ArraySort($lReturnArray, 0, 1, 0, 1) ; test this someday
+	Return $lReturnArray
+EndFunc ;==>GetAgentArraySorted
 
 ; Returns the number of living enemies in range of an agent. optional: PlayerNumber
 Func GetNumberOfEnemiesNearAgent($aAgent = -2, $aRange = 1250, $aPlayerNumber = 0)
