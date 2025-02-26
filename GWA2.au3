@@ -4593,6 +4593,22 @@ Func GetSkillInfo($aSkillID, $aInfo = "")
     Return 0
 EndFunc ;==>GetSkillInfo
 
+;~Description: Returns Skill Pointer, $aSkill should be SkillID
+Func GetSkillPtr($aSkillID)
+	If IsPtr($aSkillID) Then Return $aSkillID
+	Local $lSkillptr = $mSkillBase + 160 * $aSkillID
+	Return Ptr($lSkillptr)
+EndFunc   ;==>GetSkillPtr
+
+;~ Description: Returns skill struct.
+Func GetSkillByID($aSkillID)
+	Local $lSkillStructAddress = $mSkillBase + (160 * $aSkillID)
+
+	DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lSkillStructAddress, 'ptr', DllStructGetPtr($g_SkillStruct), 'int', DllStructGetSize($g_SkillStruct), 'int', '')
+
+	Return $g_SkillStruct
+EndFunc   ;==>GetSkillByID
+
 ;~ Description: Returns the pointer variable to a skillbar for specified hero number.
 ; #FUNCTION# ====================================================================================================================
 ; Name ..........: GetSkillbarPtr
@@ -4600,12 +4616,6 @@ EndFunc ;==>GetSkillInfo
 ; Syntax ........: GetSkillbarPtr([$aHeroNumber = 0])
 ; Parameters ....: $aHeroNumber         - [optional] default is 0/self.
 ; Return values .: Pointer to Skillbar.
-; Author ........: 
-; Modified ......:
-; Remarks .......:
-; Related .......:
-; Link ..........:
-; Example .......: No
 ; ===============================================================================================================================
 Func GetSkillbarPtr($aHeroNumber = 0)
 	; Local $lOffset[5] = [0, 24, 76, 84, 44]
@@ -4715,26 +4725,37 @@ Func GetSkillbarSkillRecharge($aSkillSlot, $aHeroNumber = 0, $aSkillbarPtr = Get
 	Local $lTimestamp = MemoryRead($aSkillbarPtr + 12 + $aSkillSlot * 20, "dword")
 	If $lTimestamp = 0 Then Return 0
 	Return $lTimestamp - GetSkillTimer()
-EndFunc   ;==>GetSkillbarSkillRecharge
+EndFunc ;==>GetSkillbarSkillRecharge
 
-;~ Description: Returns the skill ID of an equipped skill.
-Func GetSkillbarSkillID($aSkillSlot, $aHeroNumber = 0)
-	Return DllStructGetData(GetSkillbar($aHeroNumber), 'ID' & $aSkillSlot)
-EndFunc   ;==>GetSkillbarSkillID
+;~ Description: 
+; #FUNCTION# ====================================================================================================================
+; Name ..........: GetSkillbarSkillID
+; Description ...: Returns the skill ID of an equipped skill.
+; Syntax ........: GetSkillbarSkillID($askillslot[, $aHeronumber = 0[, $aSkillbarPtr = GetSkillbarPtr($aHeroNumber)]])
+; Parameters ....: $askillslot          - 
+;                  $aHeronumber         - [optional] Default is 0.
+;                  $aSkillbarPtr        - [optional] Default is GetSkillbarPtr($aHeroNumber).
+; Return values .: Skill ID
+; ===============================================================================================================================
+Func GetSkillbarSkillID($askillslot, $aHeronumber = 0, $aSkillbarPtr = GetSkillbarPtr($aHeroNumber))
+	$askillslot -= 1
+	Return MemoryRead($aSkillbarPtr + 16 + $aSkillslot * 20, "dword")
+EndFunc ;==>GetSkillbarSkillID
 
-;~ Description: Returns the adrenaline charge of an equipped skill.
-Func GetSkillbarSkillAdrenaline($aSkillSlot, $aHeroNumber = 0)
-	Return DllStructGetData(GetSkillbar($aHeroNumber), 'AdrenalineA' & $aSkillSlot)
-EndFunc   ;==>GetSkillbarSkillAdrenaline
-
-;~ Description: Returns skill struct.
-Func GetSkillByID($aSkillID)
-	Local $lSkillStructAddress = $mSkillBase + (160 * $aSkillID)
-
-	DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lSkillStructAddress, 'ptr', DllStructGetPtr($g_SkillStruct), 'int', DllStructGetSize($g_SkillStruct), 'int', '')
-
-	Return $g_SkillStruct
-EndFunc   ;==>GetSkillByID
+; #FUNCTION# ====================================================================================================================
+; Name ..........: GetSkillbarSkillAdrenaline
+; Description ...: Returns the adrenaline charge of an equipped skill.
+; Syntax ........: GetSkillbarSkillAdrenaline($aSkillSlot[, $aHeroNumber = 0[, $aSkillbarPtr = GetSkillbarPtr($aHeroNumber)]])
+; Parameters ....: $aSkillSlot          - 
+;                  $aHeroNumber         - [optional] Default is 0.
+;                  $aSkillbarPtr        - [optional] Default is GetSkillbarPtr($aHeroNumber).
+; Return values .: Adrenaline
+; ===============================================================================================================================
+Func GetSkillbarSkillAdrenaline($aSkillSlot, $aHeroNumber = 0, $aSkillbarPtr = GetSkillbarPtr($aHeroNumber))
+	$aSkillSlot -= 1
+	Return MemoryRead($aSkillbarPtr + 4 + $aSkillSlot * 20, "long")
+EndFunc ;==>GetSkillbarSkillAdrenaline
+#EndRegion Skills
 
 ;~ Description: Returns current morale.
 Func GetMorale($aHeroNumber = 0)
@@ -4811,7 +4832,7 @@ Func GetEffect($aSkillID = 0, $aHeroNumber = 0)
 
 				For $i = 0 To $lEffectCount[1] - 1
 					$lReturnArray[$i + 1] = DllStructCreate('long SkillId;long AttributeLevel;long EffectId;long AgentId;float Duration;long TimeStamp')
-					$lEffectStructAddress[1] = $lEffectStructAddress[0] + 24 * $i
+					$lEffectStructAddress[1] = $lEffectStructAddress[0] + 0x18 * $i
 					DllCall($mKernelHandle, 'int', 'ReadProcessMemory', 'int', $mGWProcHandle, 'int', $lEffectStructAddress[1], 'ptr', DllStructGetPtr($lReturnArray[$i + 1]), 'int', 24, 'int', '')
 				Next
 
@@ -4830,6 +4851,69 @@ Func GetEffect($aSkillID = 0, $aHeroNumber = 0)
 
 	Return $lReturnArray
 EndFunc   ;==>GetEffect
+
+;~ Description: Returns array of effectptr on agent.
+Func GetEffectsPtr($aSkillID = 0, $aHeroNumber = 0, $aHeroId = GetHeroID($aHeroNumber))
+	Local $lEffectCount, $lEffectStructAddress, $lBuffer
+	Local $lAmount = 0
+	Local $lOffset[4] = [0, 0x18, 0x2C, 0x510]
+	Local $lCount = MemoryReadPtr($mBasePointer, $lOffset)
+	ReDim $lOffset[5]
+	$lOffset[3] = 0x508
+	For $i = 0 To $lCount[1] - 1
+		$lOffset[4] = 0x24 * $i
+		$lBuffer = MemoryReadPtr($mBasePointer, $lOffset)
+		If $lBuffer[1] = $aHeroId Then
+			$lOffset[4] = 0x1C + 0x24 * $i
+			$lEffectCount = MemoryReadPtr($mBasePointer, $lOffset)
+			ReDim $lOffset[6]
+			$lOffset[4] = 0x14 + 0x24 * $i
+			$lOffset[5] = 0
+			$lEffectStructAddress = MemoryReadPtr($mBasePointer, $lOffset)
+			If $aSkillID = 0 Then
+				Local $lReturnArray[$lEffectCount[1] + 1]
+				$lReturnArray[0] = $lEffectCount[1]
+				For $i = 1 To $lEffectCount[1]
+					$lReturnArray[$i] = Ptr($lEffectStructAddress[0] + 0x18 * ($i - 1))
+				Next
+				Return $lReturnArray
+			Else
+				Local $lReturnArray[2] = [0, 0]
+				For $j = 0 To $lEffectCount[1] - 1
+					$lReturn = $lEffectStructAddress[0] + 0x18 * $j
+					If MemoryRead($lReturn, "long") = $aSkillID Then
+						$lReturnArray[0] = 1
+						$lReturnArray[1] = Ptr($lReturn)
+						Return $lReturnArray
+					EndIf
+				Next
+			EndIf
+		EndIf
+	Next
+EndFunc   ;==>GetEffectsPtr
+
+;~ Description: 
+Func GetSkillEffectPtr($aSkillID, $aHeroNumber = 0, $aHeroId = GetHeroID($aHeroNumber))
+	Local $lOffset[4] = [0, 0x18, 0x2C, 0x510]
+	Local $lCount = MemoryReadPtr($mBasePointer, $lOffset)
+	ReDim $lOffset[5]
+	$lOffset[3] = 0x508
+	Local $lBuffer
+	For $i = 0 To $lCount[1] - 1
+		$lOffset[4] = 0x24 * $i
+		$lBuffer = MemoryReadPtr($mBasePointer, $lOffset)
+		If $lBuffer[1] = $aHeroId Then
+			$lOffset[4] = 0x1C + 0x24 * $i
+			Local $lEffectCount = MemoryReadPtr($mBasePointer, $lOffset)
+			$lOffset[4] = 0x14 + 0x24 * $i
+			Local $lEffectStructAddress = MemoryReadPtr($mBasePointer, $lOffset, 'ptr')
+			For $j = 0 To $lEffectCount[1] - 1
+				Local $lEffectSkillID = MemoryRead($lEffectStructAddress[1] + 0x18 * $j, 'long')
+				If $lEffectSkillID = $aSkillID Then Return Ptr($lEffectStructAddress[1] + 0x18 * $j)
+			Next
+		EndIf
+	Next
+EndFunc   ;==>GetSkillEffectPtr
 
 ;~ Description: Returns time remaining before an effect expires, in milliseconds.
 Func GetEffectTimeRemaining($aEffect)
