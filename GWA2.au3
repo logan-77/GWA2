@@ -4673,7 +4673,7 @@ EndFunc ;==>UseSkill
 ;                  $aSkillbarPtr        - [optional] Default is GetSkillbarPtr(0).
 ; ===============================================================================================================================
 Func UseSkillEx($aSkillSlot, $aTarget = -2, $aTimeout = 3000, $aCallTarget = False, $aSkillbarPtr = GetSkillbarPtr(0))
-	Local $lDeadlock = TimerInit(), $lAgentID = ID($aTarget), $lMe = GetAgentPtr(-2)
+	Local $lDeadlock = TimerInit(), $lAgentID = ConvertID($aTarget), $lMe = GetAgentPtr(-2)
 	Local $lSkill = GetSkillPtr(GetSkillbarSkillID($aSkillSlot, 0, $aSkillbarPtr))
 	If $lAgentID = 0 Or GetIsDead($lMe) Or Not IsRecharged($aSkillSlot, $aSkillbarPtr) Then Return
 	If GetEnergy($lMe) < GetEnergyReq($lSkill) Then Return
