@@ -3965,8 +3965,13 @@ EndFunc   ;==>GetParty
 ;                  $aEffect             - [optional] Effect: dead, bleeding, etc (default is 0)
 ;                  $aX                  - [optional] X Position (default is X($aAgent))
 ;                  $aY                  - [optional] Y Position (default is Y($aAgent))
-; Return values .: None
-; Author ........: Blake
+; Return values .: Array of Agent Pointers
+; Author ........: Blake, credit to Greg et al.
+; Modified ......: 26.02.2025
+; Remarks .......:
+; Related .......: GetAgentArraySorted
+; Link ..........:
+; Example .......: No
 ; ===============================================================================================================================
 Func GetAgentPtrArray($aMode = 0, $aType = 0xDB, $aAllegiance = 3, $aRange = 1320, $aAgent = GetAgentPtr(-2), $aPlayerNumber = 0, $aEffect = 0, $aX = X($aAgent), $aY = Y($aAgent))
 	Local $lMaxAgents = GetMaxAgents()
@@ -4005,11 +4010,11 @@ EndFunc ;==>GetAgentPtrArray
 ; Syntax ........: GetAgentArray([$aType = 0xDB[, $aAllegiance = 0]])
 ; Parameters ....: $aType               - [optional] Agent Type (default is 0xDB)
 ;                  $aAllegiance         - [optional] Agent Allegiance (default is 0)
-; Return values .: None
+; Return values .: Array of AgentStructs
 ; Author ........: Blake
 ; Modified ......: 26.02.2025
-; Remarks .......:
-; Related .......:
+; Remarks .......: funtion should be deprecated, better use GetAgentPtrArray
+; Related .......: GetAgentPtrArray
 ; Link ..........:
 ; Example .......: No
 ; ===============================================================================================================================
@@ -4048,8 +4053,13 @@ EndFunc	;==>GetAgentArray
 ; Parameters ....: $aAgentArray         - [optional] Array of AgentPtr (default all enemies in compass range)
 ; Return values .: None
 ; Author ........: Blake
+; Modified ......: 26.02.2025
+; Remarks .......:
+; Related .......: GetAgentPtrArray
+; Link ..........:
+; Example .......: No
 ; ===============================================================================================================================
-Func GetSortedAgentArray($aAgentArray = GetAgentPtrArray(2, 0xDB, 3))
+Func GetAgentArraySorted($aAgentArray = GetAgentPtrArray(2, 0xDB, 3))
 	Local $lReturnArray[UBound($aAgentArray)][2]
 	Local $lDistance, $lMe = GetAgentPtr(-2)
 
@@ -4062,7 +4072,21 @@ Func GetSortedAgentArray($aAgentArray = GetAgentPtrArray(2, 0xDB, 3))
 	Return $lReturnArray
 EndFunc ;==>GetAgentArraySorted
 
-; Returns the number of living enemies in range of an agent. optional: PlayerNumber
+; #FUNCTION# ====================================================================================================================
+; Name ..........: GetNumberOfEnemiesNearAgent
+; Description ...: Returns the number of living enemies in range of an agent.
+; Syntax ........: GetNumberOfEnemiesNearAgent([$aAgent = -2[, $aRange = 1250[, $aPlayerNumber = 0]]])
+; Parameters ....: $aAgent              - [optional] The relevant Agent. (default is self)
+;                  $aRange              - [optional] Range (default is 1250)
+;                  $aPlayerNumber       - [optional] PlayerNumber (default is 0/none)
+; Return values .: Number of Living enemies near agent.
+; Author ........: 
+; Modified ......: 26.02.2025
+; Remarks .......:
+; Related .......:
+; Link ..........:
+; Example .......: No
+; ===============================================================================================================================
 Func GetNumberOfEnemiesNearAgent($aAgent = -2, $aRange = 1250, $aPlayerNumber = 0)
 	Local $lAgentPtrArray = GetAgentPtrArray(3, 0xDB, 3, $aRange, $aAgent, $aPlayerNumber)
 	Return UBound($lAgentPtrArray) - 1
@@ -4870,8 +4894,8 @@ Func TolSleep($aAmount = 150, $aTolerance = 50)
 	Sleep(Random($aAmount - $aTolerance, $aAmount + $aTolerance))
 EndFunc   ;==>TolSleep
 
-Func Pingsleep($msextra = 0)
-	Sleep(GetPing() + $msextra)
+Func Pingsleep($msExtra = 0)
+	Sleep(GetPing() + $msExtra)
 EndFunc   ;==>Pingsleep
 
 ;~ Description: Returns window handle of Guild Wars.
