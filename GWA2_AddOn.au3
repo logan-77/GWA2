@@ -1,4 +1,5 @@
 #include-once
+#include "GWA2.au3"
 
 #Region H&H
 Func MoveHero($aX, $aY, $HeroID, $Random = 75); Parameter1 = heroID (1-7) reset flags $aX = 0x7F800000, $aY = 0x7F800000
@@ -71,7 +72,7 @@ Func OpenChestByExtraType($ExtraType)
 		OpenChest()
 EndFunc   ;==>OpenChestByExtraType
 
-Func GetAgentArraySorted($lAgentType)     ;returns a 2-dimensional array([agentID, [distance]) sorted by distance
+Func GetAgentArraySorted($$aAgentArray = 0)
 	Local $lDistance
 	Local $lAgentArray = GetAgentArray($lAgentType)
 	Local $lReturnArray[1][2]
@@ -87,6 +88,8 @@ Func GetAgentArraySorted($lAgentType)     ;returns a 2-dimensional array([agentI
 	_ArraySort($lReturnArray, 0, 0, 0, 1)
 	Return $lReturnArray
  EndFunc   ;==>GetAgentArraySorted
+
+ Func GetAgentArraySorted($aAgentArray = GetAgentPtrArray(2))
 
   ; Function to check for chests and interact with them  
 Func CheckForChest($chestRun = False)  

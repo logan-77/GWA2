@@ -1329,7 +1329,7 @@ EndFunc ;==>MoveItemToChest
 
 ;~ Description: Looks for free Slot and moves Item to Inventory
 Func MoveItemToInventory($aItem)
-	Local $lItemPtr, $lBagPtr, $lMoveItem = False
+	Local $lBagPtr, $lMoveItem = False
 	For $bag = 1 To 4
 		$lBagPtr = GetBagPtr($bag)
 		If $lBagPtr = 0 Then ContinueLoop
@@ -3173,74 +3173,49 @@ EndFunc   ;==>FloatToInt
 
 #Region Queries
 #Region Titles
-
-; Constants for title identifiers
-Global Const $NO_TITLE = 0x00
-Global Const $SPEARMARSHALL = 0x11
-Global Const $LIGHTBRINGER = 0x14
-Global Const $ASURAN = 0x26
-Global Const $DWARVEN = 0x27
-Global Const $EBON_VANGUARD = 0x28
-Global Const $NORN = 0x29
-
 Func SetDisplayedTitle($aTitle = 0)
-;~ If $aTitle Then
-;~ 	Return SendPacket(0x8, $HEADER_TITLE_DISPLAY, $aTitle)
-;~ Else
-;~ 	Return SendPacket(0x4, $HEADER_TITLE_CLEAR)
-;~ EndIf
-;~ No Title = 0x00
-;~ Spearmarshall = 0x11
-;~ Lightbringer = 0x14
-;~ Asuran = 0x26
-;~ Dwarven = 0x27
-;~ Ebon Vanguard = 0x28
-;~ Norn = 0x29
+	If $aTitle Then
+		Return SendPacket(0x8, $HEADER_TITLE_DISPLAY, $aTitle)
+	Else
+		Return SendPacket(0x4, $HEADER_TITLE_HIDE)
+	EndIf
+	;~ No Title = 0x00
+	;~ Spearmarshall = 0x11
+	;~ Lightbringer = 0x14
+	;~ Asuran = 0x26
+	;~ Dwarven = 0x27
+	;~ Ebon Vanguard = 0x28
+	;~ Norn = 0x29
 EndFunc   ;==>SetDisplayedTitle
-
-;Func SetTitleUpdate($aTitle = 0)
-;   If $aTitle Then
-;      Return SendPacket(0x8, $HEADER_TITLE_UPDATE, $aTitle)
-; Else
-;    Return SendPacket(0x4, $HEADER_TITLE_UPDATE)
-;EndIf
-;~ No Title = 0x00
-;~ Spearmarshall = 0x11
-;~ Lightbringer = 0x14
-;~ Asuran = 0x26
-;~ Dwarven = 0x27
-;~ Ebon Vanguard = 0x28
-;~ Norn = 0x29
-;EndFunc   ;==>SetTitleUpdate
 
 ; Function to set the title to Spearmarshall
 Func SetTitleSpearmarshall()
-	SendPacket(0x8, $HEADER_TITLE_DISPLAY, $SPEARMARSHALL)
+	SendPacket(0x8, $HEADER_TITLE_DISPLAY, 0x11)
 EndFunc   ;==>SetTitleSpearmarshall
 
 ; Function to set the title to Lightbringer
 Func SetTitleLightbringer()
-	SendPacket(0x8, $HEADER_TITLE_DISPLAY, $LIGHTBRINGER)
+	SendPacket(0x8, $HEADER_TITLE_DISPLAY, 0x14)
 EndFunc   ;==>SetTitleLightbringer
 
 ; Function to set the title to Asuran
 Func SetTitleAsuran()
-	SendPacket(0x8, $HEADER_TITLE_DISPLAY, $ASURAN)
+	SendPacket(0x8, $HEADER_TITLE_DISPLAY, 0x26)
 EndFunc   ;==>SetTitleAsuran
 
 ; Function to set the title to Dwarven
 Func SetTitleDwarven()
-	SendPacket(0x8, $HEADER_TITLE_DISPLAY, $DWARVEN)
+	SendPacket(0x8, $HEADER_TITLE_DISPLAY, 0x27)
 EndFunc   ;==>SetTitleDwarven
 
 ; Function to set the title to Ebon Vanguard
 Func SetTitleEbonVanguard()
-	SendPacket(0x8, $HEADER_TITLE_DISPLAY, $EBON_VANGUARD)
+	SendPacket(0x8, $HEADER_TITLE_DISPLAY, 0x28)
 EndFunc   ;==>SetTitleEbonVanguard
 
 ; Function to set the title to Norn
 Func SetTitleNorn()
-	SendPacket(0x8, $HEADER_TITLE_DISPLAY, $NORN)
+	SendPacket(0x8, $HEADER_TITLE_DISPLAY, 0x29)
 EndFunc   ;==>SetTitleNorn
 
 ;~ Description: Returns Hero title progress.
@@ -3977,12 +3952,26 @@ Func GetParty($aAgentArray = 0)
 	Return $lReturnArray
 EndFunc   ;==>GetParty
 
-;~ Description: very fast method to get an array of agents in compass range
-;~ Case 0: all agents
-;~ Case 1: agents by: $aType (use only this for 0x200/0x400)
-;~ Case 2: agents by: $aType + $aAllegiance
-;~ Case 3: agents by $aType + $aAllegiance + optional: PlayerNumber, Effect, $aRange ($aAgent or $aX/$aY)
-;~ GetAgentPtrArray: Mode, Type, Allegiance, Range, Agent, PlayerNumber, Effect, x, y
+; #FUNCTION# ====================================================================================================================
+; Name ..........: GetAgentPtrArray
+; Description ...: 	very fast method to get an array of agents in compass range
+;					Mode 0: all agents
+;					Mode 1: agents by: $aType (use only this for 0x200/0x400)
+;					Mode 2: agents by: $aType + $aAllegiance
+;					Mode 3: agents by $aType + $aAllegiance + optional: PlayerNumber, Effect, $aRange ($aAgent or $aX/$aY)
+; Syntax ........: GetAgentPtrArray([$aMode = 0[, $aType = 0xDB[, $aAllegiance = 3[, $aRange = 1320[, $aAgent = GetAgentPtr(-2)[, $aPlayerNumber = 0[, $aEffect = 0[, $aX = X($aAgent)[, $aY = Y($aAgent)]]]]]]]]])
+; Parameters ....: $aMode               - [optional] Default is 0.
+;                  $aType               - [optional] Default is 0xDB.
+;                  $aAllegiance         - [optional] Default is 3.
+;                  $aRange              - [optional] Default is 1320.
+;                  $aAgent              - [optional] Default is GetAgentPtr(-2).
+;                  $aPlayerNumber       - [optional] Default is 0.
+;                  $aEffect             - [optional] Default is 0.
+;                  $aX                  - [optional] Default is X($aAgent).
+;                  $aY                  - [optional] Default is Y($aAgent).
+; Return values .: None
+; Author ........: Blake
+; ===============================================================================================================================
 Func GetAgentPtrArray($aMode = 0, $aType = 0xDB, $aAllegiance = 3, $aRange = 1320, $aAgent = GetAgentPtr(-2), $aPlayerNumber = 0, $aEffect = 0, $aX = X($aAgent), $aY = Y($aAgent))
 	Local $lMaxAgents = GetMaxAgents()
 	If $lMaxAgents <= 0 Then Return 0
@@ -4374,7 +4363,7 @@ Func GetAgentName($aAgent)
 		DisplayAll(False)
 	EndIf
 
-	Local $lName = MemoryRead($lAddress, 'wchar [128]')
+	$lName = MemoryRead($lAddress, 'wchar [128]')
 	$lName = StringRegExpReplace($lName, '[<]{1}([^>]+)[>]{1}', '')
 	Return $lName
 EndFunc   ;==>GetAgentName
